@@ -29,7 +29,7 @@ extern "C" {
 
 /* pystart - attribute indices */
 #define ATTR_INDEX_lock                               2
-#define ATTR_INDEX_loadPath                           50
+#define ATTR_INDEX_loadPath                           51
 /* pyend */
 
 /* pystart - attribute ids */
@@ -63,6 +63,7 @@ extern "C" {
 #define ATTR_ID_clientId                              153
 #define ATTR_ID_topicPrefix                           154
 #define ATTR_ID_gatewayState                          155
+#define ATTR_ID_peerVerify                            156
 #define ATTR_ID_motionOdr                             168
 #define ATTR_ID_motionThresh                          169
 #define ATTR_ID_motionScale                           170
@@ -120,9 +121,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      80
+#define ATTR_TABLE_SIZE                                      81
 #define ATTR_TABLE_MAX_ID                                    262
-#define ATTR_TABLE_WRITABLE_COUNT                            42
+#define ATTR_TABLE_WRITABLE_COUNT                            43
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
 #define ATTR_MAX_BIN_SIZE                                    16
@@ -193,6 +194,13 @@ enum gateway_state {
 	GATEWAY_STATE_CLOUD_CONNECTING = 16,
 	GATEWAY_STATE_MODEM_INIT = 17,
 	GATEWAY_STATE_MODEM_ERROR = 18,
+};
+
+enum peer_verify {
+	PEER_VERIFY_NONE = 0,
+	PEER_VERIFY_OPTIONAL = 1,
+	PEER_VERIFY_REQUIRED = 2,
+	PEER_VERIFY_UNSET = 3,
 };
 
 enum central_state {
@@ -289,6 +297,7 @@ enum attr_dump {
 /* pystart - enum size check */
 BUILD_ASSERT(sizeof(enum cert_status) == ATTR_SIZE_S32);
 BUILD_ASSERT(sizeof(enum gateway_state) == ATTR_SIZE_U8);
+BUILD_ASSERT(sizeof(enum peer_verify) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum central_state) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_control_point) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum fota_status) == ATTR_SIZE_U8);
@@ -315,6 +324,7 @@ int attr_prepare_qrtcLastSet(void);
 /* pystart - get string */
 const char *const attr_get_string_cert_status(int value);
 const char *const attr_get_string_gateway_state(int value);
+const char *const attr_get_string_peer_verify(int value);
 const char *const attr_get_string_central_state(int value);
 const char *const attr_get_string_fota_control_point(int value);
 const char *const attr_get_string_fota_status(int value);

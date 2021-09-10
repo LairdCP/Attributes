@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.36"
+    "version": "0.4.38"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.36",
+              "x-default": "0.4.38",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2907,6 +2907,32 @@
                 "CLOUD_CONNECTING": 16,
                 "MODEM_INIT": 17,
                 "MODEM_ERROR": 18
+              }
+            }
+          },
+          {
+            "name": "peerVerify",
+            "summary": "TLS configuration for secure MQTT transport - Indicates the preference for peer verification",
+            "note": "Value takes effect on next connection attempt",
+            "required": true,
+            "x-id": 156,
+            "x-projects": [
+              "MG100",
+              "BL5340"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "0",
+              "x-example": "2",
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true,
+              "enum": {
+                "NONE": 0,
+                "OPTIONAL": 1,
+                "REQUIRED": 2,
+                "UNSET": 3
               }
             }
           },
