@@ -250,7 +250,7 @@ static union {
 static size_t buf_size;
 
 struct smp_notification {
-	struct dfu_smp_header header;
+	struct bt_dfu_smp_header header;
 	uint8_t buffer[MAX_PBUF_SIZE + CBOR_NOTIFICATION_OVERHEAD];
 } __packed;
 
