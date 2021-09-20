@@ -1209,8 +1209,7 @@ static int prepare_for_read(const ate_t *const entry)
 static bool is_writable(const ate_t *const entry)
 {
 	bool r = false;
-	bool unlocked =
-		((*((uint8_t *)ATTR_TABLE[ATTR_INDEX_lock].pData)) == 0);
+	bool unlocked = ((*((bool *)ATTR_TABLE[ATTR_INDEX_lock].pData)) == 0);
 
 	if (entry->writable) {
 		if (entry->lockable) {
