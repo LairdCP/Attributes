@@ -115,7 +115,7 @@ uart:~$ attr quiet powerSupplyVoltage 1
 
 A module may not read or write values from interrupt context because read/write operations are mutex protected.
 
-This module was designed using littlefs (LFS).  For simplicity, all values are written to a single file. Avoid configuring attributes that change often to savable.
+This module was designed using littlefs (LFS). For simplicity, all values are written to a single file. Avoid configuring attributes that change often to savable.
 
 The attribute module must be initialized after the file system and should be initialized before most other modules and main. This allows configuration to be ready for use.
 
@@ -144,3 +144,38 @@ Across all Laird Connectivity systems, IDs are supposed to be unique. This means
 
 The current JSON format doesn't allow for different projects to have different min, max, default, or broadcast values.
 
+## Customization
+
+For a custom project, a new attributes.json file can be created. Unless compatibility with Laird Connectivity applications is desired, then IDs can be different.
+
+## Custom Field Definitions
+
+The following fields are specific to this implementation and are not part of the OpenRPC specification. They are prefixed with 'x-'.
+
+| Field                | Required | Default | Description                                                           |
+| -------------------- | -------- | ------- | --------------------------------------------------------------------- |
+| x-id                 | y        | NA      | Unique ID of attribute                                                |
+| x-projects           | y        | NA      | Project is used by attribute generator                                |
+| x-ctype              | y        | NA      | Variable type in C. "string" converted to "char" by generator.        |
+| x-default            | y        | NA      | Default value                                                         |
+| x-example            | n        | NA      | A commonly used or alternate value                                    |
+| x-lockable           | n        | false   | If true, when attributes are locked then value cannot be written      |
+| x-broadcast          | n        | false   | If framework is enabled, generate attribute changed broadcast message |
+| x-savable            | n        | false   | Save value to file system                                             |
+| x-writable           | n        | false   | If true, value can be written from SMP or loaded from file            |
+| x-readable           | n        | false   | If true, value can be read from SMP and dumped to a file              |
+| x-array-size         | n        | 0       | Number of elements for an array type                                  |
+| x-deprecated         | n        | false   | No longer used, prevents re-use of id or failures due to missing id   |
+| x-validator          | n        | type    | Override for write validation function. Often used for control points |
+| x-prepare            | n        | NA      | Optional function that is called before a value is read or dumped     |
+| x-enum-include-errno | n        | false   | If true, then include negative error numbers as part of enum          |
+
+Custom validators are specified by the suffix of the validator function name.
+```
+"x-validator": "cp32"
+```
+
+Prepare functions are declared as weak and can be overridden in application. They are of the form attr_prepare_NAME. Example for the variable named upTime.
+```
+int attr_prepare_upTime(void);
+```
