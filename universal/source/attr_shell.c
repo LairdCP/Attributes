@@ -188,7 +188,10 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				break;
 
 			case ATTR_TYPE_S64:
-				param.yy = strtoull(argv[2], NULL, 0);
+				/* Hex cannot be used to set negative numbers
+				 * 0x8000000000000000 - 0xFFFFFFFFFFFFFFFF
+				 */
+				param.yy = strtoll(argv[2], NULL, 0);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.yy,
 					     sizeof(param.yy));
 				break;
