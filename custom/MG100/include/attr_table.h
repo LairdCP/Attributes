@@ -150,6 +150,7 @@ extern "C" {
 #define ATTR_ID_polteConfidence                       260
 #define ATTR_ID_polteTimestamp                        261
 #define ATTR_ID_blePrepareTimeout                     262
+#define ATTR_ID_temperatureOffset                     263
 /* pyend */
 
 /******************************************************************************/
@@ -157,9 +158,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                 117
-#define ATTR_TABLE_MAX_ID                               262
-#define ATTR_TABLE_WRITABLE_COUNT                       51
+#define ATTR_TABLE_SIZE                                 118
+#define ATTR_TABLE_MAX_ID                               263
+#define ATTR_TABLE_WRITABLE_COUNT                       52
 #define ATTR_MAX_STR_LENGTH                             254
 #define ATTR_MAX_STR_SIZE                               255
 #define ATTR_MAX_BIN_SIZE                               16

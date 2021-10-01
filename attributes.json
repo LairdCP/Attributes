@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.38"
+    "version": "0.4.39"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.38",
+              "x-default": "0.4.39",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2955,7 +2955,7 @@
           },
           {
             "name": "batteryTemperature",
-            "summary": "Battery Temperature",
+            "summary": "Temperature of board (from LIS3DH) used in battery calculations",
             "required": false,
             "x-id": 158,
             "x-projects": [
@@ -2964,7 +2964,7 @@
             "schema": {
               "type": "integer",
               "x-ctype": "int16_t",
-              "x-default": "0",
+              "x-default": -127,
               "x-example": "0",
               "x-readable": true
             }
@@ -5006,6 +5006,25 @@
               "x-readable": true,
               "x-writable": true,
               "x-savable": true
+            }
+          },
+          {
+            "name": "temperatureOffset",
+            "summary": "Offset applied to value read from LIS3DH",
+            "notes": "Can be used in conjunction with single point calibration",
+            "required": false,
+            "x-id": 263,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "int8_t",
+              "x-default": "25",
+              "x-example": "27",
+              "x-readable": true,
+              "x-savable": true,
+              "x-writable": true
             }
           }
         ]
