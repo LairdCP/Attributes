@@ -33,7 +33,7 @@ zephyr_sources(
 )
 endif()
 
-if(CONFIG_BOARD_BL5340_DVK_CPUAPP)
+if(CONFIG_BOARD_BL5340_DVK_CPUAPP OR CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
 zephyr_include_directories(custom/BL5340/include)
 zephyr_sources(
     custom/BL5340/source/attr_table.c
