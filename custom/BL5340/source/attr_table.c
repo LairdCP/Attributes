@@ -73,6 +73,7 @@ typedef struct rw_attribute {
 	char ethernetStaticDNS[15 + 1];
 	char sntpServer[64 + 1];
 	uint32_t blePrepareTimeout;
+	bool lwm2mEnableBootstrap;
 	/* pyend */
 } rw_attribute_t;
 
@@ -119,7 +120,8 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.ethernetStaticGateway = "0.0.0.0",
 	.ethernetStaticDNS = "0.0.0.0",
 	.sntpServer = "time.windows.com",
-	.blePrepareTimeout = 3600
+	.blePrepareTimeout = 3600,
+	.lwm2mEnableBootstrap = false
 	/* pyend */
 };
 
@@ -174,7 +176,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.bluetoothAddress = "0",
 	.resetCount = 0,
 	.upTime = 0,
-	.attributeVersion = "0.4.38",
+	.attributeVersion = "0.4.41",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -341,7 +343,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[77 ] = { 238, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
 	[78 ] = { 239, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
 	[79 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         },
-	[80 ] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     }
+	[80 ] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
+	[81 ] = { 264, RW_ATTRX(lwm2mEnableBootstrap)          , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -430,7 +433,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[238] = &ATTR_TABLE[77 ],
 	[239] = &ATTR_TABLE[78 ],
 	[241] = &ATTR_TABLE[79 ],
-	[262] = &ATTR_TABLE[80 ]
+	[262] = &ATTR_TABLE[80 ],
+	[264] = &ATTR_TABLE[81 ]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),

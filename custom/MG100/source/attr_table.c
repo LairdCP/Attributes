@@ -79,6 +79,7 @@ typedef struct rw_attribute {
 	char poltePassword[16 + 1];
 	uint32_t blePrepareTimeout;
 	int8_t temperatureOffset;
+	bool lwm2mEnableBootstrap;
 	/* pyend */
 } rw_attribute_t;
 
@@ -131,7 +132,8 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.polteUser = "",
 	.poltePassword = "",
 	.blePrepareTimeout = 3600,
-	.temperatureOffset = 25
+	.temperatureOffset = 25,
+	.lwm2mEnableBootstrap = false
 	/* pyend */
 };
 
@@ -218,7 +220,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.39",
+	.attributeVersion = "0.4.40",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -456,7 +458,8 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[114] = { 260, RO_ATTRS(polteConfidence)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[115] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[116] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
-	[117] = { 263, RW_ATTRX(temperatureOffset)             , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[117] = { 263, RW_ATTRX(temperatureOffset)             , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[118] = { 264, RW_ATTRX(lwm2mEnableBootstrap)          , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -582,7 +585,8 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[260] = &ATTR_TABLE[114],
 	[261] = &ATTR_TABLE[115],
 	[262] = &ATTR_TABLE[116],
-	[263] = &ATTR_TABLE[117]
+	[263] = &ATTR_TABLE[117],
+	[264] = &ATTR_TABLE[118]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),

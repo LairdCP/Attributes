@@ -114,6 +114,7 @@ extern "C" {
 #define ATTR_ID_ethernetDHCPAttempts                  239
 #define ATTR_ID_sntpServer                            241
 #define ATTR_ID_blePrepareTimeout                     262
+#define ATTR_ID_lwm2mEnableBootstrap                  264
 /* pyend */
 
 /******************************************************************************/
@@ -121,9 +122,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      81
-#define ATTR_TABLE_MAX_ID                                    262
-#define ATTR_TABLE_WRITABLE_COUNT                            43
+#define ATTR_TABLE_SIZE                                      82
+#define ATTR_TABLE_MAX_ID                                    264
+#define ATTR_TABLE_WRITABLE_COUNT                            44
 #define ATTR_MAX_STR_LENGTH                                  254
 #define ATTR_MAX_STR_SIZE                                    255
 #define ATTR_MAX_BIN_SIZE                                    16

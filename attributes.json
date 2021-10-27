@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.39"
+    "version": "0.4.41"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.39",
+              "x-default": "0.4.41",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -5025,6 +5025,24 @@
               "x-readable": true,
               "x-savable": true,
               "x-writable": true
+            }
+          },
+          {
+            "name": "lwm2mEnableBootstrap",
+            "summary": "If true, bootstrap procedure will be enabled during initialization",
+            "required": true,
+            "x-id": 264,
+            "x-projects": [
+              "MG100",
+              "BL5340"
+            ],
+            "schema": {
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "true",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
             }
           }
         ]
