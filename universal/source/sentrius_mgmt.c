@@ -140,8 +140,10 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr);
 static int factory_reset(struct mgmt_ctxt *ctxt);
 static int sha_256(struct mgmt_ctxt *ctxt);
 
+#ifdef CONFIG_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -249,6 +251,7 @@ static union {
 
 static size_t buf_size;
 
+#ifdef CONFIG_BT
 struct smp_notification {
 	struct bt_dfu_smp_header header;
 	uint8_t buffer[MAX_PBUF_SIZE + CBOR_NOTIFICATION_OVERHEAD];
@@ -263,12 +266,14 @@ static struct {
 	struct bt_conn_cb conn_callbacks;
 	struct smp_notification cmd;
 } smp_ble;
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 SYS_INIT(sentrius_mgmt_init, APPLICATION, 99);
 
+#ifdef CONFIG_BT
 /* callback from attribute module */
 int attr_notify(attr_id_t Index)
 {
@@ -322,6 +327,7 @@ int attr_notify(attr_id_t Index)
 
 	return err;
 }
+#endif
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -332,13 +338,16 @@ static int sentrius_mgmt_init(const struct device *device)
 
 	mgmt_register_group(&sentrius_mgmt_group);
 
+#ifdef CONFIG_BT
 	smp_ble.conn_callbacks.connected = smp_ble_connected;
 	smp_ble.conn_callbacks.disconnected = smp_ble_disconnected;
 	bt_conn_cb_register(&smp_ble.conn_callbacks);
+#endif
 
 	return 0;
 }
 
+#ifdef CONFIG_BT
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err)
 {
 	/* Did a central connect to us? */
@@ -365,6 +374,7 @@ static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason)
 
 	attr_disable_notify();
 }
+#endif
 
 static int get_parameter(struct mgmt_ctxt *ctxt)
 {
