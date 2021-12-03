@@ -794,6 +794,22 @@ int attr_default(attr_id_t id)
 	}
 }
 
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+bool attr_is_locked(void)
+{
+	bool locked = true;
+	uint8_t lock_status = attr_get_uint32(CONFIG_ATTR_INDEX_LOCK,
+					      LOCK_STATUS_NOT_SETUP);
+
+	if (lock_status == LOCK_STATUS_NOT_SETUP ||
+		lock_status == LOCK_STATUS_SETUP_DISENGAGED) {
+		locked = false;
+	}
+
+	return locked;
+}
+#endif
+
 __weak int attr_notify(attr_id_t id)
 {
 	ARG_UNUSED(id);
@@ -1209,19 +1225,30 @@ static int prepare_for_read(const ate_t *const entry)
 static bool is_writable(const ate_t *const entry)
 {
 	bool r = false;
-	bool unlocked = ((*((bool *)ATTR_TABLE[ATTR_INDEX_lock].pData)) == 0);
+	bool settings_locked = 0;
 
 	if (entry->writable) {
 		if (entry->lockable) {
-			r = unlocked;
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+			settings_locked = attr_is_locked();
+
+			if (settings_locked == false) {
+#endif
+				r = true;
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+			}
+#endif
 		} else {
 			r = true;
 		}
 	}
 
 	if (!r) {
-		LOG_DBG("Id [%u] %s is Not writable", entry->id, entry->name);
+		LOG_DBG("Id [%u] %s is %s", entry->id, entry->name,
+			(settings_locked == false ? "not writable" :
+			 "locked by settings passcode"));
 	}
+
 	return r;
 }
 
@@ -1312,6 +1339,51 @@ static int64_t sign_extend64(const ate_t *const entry)
 	return v;
 }
 
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+static void attr_load_settings_lock(void)
+{
+	int r;
+	uint8_t lock_enabled;
+	const struct attr_table_entry *const entry_lock = attr_map(
+						CONFIG_ATTR_INDEX_LOCK);
+	const struct attr_table_entry *const entry_lock_status = attr_map(
+						CONFIG_ATTR_INDEX_LOCK_STATUS);
+
+	if (attr_initialized == true) {
+		/* Setup is already complete */
+		return;
+	}
+
+	/* Check settings lock status */
+	if (entry_lock == NULL || entry_lock_status == NULL) {
+		/* Missing required attributes */
+		if (entry_lock == NULL) {
+			LOG_ERR("Missing lock attribute (%d), settings lock inoperable",
+				CONFIG_ATTR_INDEX_LOCK);
+		}
+
+		if (entry_lock_status == NULL) {
+			LOG_ERR("Missing lock status attribute (%d), settings lock inoperable",
+				CONFIG_ATTR_INDEX_LOCK_STATUS);
+		}
+	} else {
+		/* Set the current status of the lock */
+		lock_enabled = *(uint8_t*)entry_lock->pData;
+
+		r = attr_write(entry_lock_status, ATTR_TYPE_ANY, &lock_enabled,
+			       sizeof(lock_enabled));
+
+		if (r == 0) {
+			r = save_single(entry_lock_status);
+			change_single(entry_lock_status, ENABLE_NOTIFICATIONS);
+		}
+	}
+
+        /* Turn off the display on the terminal of the passcode */
+        attr_set_quiet(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE, true);
+}
+#endif
+
 /******************************************************************************/
 /* System WorkQ context                                                       */
 /******************************************************************************/
@@ -1362,6 +1434,10 @@ static int attr_init(const struct device *device)
 #endif
 
 	initialize_quiet();
+
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+	attr_load_settings_lock();
+#endif
 
 	attr_initialized = true;
 

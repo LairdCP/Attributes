@@ -475,6 +475,13 @@ int attr_disable_notify(void);
  */
 int attr_default(attr_id_t id);
 
+/**
+ * @brief Check if configuration lock is engaged
+ *
+ * @return bool false if settings lock is disengaged or not set, true if engaged
+ */
+bool attr_is_locked(void);
+
 #ifdef __cplusplus
 }
 #endif
