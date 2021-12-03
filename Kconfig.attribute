@@ -105,6 +105,14 @@ config ATTR_INDEX_SETTINGS_PASSCODE_STATUS
 	  The attribute index which holds the passcode status and is
 	  used to notify a client on the passcode entry result.
 
+config ATTR_SHELL_LOCK
+	bool "Enable settings lock shell manipulation"
+	depends on SHELL
+	default y if SHELL
+	help
+	  Allows the configuration lock to be enabled, disabled, set,
+	  removed and checked via the 'lock' shell commands.
+
 endif # ATTR_SETTINGS_LOCK
 
 config MCUMGR_CMD_SENTRIUS_MGMT

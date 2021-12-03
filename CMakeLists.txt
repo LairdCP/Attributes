@@ -41,4 +41,6 @@ zephyr_sources(
 )
 endif()
 
+zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK universal/source/shell_lock.c)
+
 endif() # CONFIG_ATTR
