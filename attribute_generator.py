@@ -13,6 +13,7 @@ import collections
 import os
 import inflection
 import sys
+import math
 
 ATTRIBUTE_VERSION_ARRAY_INDEX = 93
 JSON_INDENT = '  '
@@ -40,6 +41,8 @@ def ToYesNo(b) -> str:
     else:
         return "n"
 
+def ToInt(b) -> str:
+    return math.trunc(b)
 
 def GetNumberField(d: dict, item: str):
     """ Handles items not being present (lazy get) """
@@ -105,6 +108,7 @@ class attributes:
         self.apiTotalAttributes = 0
         self.MaxNameLength = 0
         self.project = project
+        self.largestNumberSize = 0
 
         self.id = []
         self.apiId = []
@@ -231,6 +235,7 @@ class attributes:
     def GetType(self, index: int) -> str:
         kind = self.type[index]
         array_size = self.arraySize[index]
+        numberSize = 0
         s = "ATTR_TYPE_"
         if kind == "string":
             s += "STRING"
@@ -239,26 +244,39 @@ class attributes:
             s += "BYTE_ARRAY"
         elif kind == "float":
             s += "FLOAT"
+            numberSize = 4
         elif kind == "int8_t":
             s += "S8"
+            numberSize = 1
         elif kind == "int16_t":
             s += "S16"
+            numberSize = 2
         elif kind == "int32_t":
             s += "S32"
+            numberSize = 4
         elif kind == "int64_t":
             s += "S64"
+            numberSize = 8
         elif kind == "bool":
             s += "BOOL"
+            numberSize = 1
         elif kind == "uint8_t":
             s += "U8"
+            numberSize = 1
         elif kind == "uint16_t":
             s += "U16"
+            numberSize = 2
         elif kind == "uint32_t":
             s += "U32"
+            numberSize = 4
         elif kind == "uint64_t":
             s += "U64"
+            numberSize = 8
         else:
             s += "UNKNOWN"
+
+        if (numberSize > self.largestNumberSize):
+            self.largestNumberSize = numberSize
 
         return s
 
@@ -570,6 +588,10 @@ class attributes:
     def CreateConstants(self) -> str:
         """Create some definitions for header file"""
         defs = []
+        maxBinSize = ToInt(max(self.arraySize))
+
+        if (self.largestNumberSize > maxBinSize):
+            maxBinSize = self.largestNumberSize
 
         self.MaxNameLength = len(max(self.name, key=len))
 
@@ -584,7 +606,7 @@ class attributes:
         defs.append(self.JustifyDefine("MAX_STR_SIZE", "",
                                        max(self.stringMax) + 1))
         defs.append(self.JustifyDefine("MAX_BIN_SIZE", "",
-                                       max(self.arraySize)))
+                                       maxBinSize))
 
         self.CreateMaxStringSizes(defs)
         self.CreateArraySizes(defs)
