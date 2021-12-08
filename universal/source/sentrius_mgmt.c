@@ -709,7 +709,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-	r = attr_load(param.buf);
+	r = attr_load(param.buf, NULL, NULL);
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
 	err |= cbor_encode_int(&ctxt->encoder, r);
@@ -1075,32 +1075,33 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr)
 	switch (cbor_attr->type) {
 	case CborAttrIntegerType:
 		status = attr_set(id, type, cbor_attr->addr.integer,
-				  sizeof(int64_t));
+				  sizeof(int64_t), NULL);
 		break;
 
 	case CborAttrUnsignedIntegerType:
 		status = attr_set(id, type, cbor_attr->addr.uinteger,
-				  sizeof(uint64_t));
+				  sizeof(uint64_t), NULL);
 		break;
 
 	case CborAttrTextStringType:
 		status = attr_set(id, type, cbor_attr->addr.string,
-				  strlen(cbor_attr->addr.string));
+				  strlen(cbor_attr->addr.string), NULL);
 		break;
 
 	case CborAttrFloatType:
 		status =
-			attr_set(id, type, cbor_attr->addr.fval, sizeof(float));
+			attr_set(id, type, cbor_attr->addr.fval, sizeof(float),
+				 NULL);
 		break;
 
 	case CborAttrBooleanType:
 		status = attr_set(id, type, cbor_attr->addr.boolean,
-				  sizeof(bool));
+				  sizeof(bool), NULL);
 		break;
 
 	case CborAttrByteStringType:
 		status = attr_set(id, type, cbor_attr->addr.bytestring.data,
-				  *(cbor_attr->addr.bytestring.len));
+				  *(cbor_attr->addr.bytestring.len), NULL);
 		break;
 
 	default:

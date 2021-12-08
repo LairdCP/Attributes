@@ -60,6 +60,17 @@ enum attr_size {
 	ATTR_SIZE_FLOAT = sizeof(float),
 };
 
+/* Errors associated with parameter writes */
+enum attr_write_error {
+	ATTR_WRITE_ERROR_OK = 0,
+	ATTR_WRITE_ERROR_NUMERIC_TOO_LOW,
+	ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH,
+	ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS,
+	ATTR_WRITE_ERROR_PARAMETER_READ_ONLY,
+	ATTR_WRITE_ERROR_PARAMETER_UNKNOWN,
+	ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH
+};
+
 struct attr_min_max {
 	union {
 		uint32_t ux;

@@ -81,10 +81,13 @@ bool attr_valid_id(attr_id_t id);
  * @param vlen The length (without null char) of the string
  * being passed in.  If the value isn't a string, then the length is
  * not used.
+ * @param modified Will be set to true if parameter was modified or false if not
+ * (can be supplied NULL to ignore)
  *
  * @retval negative error code, 0 on success
  */
-int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen);
+int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen,
+	     bool *modified);
 
 /**
  * @brief Same as set value except broadcast is disabled.
@@ -94,7 +97,7 @@ int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen);
  * @retval negative error code, 0 on success
  */
 int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
-			       size_t vlen);
+			       size_t vlen, bool *modified);
 
 /**
  * @brief Copy an attribute.  This is the only get function that should be
@@ -423,10 +426,12 @@ int attr_set_quiet(attr_id_t id, bool value);
  * @note SMP notifications are disabled during load.
  *
  * @param abs_path Absolute file name
+ * @param modified Will be set to true if parameters were modified or false if
+ * not (can be supplied NULL to ignore)
  *
  * @retval negative error code, number of parameters on success
  */
-int attr_load(const char *abs_path);
+int attr_load(const char *abs_path, const char *feedback_path, bool *modified);
 
 /**
  * @brief Notification callback

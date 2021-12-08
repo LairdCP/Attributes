@@ -161,7 +161,7 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 			case ATTR_TYPE_FLOAT:
 				param.f = strtof(argv[2], NULL);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.f,
-					     sizeof(param.f));
+					     sizeof(param.f), NULL);
 				break;
 
 			case ATTR_TYPE_BOOL:
@@ -170,13 +170,13 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 			case ATTR_TYPE_U32:
 				param.x = strtoul(argv[2], NULL, 0);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.x,
-					     sizeof(param.x));
+					     sizeof(param.x), NULL);
 				break;
 
 			case ATTR_TYPE_U64:
 				param.xx = strtoull(argv[2], NULL, 0);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.xx,
-					     sizeof(param.xx));
+					     sizeof(param.xx), NULL);
 				break;
 
 			case ATTR_TYPE_S8:
@@ -184,7 +184,7 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 			case ATTR_TYPE_S32:
 				param.y = strtol(argv[2], NULL, 0);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.y,
-					     sizeof(param.y));
+					     sizeof(param.y), NULL);
 				break;
 
 			case ATTR_TYPE_S64:
@@ -193,12 +193,12 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				 */
 				param.yy = strtoll(argv[2], NULL, 0);
 				r = attr_set(id, ATTR_TYPE_ANY, &param.yy,
-					     sizeof(param.yy));
+					     sizeof(param.yy), NULL);
 				break;
 
 			case ATTR_TYPE_STRING:
 				r = attr_set(id, ATTR_TYPE_ANY, argv[2],
-					     strlen(argv[2]));
+					     strlen(argv[2]), NULL);
 				break;
 
 			case ATTR_TYPE_BYTE_ARRAY:
@@ -206,7 +206,7 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				binlen = hex2bin(argv[2], strlen(argv[2]),
 						 param.bin, sizeof(param.bin));
 				r = attr_set(id, ATTR_TYPE_ANY, param.bin,
-					     binlen);
+					     binlen, NULL);
 				break;
 
 			default:
@@ -237,7 +237,7 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 
 	if ((argc == 3) && (argv[1] != NULL) && (argv[2] != NULL)) {
 		id = get_id(argv[1]);
-		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]));
+		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]), NULL);
 	} else {
 		shell_error(shell, "Unexpected parameters");
 		return -EINVAL;
@@ -516,7 +516,7 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int r = -EPERM;
 	if ((argc == 2) && (argv[1] != NULL)) {
-		r = attr_load(argv[1]);
+		r = attr_load(argv[1], NULL, NULL);
 		if (r < 0) {
 			shell_error(shell, "attr_ Load error");
 		}

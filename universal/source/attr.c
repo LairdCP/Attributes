@@ -71,6 +71,14 @@ enum { DISABLE_NOTIFICATIONS = 0, ENABLE_NOTIFICATIONS = 1 };
 
 static const char EMPTY_STRING[] = "";
 
+/* Each feedback file entry consists of a 2 character id, an equals to sign
+ * character, a two character error code and a new line character.
+ */
+#define ATTR_LOAD_FEEDBACK_ENTRY_SIZE 6
+
+/* Malloc always wants to align on a 4 byte boundary */
+#define ATTR_LOAD_FEEDBACK_ALIGN_SIZE 4
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -97,7 +105,7 @@ static bool attr_initialized;
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static int set_internal(attr_id_t id, enum attr_type type, void *pv,
-			size_t vlen, bool broadcast);
+			size_t vlen, bool broadcast, bool *modified);
 
 static int save_single(const ate_t *const entry);
 static int save_attributes(void);
@@ -105,11 +113,13 @@ static void change_single(const ate_t *const entry, bool send_notifications);
 static void change_handler(bool send_notifications);
 static void notification_handler(attr_id_t id);
 
-static int load_attributes(const char *fname, bool validate_first,
-			   bool mask_modified);
+static int load_attributes(const char *fname, const char *feedback_path,
+			   bool validate_first, bool mask_modified,
+			   bool skip_non_writeable);
 
 static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified);
+		  bool mask_modified, uint16_t *error_count,
+		  bool skip_non_writeable);
 
 static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 		    size_t vlen);
@@ -142,6 +152,15 @@ static void sys_workq_show_handler(struct k_work *item);
 extern void attr_table_initialize(void);
 extern void attr_table_factory_reset(void);
 
+static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp);
+static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
+							  enum attr_type Type);
+static enum attr_write_error diagnose_string_write_error(param_kvp_t *kvp);
+
+static int build_empty_feedback_file(const char *feedback_path);
+static int build_feedback_file(const char *feedback_path, char *fstr,
+			       param_kvp_t *kvp, size_t pairs);
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -172,15 +191,15 @@ bool attr_valid_id(attr_id_t id)
 	return (entry != NULL);
 }
 
-int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen)
+int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen, bool *modified)
 {
-	return set_internal(id, type, pv, vlen, true);
+	return set_internal(id, type, pv, vlen, true, modified);
 }
 
 int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
-			       size_t vlen)
+			       size_t vlen, bool *modified)
 {
-	return set_internal(id, type, pv, vlen, false);
+	return set_internal(id, type, pv, vlen, false, modified);
 }
 
 int attr_get(attr_id_t id, void *pv, size_t vlen)
@@ -723,20 +742,35 @@ int attr_set_quiet(attr_id_t id, bool value)
 	return r;
 }
 
-int attr_load(const char *abs_path)
+int attr_load(const char *abs_path, const char *feedback_path, bool *modified)
 {
 	int r = -EPERM;
 
+	if (modified != NULL) {
+		*modified = false;
+	}
+
 	TAKE_MUTEX(attr_mutex);
 	do {
-		r = load_attributes(abs_path, true, false);
+		r = load_attributes(abs_path, feedback_path, true, false, true);
 		BREAK_ON_ERROR(r);
+
+		if (modified != NULL) {
+			/* See if any attributes were modified prior to save */
+			uint16_t i = 0;
+			while (i < ATTR_TABLE_SIZE) {
+				if (atomic_test_bit(attr_modified, i)) == true) {
+					*modified = true;
+					break;
+				}
+
+				++i;
+			}
+		}
 
 		/* If attributes can't be saved, then still broadcast. */
 		r = save_attributes();
-
 		change_handler(DISABLE_NOTIFICATIONS);
-
 	} while (0);
 	GIVE_MUTEX(attr_mutex);
 
@@ -839,7 +873,7 @@ static size_t get_attr_length(attr_index_t index)
 }
 
 static int set_internal(attr_id_t id, enum attr_type type, void *pv,
-			size_t vlen, bool broadcast)
+			size_t vlen, bool broadcast, bool *modified)
 {
 	ATTR_ENTRY_DECL(id);
 	int r = -EPERM;
@@ -850,6 +884,14 @@ static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 			r = validate(entry, type, pv, vlen);
 			if (r == 0) {
 				r = attr_write(entry, type, pv, vlen);
+
+				if (modified != NULL) {
+					*modified = (atomic_test_bit(
+							attr_modified,
+							attr_table_index(entry))
+							== true);
+				}
+
 				if (r == 0) {
 					r = save_single(entry);
 					if (broadcast) {
@@ -1082,14 +1124,16 @@ static void show(const ate_t *const entry)
  *
  * @param mask_modified Don't set modified flag during initialization
  */
-static int load_attributes(const char *fname, bool validate_first,
-			   bool mask_modified)
+static int load_attributes(const char *fname, const char *feedback_path,
+			   bool validate_first, bool mask_modified,
+			   bool skip_non_writeable)
 {
 	int r = -EPERM;
 	size_t fsize;
 	char *fstr = NULL;
 	param_kvp_t *kvp = NULL;
 	size_t pairs = 0;
+	uint16_t error_count = 0;
 
 	do {
 		r = lcz_param_file_parse_from_file(fname, &fsize, &fstr, &kvp);
@@ -1100,16 +1144,47 @@ static int load_attributes(const char *fname, bool validate_first,
 		pairs = r;
 
 		if (validate_first) {
-			r = loader(kvp, fstr, pairs, false, mask_modified);
+			r = loader(kvp, fstr, pairs, false, mask_modified,
+				   &error_count, skip_non_writeable);
+
+			if (error_count != 0) {
+				/* Error occured during verification, no point
+				 * in continuing
+				 */
+				r = -EINVAL;
+			}
 		}
 		BREAK_ON_ERROR(r);
 
-		r = loader(kvp, fstr, pairs, true, mask_modified);
+		r = loader(kvp, fstr, pairs, true, mask_modified, &error_count,
+			   skip_non_writeable);
 
 	} while (0);
 
-	k_free(kvp);
-	k_free(fstr);
+	/* If we got as far as building the kvp list and any errors
+	 * occurred, build a list of diagnostics for all parameters in
+	 * the file.
+	 */
+	if ((kvp != NULL) && (error_count) && (feedback_path != NULL)) {
+		build_feedback_file(feedback_path, fstr, kvp, pairs);
+	}
+
+	/* If no errors occurred and we have a feedback path, we just
+	 * create an empty file.
+	 */
+	if ((!error_count) && (feedback_path != NULL)) {
+		build_empty_feedback_file(feedback_path);
+	}
+
+	/* Free the kvp allocation only if an allocation has been made */
+	if (kvp != NULL) {
+		k_free(kvp);
+	}
+
+	/* Free the fstr allocation only if an allocation has been made */
+	if (fstr != NULL) {
+		k_free(fstr);
+	}
 
 	LOG_DBG("status %d", r);
 
@@ -1117,7 +1192,8 @@ static int load_attributes(const char *fname, bool validate_first,
 }
 
 static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified)
+		  bool mask_modified, uint16_t *error_count,
+		  bool skip_non_writeable)
 {
 	int r = -EPERM;
 	uint8_t bin[ATTR_MAX_BIN_SIZE];
@@ -1126,6 +1202,10 @@ static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
 	const ate_t *entry;
 	int (*validate_or_write)(const ate_t *const, enum attr_type, void *,
 				 size_t) = do_write ? attr_write : validate;
+
+	if (error_count != NULL) {
+		*error_count = 0;
+	}
 
 	/* Loop through file
 	 * Find entry for each ID
@@ -1136,6 +1216,12 @@ static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
 
 		if (entry == NULL) {
 			r = -EPERM;
+		} else if (skip_non_writeable == true && !is_writable(entry)) {
+			/* When importing settings from a remote source, in
+			 * verification mode, skip entries that are not
+			 * writeable
+			 */
+			r = 0;
 		} else if (convert_attr_type(attr_table_index(entry)) ==
 			   PARAM_STR) {
 			r = validate_or_write(entry, ATTR_TYPE_STRING,
@@ -1160,6 +1246,13 @@ static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
 		}
 
 		if (r < 0) {
+			/* We always update the error count here regardless
+			 * of whether break out is enabled.
+			 */
+			if (error_count != NULL) {
+				*error_count = *error_count + 1;
+			}
+
 			if (IS_ENABLED(CONFIG_ATTR_BREAK_ON_LOAD_FAILURE)) {
 				break;
 			}
@@ -1379,10 +1472,242 @@ static void attr_load_settings_lock(void)
 		}
 	}
 
-        /* Turn off the display on the terminal of the passcode */
-        attr_set_quiet(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE, true);
+	/* Turn off the display on the terminal of the passcode */
+	attr_set_quiet(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE, true);
 }
 #endif
+
+static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp)
+{
+	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
+	enum attr_type attribute_type;
+
+	/* The following apply to all parameter types.
+	 * Known parameter index?
+	 */
+	if (!attr_valid_id(kvp->id)) {
+		result = ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
+	}
+	if (result == ATTR_WRITE_ERROR_OK) {
+		/* Writable parameter? */
+		if (!is_writable(attr_map(kvp->id))) {
+			result = ATTR_WRITE_ERROR_PARAMETER_READ_ONLY;
+		}
+	}
+	/* If not diagnosed used type specific handlers */
+	if (result == ATTR_WRITE_ERROR_OK) {
+		attribute_type = attr_get_type(kvp->id);
+		switch (attribute_type) {
+			case (ATTR_TYPE_BOOL):
+			case (ATTR_TYPE_U8):
+			case (ATTR_TYPE_U16):
+			case (ATTR_TYPE_U32):
+			case (ATTR_TYPE_U64):
+			case (ATTR_TYPE_S8):
+			case (ATTR_TYPE_S16):
+			case (ATTR_TYPE_S32):
+			case (ATTR_TYPE_S64):
+			case (ATTR_TYPE_FLOAT):
+				result = diagnose_numeric_write_error(
+				kvp, attribute_type);
+				break;
+			case (ATTR_TYPE_STRING):
+				result = diagnose_string_write_error(kvp);
+				break;
+			default:
+				break;
+		}
+	}
+	return (result);
+}
+
+static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
+							  enum attr_type Type)
+{
+	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
+	const struct attr_table_entry *attribute_entry;
+	uint8_t bin[ATTR_MAX_HEX_SIZE];
+	size_t binlen;
+
+	attribute_entry = attr_map(kvp->id);
+
+
+	/* Get numeric data and length */
+	binlen = hex2bin(kvp->keystr, kvp->length, bin, sizeof(bin));
+	/* Make sure the data is valid for use */
+	if (binlen <= 0) {
+		result = ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
+	}
+	/* And only proceed if safe to do so */
+	if (result == ATTR_WRITE_ERROR_OK) {
+		switch (Type) {
+			case (ATTR_TYPE_U8):
+			case (ATTR_TYPE_BOOL):
+				if (*((uint8_t *)(bin)) > attribute_entry->max.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((uint8_t *)(bin)) <
+					   attribute_entry->min.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_U16):
+				if (*((uint16_t *)(bin)) > attribute_entry->max.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((uint16_t *)(bin)) <
+					   attribute_entry->min.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_U32):
+				if (*((uint32_t *)(bin)) > attribute_entry->max.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((uint32_t *)(bin)) <
+					   attribute_entry->min.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_U64):
+				if (*((uint64_t *)(bin)) > attribute_entry->max.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((uint64_t *)(bin)) <
+					   attribute_entry->min.ux) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_S8):
+				if (*((int8_t *)(bin)) > attribute_entry->max.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((int8_t *)(bin)) <
+					   attribute_entry->min.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_S16):
+				if (*((int16_t *)(bin)) > attribute_entry->max.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((int16_t *)(bin)) <
+					   attribute_entry->min.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_S32):
+				if (*((int32_t *)(bin)) > attribute_entry->max.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((int32_t *)(bin)) <
+					   attribute_entry->min.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_S64):
+				if (*((int64_t *)(bin)) > attribute_entry->max.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((int64_t *)(bin)) <
+					   attribute_entry->min.sx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			case (ATTR_TYPE_FLOAT):
+				if (*((float *)(bin)) > attribute_entry->max.fx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+				} else if (*((float *)(bin)) <
+					   attribute_entry->min.fx) {
+					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return (result);
+}
+
+static enum attr_write_error diagnose_string_write_error(param_kvp_t *kvp)
+{
+	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
+	const struct attr_table_entry *attribute_entry;
+
+	attribute_entry = attr_map(kvp->id);
+
+	if (attribute_entry->size < kvp->length) {
+		result = ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS;
+	}
+
+	return (result);
+}
+
+static int build_feedback_file(const char *feedback_path, char *fstr,
+			       param_kvp_t *kvp, size_t pairs)
+{
+	/* Start with a result greater than zero here
+	 * so we enter the while loop
+	 */
+	int result = 1;
+	int pair_index;
+	enum attr_write_error attribute_write_error;
+	param_kvp_t *next_kvp;
+	uint16_t total_length = 0;
+	uint8_t *write_buffer;
+
+	/* Reserve enough space to hold details of all parameters. We add
+	 * an extra character here so the append_feedback function can keep
+	 * the string buffer null terminated for internal use.
+	 */
+	uint16_t buffer_size = (ATTR_LOAD_FEEDBACK_ENTRY_SIZE * pairs) + 1;
+	/* Also be sure we align properly for malloc calls */
+	buffer_size = ((buffer_size / ATTR_LOAD_FEEDBACK_ALIGN_SIZE) *
+		      ATTR_LOAD_FEEDBACK_ALIGN_SIZE) +
+		      ATTR_LOAD_FEEDBACK_ALIGN_SIZE;
+
+	write_buffer = k_malloc(buffer_size);
+
+	/* Then add our feedback if possible */
+	if (write_buffer != NULL) {
+		/* Start out with a blank buffer */
+		memset(write_buffer, 0x0, buffer_size);
+		/* Work through all load KVPs */
+		for (pair_index = 0; (pair_index < pairs) && (result > 0);
+		     pair_index++) {
+			/* Get next KVP for diagnosis */
+			next_kvp = &kvp[pair_index];
+			/* Diagnose the next parameter error */
+			attribute_write_error =
+			diagnose_parameter_write_error(next_kvp);
+			/* And add to our output file */
+			result = lcz_param_file_append_feedback(
+			next_kvp->id, attribute_write_error,
+			write_buffer);
+			/* Zero and less indicates an error occurred,
+			 * greater than zero an added length.
+			 */
+			if (result > 0) {
+				total_length += result;
+			}
+		}
+	}
+
+	/* OK to write our feedback file? */
+	if (write_buffer != NULL) {
+		/* Any data added? */
+		if (total_length) {
+			/* Either create or overwrite the feedback file */
+			result = fsu_write_abs(feedback_path, write_buffer,
+					       total_length);
+		}
+		/* Free memory regardless */
+		k_free(write_buffer);
+	}
+	return (result);
+}
+
+static int build_empty_feedback_file(const char *feedback_path)
+{
+	int result;
+
+	result = fsu_write_abs(feedback_path, NULL, 0);
+
+	return (result);
+}
 
 /******************************************************************************/
 /* System WorkQ context                                                       */
@@ -1394,6 +1719,7 @@ static void sys_workq_show_handler(struct k_work *item)
 	attr_index_t i;
 
 	TAKE_MUTEX(attr_mutex);
+
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		show(&ATTR_TABLE[i]);
 		k_sleep(K_MSEC(CONFIG_ATTR_SHELL_SHOW_ALL_DELAY_MS));
@@ -1426,7 +1752,7 @@ static int attr_init(const struct device *device)
 		LOG_INF("Parameter file doesn't exist");
 	} else {
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
-		r = load_attributes(ATTR_ABS_PATH, false, true);
+		r = load_attributes(ATTR_ABS_PATH, NULL, false, true, false);
 	}
 
 #ifdef CONFIG_ATTR_SHELL
