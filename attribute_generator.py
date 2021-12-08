@@ -607,6 +607,8 @@ class attributes:
                                        max(self.stringMax) + 1))
         defs.append(self.JustifyDefine("MAX_BIN_SIZE", "",
                                        maxBinSize))
+        defs.append(self.JustifyDefine("MAX_INT_SIZE", "",
+                                       self.largestNumberSize))
 
         self.CreateMaxStringSizes(defs)
         self.CreateArraySizes(defs)
