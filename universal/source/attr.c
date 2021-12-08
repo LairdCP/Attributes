@@ -832,7 +832,7 @@ int attr_default(attr_id_t id)
 bool attr_is_locked(void)
 {
 	bool locked = true;
-	uint8_t lock_status = attr_get_uint32(CONFIG_ATTR_INDEX_LOCK,
+	uint8_t lock_status = attr_get_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
 					      LOCK_STATUS_NOT_SETUP);
 
 	if (lock_status == LOCK_STATUS_NOT_SETUP ||
