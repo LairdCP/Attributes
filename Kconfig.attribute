@@ -68,6 +68,33 @@ config ATTR_FLOAT_MAX_STR_SIZE
 	help
 	  An example with ATTR_FLOAT_FMT of %0.4e is -2.8171e+000.
 
+config ATTR_DEFERRED_SAVE
+	bool "Enable deferred attribute saving"
+	help
+	  This enables deferred saving of attribute data to storage,
+	  which saves the attributes data in the background on a timer.
+	  If this option is disabled and 5 attributes are changed in a
+	  row, this results in 5 erase/write cycles, with this option
+	  enabled it will keep the changes in RAM and then write them
+	  out later, resulting in 1 erase/write cycle.
+
+	  Note: Due to deferring the save process, this increases the
+	        chances of losing attribute data if e.g. power is lost
+	        prior to an update cycle running and completing.
+
+if ATTR_DEFERRED_SAVE
+
+config ATTR_SAVE_DELAY_MS
+	int "Time (in ms) before saving attributes to storage"
+	default 30000
+	range 1000 3600000
+	help
+	  This is how long after an attribute is changed before the
+	  change will be written back to the storage device (which will
+	  also include any additional changes up to the point of save).
+
+endif # ATTR_DEFERRED_SAVE
+
 config ATTR_SETTINGS_LOCK
 	bool "Enable settings lock"
 	help

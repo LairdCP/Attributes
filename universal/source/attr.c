@@ -20,6 +20,7 @@ LOG_MODULE_REGISTER(attr, 4);
 #include <stdio.h>
 #include <logging/log_ctrl.h>
 #include <sys/util.h>
+#include <sys/crc.h>
 
 #include "lcz_param_file.h"
 #include "file_system_utilities.h"
@@ -46,6 +47,8 @@ LOG_MODULE_REGISTER(attr, 4);
 		k_yield();                                                     \
 	}                                                                      \
 	k_mutex_lock(&m, K_FOREVER)
+
+#define TAKE_MUTEX_NO_INIT(m) k_mutex_lock(&m, K_FOREVER)
 
 #define GIVE_MUTEX(m) k_mutex_unlock(&m)
 
@@ -79,6 +82,17 @@ static const char EMPTY_STRING[] = "";
 /* Malloc always wants to align on a 4 byte boundary */
 #define ATTR_LOAD_FEEDBACK_ALIGN_SIZE 4
 
+/* Time (in ms) between checks if a save is currently in progress */
+#define ATTR_SAVE_EXECUTING_CHECK_TIME_MS 200
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+#define ATTR_SAVE_NOW true
+#define ATTR_SAVE_LATER false
+#else
+#define ATTR_SAVE_NOW
+#define ATTR_SAVE_LATER
+#endif
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -98,6 +112,11 @@ static ATOMIC_DEFINE(notify, ATTR_TABLE_SIZE);
 
 static struct k_mutex attr_mutex;
 static struct k_mutex attr_work_mutex;
+static struct k_mutex attr_save_change_mutex;
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+static struct k_work_delayable attr_save_delayed_work;
+#endif
 
 static bool attr_initialized;
 
@@ -108,7 +127,13 @@ static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 			size_t vlen, bool broadcast, bool *modified);
 
 static int save_single(const ate_t *const entry);
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+static int save_attributes(bool immediately);
+#else
 static int save_attributes(void);
+#endif
+
 static void change_single(const ate_t *const entry, bool send_notifications);
 static void change_handler(bool send_notifications);
 static void notification_handler(attr_id_t id);
@@ -161,6 +186,10 @@ static int build_empty_feedback_file(const char *feedback_path);
 static int build_feedback_file(const char *feedback_path, char *fstr,
 			       param_kvp_t *kvp, size_t pairs);
 
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+static void save_attributes_work(struct k_work *item);
+#endif
+
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
@@ -170,7 +199,7 @@ int attr_factory_reset(void)
 {
 	fsu_delete_abs(ATTR_QUIET_ABS_PATH);
 	attr_table_factory_reset();
-	return save_attributes();
+	return save_attributes(ATTR_SAVE_NOW);
 }
 
 enum attr_type attr_get_type(attr_id_t id)
@@ -682,42 +711,54 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		break;
 	}
 
-	/* Dump should provide instantaneous values */
+	/* Update all parameters that need to be prepared before reserving
+	 * the mutex - we want to avoid stacking up reservations of it,
+	 * and if an attribute value changes after this, it will still be
+	 * up to date
+	 */
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		if (dumpable(i)) {
 			(void)prepare_for_read(&ATTR_TABLE[i]);
 		}
 	}
 
-	TAKE_MUTEX(attr_mutex);
+	/* Only proceed if prepares were executed OK */
+	if (r == 0) {
+		TAKE_MUTEX(attr_mutex);
 
-	do {
-		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-			if (dumpable(i)) {
-				r = lcz_param_file_generate_file(
-					i, convert_attr_type(i),
-					ATTR_TABLE[i].pData, get_attr_length(i),
-					fstr);
-				if (r < 0) {
-					LOG_ERR("Error converting attribute table "
-						"into file (dump) [%u] status: %d",
-						ATTR_TABLE[i].id, r);
-					break;
-				} else {
-					count += 1;
+		do {
+			for (i = 0; i < ATTR_TABLE_SIZE; i++) {
+				if (dumpable(i)) {
+					r = lcz_param_file_generate_file(
+						i, convert_attr_type(i),
+						ATTR_TABLE[i].pData, get_attr_length(i),
+						fstr);
+					if (r < 0) {
+						LOG_ERR("Error converting attribute table "
+							"into file (dump) [%u] status: %d",
+							ATTR_TABLE[i].id, r);
+						break;
+					} else {
+						count += 1;
+					}
 				}
 			}
-		}
-		BREAK_ON_ERROR(r);
 
-		r = lcz_param_file_validate_file(*fstr, strlen(*fstr));
+			/* Don't validate the file if any attribute errors
+			 * occurred. Break here to jump out the while(0)
+			 * loop
+			 */
+			BREAK_ON_ERROR(r);
 
-	} while (0);
+			r = lcz_param_file_validate_file(*fstr, strlen(*fstr));
+		} while (0);
 
-	GIVE_MUTEX(attr_mutex);
+		GIVE_MUTEX(attr_mutex);
+	}
 
 	if (r < 0) {
 		k_free(fstr);
+		LOG_ERR("Error converting attribute table into file");
 	}
 
 	return (r < 0) ? r : count;
@@ -769,7 +810,7 @@ int attr_load(const char *abs_path, const char *feedback_path, bool *modified)
 		}
 
 		/* If attributes can't be saved, then still broadcast. */
-		r = save_attributes();
+		r = save_attributes(ATTR_SAVE_NOW);
 		change_handler(DISABLE_NOTIFICATIONS);
 	} while (0);
 	GIVE_MUTEX(attr_mutex);
@@ -918,7 +959,7 @@ static int save_single(const ate_t *const entry)
 
 	if (atomic_test_bit(attr_modified, attr_table_index(entry))) {
 		if (entry->savable && !entry->deprecated) {
-			r = save_attributes();
+			r = save_attributes(ATTR_SAVE_LATER);
 		}
 	}
 	return r;
@@ -931,12 +972,21 @@ static void change_single(const ate_t *const entry, bool send_notifications)
 	}
 }
 
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+static int save_attributes_internal(void)
+#else
 static int save_attributes(void)
+#endif
 {
 	/* Although unlikely, the table could have zero savable items. */
 	int r = 0;
 	char *fstr = NULL;
 	attr_index_t i;
+	uint32_t checksum_file = 0;
+	uint32_t checksum_ram = 0;
+	uint32_t fstrlen;
+
+	TAKE_MUTEX(attr_save_change_mutex);
 
 	/* Converting to file format is larger, but makes it easier to go between
 	 * different versions.
@@ -959,20 +1009,102 @@ static int save_attributes(void)
 		}
 		BREAK_ON_ERROR(r);
 
-		r = lcz_param_file_validate_file(fstr, strlen(fstr));
+		fstrlen = strlen(fstr);
+		r = lcz_param_file_validate_file(fstr, fstrlen);
 		BREAK_ON_ERROR(r);
 
-		r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME, fstr,
-					      strlen(fstr));
-		LOG_DBG("Wrote %d of %d bytes of parameters to file", r,
-			strlen(fstr));
+		/* Calculate a CRC32 checksum of the current settings file and
+		 * pending data in RAM, which avoids an erase and write process
+		 * on the storage flash if there are no changes to write
+		 */
+		r = fsu_crc32_abs(&checksum_file, ATTR_ABS_PATH,
+				  fsu_get_file_size_abs(ATTR_ABS_PATH));
 
+		if (r == 0) {
+			checksum_ram = crc32_ieee_update(0, fstr, fstrlen);
+		} else {
+			/* If calculating the checksum fails, skip working out
+			 * the checksum of the RAM variables and just set the
+			 * checksums to be different
+			 */
+			checksum_ram = checksum_file + 1;
+		}
+
+		if (checksum_file != checksum_ram) {
+			/* Checksums mismatch, data has changed, write the
+			 * file
+			 */
+			r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME, fstr,
+						      fstrlen);
+			LOG_DBG("Wrote %d of %d bytes of parameters to file", r,
+				strlen(fstr));
+		}
 	} while (0);
 
 	k_free(fstr);
 
+#ifdef CONFIG_ATTR_SAVE_STATUS_IN_NON_INIT_RAM
+	if (r >= 0) {
+		/* Clear unsaved data flag */
+		non_init_set_save_flag(false);
+	}
+#endif
+
+	GIVE_MUTEX(attr_save_change_mutex);
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	attr_set_signed32(ATTR_ID_save_error_code, ((r < 0) ? r : 0));
+#endif
+
 	return (r < 0) ? r : 0;
 }
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+static void save_attributes_work(struct k_work *item)
+{
+	save_attributes_internal();
+}
+
+static int save_attributes(bool immediately)
+{
+	int rc = 0;
+
+#ifdef CONFIG_ATTR_SAVE_STATUS_IN_NON_INIT_RAM
+	non_init_set_save_flag(true);
+#endif
+
+	if (immediately == true) {
+		/* Flag set to immediate save, because the state of the device
+		 * is unknown and could be about to reboot, cancel a pending
+		 * run and do not reschedule another run, just run it in the
+		 * function directly
+		 */
+		if (k_work_delayable_is_pending(&attr_save_delayed_work) ==
+		    true) {
+			(void)k_work_cancel_delayable(&attr_save_delayed_work);
+		}
+
+		rc = save_attributes_internal();
+	} else {
+		while (k_work_delayable_busy_get(&attr_save_delayed_work) ==
+		       true) {
+			/* The save task is currently running, yield by
+			 * sleeping until it has finished
+			 */
+			k_sleep(K_MSEC(ATTR_SAVE_EXECUTING_CHECK_TIME_MS));
+		}
+
+		/* Schedule task for saving the data */
+		if (k_work_delayable_is_pending(&attr_save_delayed_work) ==
+		    false) {
+			k_work_reschedule(&attr_save_delayed_work,
+					  K_MSEC(CONFIG_ATTR_SAVE_DELAY_MS));
+		}
+	}
+
+	return rc;
+}
+#endif
 
 /* generate framework broadcast, show value, and BLE notification callback */
 static void change_handler(bool send_notifications)
@@ -1290,9 +1422,17 @@ static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 {
 	int r = -EPERM;
 
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	TAKE_MUTEX_NO_INIT(attr_save_change_mutex);
+#endif
+
 	if (type == entry->type || type == ATTR_TYPE_ANY) {
 		r = entry->validator(entry, pv, vlen, true);
 	}
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	GIVE_MUTEX(attr_save_change_mutex);
+#endif
 
 	if (r < 0) {
 		LOG_WRN("validation failure id: %u %s", entry->id, entry->name);
@@ -1740,6 +1880,7 @@ static int attr_init(const struct device *device)
 
 	k_mutex_init(&attr_mutex);
 	k_mutex_init(&attr_work_mutex);
+	k_mutex_init(&attr_save_change_mutex);
 
 	attr_table_initialize();
 
@@ -1757,6 +1898,10 @@ static int attr_init(const struct device *device)
 
 #ifdef CONFIG_ATTR_SHELL
 	k_work_init(&work_show, sys_workq_show_handler);
+#endif
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	k_work_init_delayable(&attr_save_delayed_work, save_attributes_work);
 #endif
 
 	initialize_quiet();
