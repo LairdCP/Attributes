@@ -263,6 +263,22 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	return r;
 }
 
+int attr_get_default(attr_id_t id, void *pv, size_t vlen)
+{
+	ATTR_ENTRY_DECL(id);
+	size_t size;
+	int r = -EPERM;
+	memset(pv, 0, vlen);
+
+	if (entry != NULL) {
+		size = MIN(entry->size, vlen);
+		memcpy(pv, entry->pDefault, size);
+		r = size;
+	}
+
+	return r;
+}
+
 int attr_set_string(attr_id_t id, char const *pv, size_t vlen)
 {
 	ATTR_ENTRY_DECL(id);

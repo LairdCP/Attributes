@@ -114,6 +114,17 @@ int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
 int attr_get(attr_id_t id, void *pv, size_t vlen);
 
 /**
+ * @brief Get default value for an attribute.
+ *
+ * @param id an attribute id.
+ * @param pv pointer to location to copy string
+ * @param vlen is the size of pv.
+ *
+ * @retval negative error code, size of value on return
+ */
+int attr_get_default(attr_id_t id, void *pv, size_t vlen);
+
+/**
  * @brief Set a string
  *
  * @param id an attribute id.
