@@ -99,6 +99,7 @@ static const char EMPTY_STRING[] = "";
 extern const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE];
 
 ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
+ATOMIC_DEFINE(attr_skip_broadcast, ATTR_TABLE_SIZE);
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -387,6 +388,27 @@ int attr_set_uint32(attr_id_t id, uint32_t value)
 		if (r == 0) {
 			r = save_single(entry);
 			change_single(entry, ENABLE_NOTIFICATIONS);
+		}
+		GIVE_MUTEX(attr_mutex);
+	}
+	return r;
+}
+
+int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value)
+{
+	ATTR_ENTRY_DECL(id);
+	uint32_t local = value;
+	attr_index_t index;
+	int r = -EPERM;
+
+	if (entry != NULL) {
+		TAKE_MUTEX(attr_mutex);
+		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
+		if (r == 0) {
+			r = save_single(entry);
+			index = entry - &ATTR_TABLE[0];
+			atomic_set_bit(attr_skip_broadcast, index);
+			change_single(entry, DISABLE_NOTIFICATIONS);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -1127,6 +1149,7 @@ static void change_handler(bool send_notifications)
 {
 	attr_index_t i;
 	bool modified;
+	bool skip_broadcast;
 
 #ifdef CONFIG_ATTR_BROADCAST
 	const size_t MSG_SIZE = sizeof(attr_changed_msg_t);
@@ -1143,9 +1166,10 @@ static void change_handler(bool send_notifications)
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		modified = atomic_test_bit(attr_modified, i);
+		skip_broadcast = atomic_test_bit(attr_skip_broadcast, i);
 
 #ifdef CONFIG_ATTR_BROADCAST
-		if (modified && ATTR_TABLE[i].broadcast) {
+		if (modified && ATTR_TABLE[i].broadcast && !skip_broadcast) {
 			if (pb != NULL) {
 				pb->list[pb->count++] = ATTR_TABLE[i].id;
 			}
@@ -1162,6 +1186,7 @@ static void change_handler(bool send_notifications)
 		}
 
 		atomic_clear_bit(attr_modified, i);
+		atomic_clear_bit(attr_skip_broadcast, i);
 	}
 
 #ifdef CONFIG_ATTR_BROADCAST
@@ -1930,3 +1955,4 @@ static int attr_init(const struct device *device)
 
 	return r;
 }
+

@@ -199,6 +199,17 @@ int attr_set_signed64(attr_id_t id, int64_t value);
 int attr_set_uint32(attr_id_t id, uint32_t value);
 
 /**
+ * @brief Helper function for setting uint8, 16 or 32, without broadcast or
+ * notification
+ *
+ * @param id an attribute id.
+ * @param value The value to set.
+ *
+ * @retval negative error code, 0 on success
+ */
+int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value);
+
+/**
  * @brief Helper function for setting int8, int16, or int32
  *
  * @param id an attribute id.
