@@ -816,7 +816,7 @@ int attr_load(const char *abs_path, const char *feedback_path, bool *modified)
 			/* See if any attributes were modified prior to save */
 			uint16_t i = 0;
 			while (i < ATTR_TABLE_SIZE) {
-				if (atomic_test_bit(attr_modified, i)) == true) {
+				if (atomic_test_bit(attr_modified, i) == true) {
 					*modified = true;
 					break;
 				}
