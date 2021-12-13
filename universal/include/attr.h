@@ -509,6 +509,15 @@ int attr_default(attr_id_t id);
  */
 bool attr_is_locked(void);
 
+/**
+ * @brief Force saving of attribute data to the storage device
+ *
+ * @note Does nothing if deferred attribute saving is not enabled
+ *
+ * @return int 0 on success, else negative errno.
+ */
+int attr_force_save(void);
+
 #ifdef __cplusplus
 }
 #endif

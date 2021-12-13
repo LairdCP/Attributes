@@ -666,7 +666,7 @@ static int set_rtc(struct mgmt_ctxt *ctxt)
 	}
 
 	if (epoch < UINT32_MAX) {
-		r = attr_set_uint32(ATTR_ID_qrtcLastSet, epoch);
+		r = attr_set_uint32(ATTR_ID_qrtc_last_set, epoch);
 		t = lcz_qrtc_set_epoch(epoch);
 	}
 
@@ -695,7 +695,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	CborError err = 0;
 
 	/* The input file is an optional parameter. */
-	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_loadPath),
+	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_load_path),
 		sizeof(param.buf));
 
 	struct cbor_attr_t params_attr[] = { { .attribute = "p1",
@@ -725,7 +725,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 	char *fstr = NULL;
 
 	/* The output file is an optional parameter. */
-	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_dumpPath),
+	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_dump_path),
 		sizeof(param.buf));
 
 	struct cbor_attr_t params_attr[] = {

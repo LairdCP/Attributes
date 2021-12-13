@@ -56,6 +56,14 @@ zephyr_sources(
 )
 endif()
 
+if(CONFIG_BOARD_BT6)
+zephyr_include_directories(custom/BT610/include)
+zephyr_sources(
+    custom/BT610/source/attr_table.c
+    custom/BT610/source/attr_custom_validator.c
+)
+endif()
+
 endif() # CONFIG_ATTR_DEVICE_OVERRIDE
 
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK universal/source/shell_lock.c)

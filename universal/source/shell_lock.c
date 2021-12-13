@@ -198,7 +198,7 @@ static int lock_lock_cmd(const struct shell *shell, size_t argc, char **argv)
 		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK, true);
 		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
 				    LOCK_STATUS_SETUP_ENGAGED);
-		passCodeStatus = SETTINGS_PASSCODE_STATUS_VALID;
+		passCodeStatus = SETTINGS_PASSCODE_STATUS_VALID_CODE;
 
 		/* Send feedback about the passcode */
 		attr_set_uint32(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
@@ -246,12 +246,12 @@ static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 						CONFIG_ATTR_INDEX_LOCK_STATUS,
 						LOCK_STATUS_SETUP_DISENGAGED);
 					passCodeStatus =
-						SETTINGS_PASSCODE_STATUS_VALID;
+						SETTINGS_PASSCODE_STATUS_VALID_CODE;
 					shell_print(shell, "Configuration is "
 						    "now unlocked");
 				} else {
 					passCodeStatus =
-						SETTINGS_PASSCODE_STATUS_INVALID;
+						SETTINGS_PASSCODE_STATUS_INVALID_CODE;
 					shell_error(shell, "Invalid configuration"
 						    " lock key provided");
 					r = -EINVAL;
@@ -332,7 +332,7 @@ static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 							    " from");
 					} else {
 						passCodeStatus =
-							SETTINGS_PASSCODE_STATUS_INVALID;
+							SETTINGS_PASSCODE_STATUS_INVALID_CODE;
 						shell_error(shell, "Invalid configuration"
 							    " lock key provided");
 						r = -EINVAL;
@@ -382,9 +382,9 @@ static int lock_error_cmd(const struct shell *shell, size_t argc, char **argv)
 				    SETTINGS_PASSCODE_STATUS_UNDEFINED);
 
 		shell_print(shell, "Lock last error: %d (%s)", passCodeStatus,
-			    (passCodeStatus == SETTINGS_PASSCODE_STATUS_VALID ?
+			    (passCodeStatus == SETTINGS_PASSCODE_STATUS_VALID_CODE ?
 				"Valid code" : (passCodeStatus ==
-					SETTINGS_PASSCODE_STATUS_INVALID ?
+					SETTINGS_PASSCODE_STATUS_INVALID_CODE ?
 					"Invalid code" : (passCodeStatus ==
 						SETTINGS_PASSCODE_STATUS_UNDEFINED ?
 						"No code entered" : "Unknown"))));

@@ -94,7 +94,7 @@ def GenEnums(lst, enums, names, errno):
                     f"INCLUDE_ERRNO = INT32_MIN,\n"
             for key, value in i.items():
                 s += "\t" + snake.upper() + "_" \
-                    + key + " = " + str(value) + ",\n"
+                    + key + " = " + str(value).lower() + ",\n"
             s += "};\n\n"
             lst.append(s)
 
@@ -423,10 +423,12 @@ class attributes:
             PrintDuplicate(self.apiName)
             return False
 
-        if len(set(self.apiId)) != len(self.apiId):
-            print("Duplicate attribute ID in API")
-            PrintDuplicate(self.apiName)
-            return False
+# IDs are duplicated but used by different projects, e.g. BT610 and MG100,
+# therefore this check can no longer be performed
+#        if len(set(self.apiId)) != len(self.apiId):
+#            print("Duplicate attribute ID in API")
+#            PrintDuplicate(self.apiName)
+#            return False
 
         if len(set(self.name)) != len(self.name):
             print("Duplicate Attribute Name")
@@ -576,7 +578,7 @@ class attributes:
 
     def CreateIndices(self) -> str:
         """Create attribute indices for header file"""
-        special = ["lock", "loadPath"]
+        special = ["lock", "load_path"]
         indices = []
         for i in range(self.projectAttributeCount):
             name = self.name[i]
@@ -724,7 +726,7 @@ class attributes:
                 s += "{\n"
                 s += "\tswitch (value) {\n"
                 for key, value in enum.items():
-                    s += '\t\t' + f'case {str(value)}:'.ljust(GS_CASE_WIDTH) + \
+                    s += '\t\t' + f'case {str(value).lower()}:'.ljust(GS_CASE_WIDTH) + \
                         'return "' + inflection.titleize(key) + '";\n'
                 s += '\t\t' + 'default:'.ljust(GS_CASE_WIDTH)
 
@@ -742,6 +744,7 @@ class attributes:
                 s = s.replace("2 D", "2D")
                 s = s.replace("3 D", "3D")
                 s = s.replace("Nb1", "NB1")
+                s = s.replace("1 M", "1M")
                 lst.append(s)
 
         return ''.join(lst)

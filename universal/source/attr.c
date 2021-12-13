@@ -1091,7 +1091,7 @@ static int save_attributes(void)
 	GIVE_MUTEX(attr_save_change_mutex);
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
-	attr_set_signed32(ATTR_ID_save_error_code, ((r < 0) ? r : 0));
+	attr_set_signed32(ATTR_ID_attr_save_error_code, ((r < 0) ? r : 0));
 #endif
 
 	return (r < 0) ? r : 0;
@@ -1707,7 +1707,7 @@ static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
 {
 	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
 	const struct attr_table_entry *attribute_entry;
-	uint8_t bin[ATTR_MAX_HEX_SIZE];
+	uint8_t bin[ATTR_MAX_BIN_SIZE];
 	size_t binlen;
 
 	attribute_entry = attr_map(kvp->id);
@@ -1890,6 +1890,15 @@ static int build_empty_feedback_file(const char *feedback_path)
 	return (result);
 }
 
+int attr_force_save(void)
+{
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	return save_attributes(true);
+#else
+	return 0;
+#endif
+}
+
 /******************************************************************************/
 /* System WorkQ context                                                       */
 /******************************************************************************/
@@ -1925,7 +1934,7 @@ static int attr_init(const struct device *device)
 
 	attr_table_initialize();
 
-	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_loadPath].pData) == 0) {
+	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) == 0) {
 		LOG_WRN("SMP load path should be different from attribute source");
 	}
 
