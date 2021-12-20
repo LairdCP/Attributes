@@ -17,6 +17,13 @@ import math
 
 ATTRIBUTE_VERSION_ARRAY_INDEX = 93
 JSON_INDENT = '  '
+DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW = 0b1
+DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW = 0b10
+DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED = 0b100
+DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP = 0b1000
+DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP = 0b10000
+DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED = 0b100000
+DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE = 0b1000000
 
 # Left Justified Field Widths
 ID_WIDTH = 54
@@ -126,6 +133,7 @@ class attributes:
         self.readable = []
         self.savable = []
         self.deprecated = []
+        self.displayOptions = []
         self.validator = []
         self.prepare = []
         self.enum = []
@@ -212,6 +220,58 @@ class attributes:
                     self.writable.append(GetBoolField(a, 'x-writable'))
                     self.savable.append(GetBoolField(a, 'x-savable'))
                     self.deprecated.append(GetBoolField(a, 'x-deprecated'))
+
+                    obscureInShow = GetBoolField(a, 'x-obscure-in-show')
+                    hideInShow = GetBoolField(a, 'x-hide-in-show')
+                    showUnlockedOverride = GetBoolField(a, 'x-show-unlocked-override')
+                    obscureInDump = GetBoolField(a, 'x-obscure-in-dump')
+                    hideInDump = GetBoolField(a, 'x-hide-in-dump')
+                    dumpUnlockedOverride = GetBoolField(a, 'x-dump-unlocked-override')
+                    showOnChange = GetBoolField(a, 'x-show-on-change')
+                    displayOptionsBitmask = 0
+
+                    if (hideInShow == 1 and obscureInShow == 1):
+                        raise Exception("Cannot both hide and obscure attribute " +
+                                        p['name'] + " (in show)")
+
+                    if (hideInDump == 1 and obscureInDump == 1):
+                        raise Exception("Cannot both hide and obscure attribute " +
+                                        p['name'] + " (in dump)")
+
+                    if (hideInShow == 0 and obscureInShow == 0 and showUnlockedOverride == 1):
+                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
+                                        p['name'] + " (in show)")
+
+                    if (hideInDump == 0 and obscureInDump == 0 and dumpUnlockedOverride == 1):
+                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
+                                        p['name'] + " (in dump)")
+
+                    if (hideInShow == 0 and obscureInShow == 0 and showOnChange == 1):
+                        raise Exception("Cannot show on change if obscure/hide is disabled on attribute " +
+                                        p['name'])
+
+                    if (obscureInShow == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW
+
+                    if (hideInShow == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW
+
+                    if (showUnlockedOverride == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED
+
+                    if (obscureInDump == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP
+
+                    if (hideInDump == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP
+
+                    if (dumpUnlockedOverride == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED
+
+                    if (showOnChange == 1):
+                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE
+
+                    self.displayOptions.append(displayOptionsBitmask)
                     self.validator.append(GetStringField(a, 'x-validator'))
                     self.prepare.append(GetBoolField(a, 'x-prepare'))
                     self.enum.append(GetDictionaryField(a, 'enum'))
@@ -365,10 +425,11 @@ class attributes:
             broadcast = ToYesNo(self.broadcast[i])
             savable = ToYesNo(self.savable[i])
             deprecated = ToYesNo(self.deprecated[i])
+            displayOptions = ToInt(self.displayOptions[i])
             result = f"\t[{i:<3}] = " \
                 + "{ " + f"{self.id[i]:<3}, " \
                 + f"{self.GetAttributeMacro(i)}, {self.GetType(i).ljust(TYPE_WIDTH)}, {savable}, " \
-                + f"{writable}, {readable}, {lockable}, {broadcast}, {deprecated}, " \
+                + f"{writable}, {readable}, {lockable}, {broadcast}, {deprecated}, {displayOptions}, " \
                 + f"{self.GetValidatorString(i)}, {self.GetPrepareString(i)}, " \
                 + f"{self.CreateMinMaxString(i)}" \
                 + " }," \

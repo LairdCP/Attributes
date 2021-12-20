@@ -121,6 +121,9 @@ static struct k_work_delayable attr_save_delayed_work;
 
 static bool attr_initialized;
 
+static const char asterisk_data[] = "******";
+#define ASTERISK_DATA_SIZE (sizeof(asterisk_data) - 1)
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -153,7 +156,7 @@ static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 		      size_t vlen);
 
-static void show(const ate_t *const entry);
+static int show(const ate_t *const entry, bool change_handler);
 
 static param_t convert_attr_type(attr_index_t index);
 static size_t get_attr_length(attr_index_t index);
@@ -238,26 +241,64 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	ATTR_ENTRY_DECL(id);
 	size_t size;
 	int64_t extended;
-	int r = -EPERM;
+	int r = 0;
+	bool prevent_show = true;
 
 	if (entry != NULL) {
 		if (entry->readable) {
-			r = prepare_for_read(entry);
-			if (r >= 0) {
-				TAKE_MUTEX(attr_mutex);
-				if (entry->type == ATTR_TYPE_S64 ||
-				    entry->type == ATTR_TYPE_S32 ||
-				    entry->type == ATTR_TYPE_S16 ||
-				    entry->type == ATTR_TYPE_S8) {
-					extended = sign_extend64(entry);
-					size = MIN(sizeof(int64_t), vlen);
-					memcpy(pv, &extended, size);
-				} else {
-					size = MIN(entry->size, vlen);
-					memcpy(pv, entry->pData, size);
+			if (entry->display_options &
+					DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+				/* Hidden attribute */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+				if ((entry->display_options &
+					DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
+				    && attr_is_locked() == false) {
+					/* Attributes are unlocked, show
+					 * because of overriding display option
+					 */
+					prevent_show = false;
 				}
-				r = size;
-				GIVE_MUTEX(attr_mutex);
+#endif
+
+				if (prevent_show == true) {
+					r = -EACCES;
+				}
+			} else if (entry->display_options &
+					DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+				/* Obscured attribute */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+				if ((entry->display_options &
+					DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
+				    && attr_is_locked() == false) {
+					/* Attributes are unlocked, show because
+					 * of overriding display option
+					 */
+					prevent_show = false;
+				}
+#endif
+				if (prevent_show == true) {
+					r = -EPERM;
+				}
+			}
+
+			if (r == 0) {
+				r = prepare_for_read(entry);
+				if (r >= 0) {
+					TAKE_MUTEX(attr_mutex);
+					if (entry->type == ATTR_TYPE_S64 ||
+					    entry->type == ATTR_TYPE_S32 ||
+					    entry->type == ATTR_TYPE_S16 ||
+					    entry->type == ATTR_TYPE_S8) {
+						extended = sign_extend64(entry);
+						size = MIN(sizeof(int64_t), vlen);
+						memcpy(pv, &extended, size);
+					} else {
+						size = MIN(entry->size, vlen);
+						memcpy(pv, entry->pData, size);
+					}
+					r = size;
+					GIVE_MUTEX(attr_mutex);
+				}
 			}
 		}
 	}
@@ -704,16 +745,16 @@ attr_id_t attr_get_id(const char *name)
 
 int attr_show(attr_id_t id)
 {
+	int rc = -EINVAL;
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
 		TAKE_MUTEX(attr_mutex);
-		show(entry);
+		rc = show(entry, false);
 		GIVE_MUTEX(attr_mutex);
-		return 0;
-	} else {
-		return -EINVAL;
 	}
+
+	return rc;
 }
 
 int attr_show_all(void)
@@ -732,10 +773,17 @@ int attr_delete(void)
 
 int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 {
-	int r = -EPERM;
+	int r = 0;
 	int count = 0;
 	bool (*dumpable)(attr_index_t) = is_dump_rw;
 	attr_index_t i;
+	bool prevent_dump = true;
+	const void *val_data;
+	size_t val_size;
+	param_t val_type;
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+	bool locked = true;
+#endif
 
 	switch (type) {
 	case ATTR_DUMP_W:
@@ -748,6 +796,11 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		dumpable = is_dump_rw;
 		break;
 	}
+
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+	/* Cache attribute locked value */
+	locked = attr_is_locked();
+#endif
 
 	/* Update all parameters that need to be prepared before reserving
 	 * the mutex - we want to avoid stacking up reservations of it,
@@ -763,14 +816,69 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	/* Only proceed if prepares were executed OK */
 	if (r == 0) {
 		TAKE_MUTEX(attr_mutex);
-
 		do {
 			for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 				if (dumpable(i)) {
+					prevent_dump = true;
+					if (ATTR_TABLE[i].display_options &
+					    DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP) {
+						/* Hidden attribute, do not show */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+						if ((ATTR_TABLE[i].display_options &
+							DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED)
+						    && locked == false) {
+							/* Attributes are
+							 * unlocked, show
+							 * because of overriding
+							 * display option
+							 */
+							prevent_dump = false;
+						}
+#endif
+
+						if (prevent_dump == true) {
+							continue;
+						}
+					} else if (ATTR_TABLE[i].display_options &
+						   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
+						/* Obscured attribute, show
+						 * asterisks for value
+						 */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+						if ((ATTR_TABLE[i].display_options &
+						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED)
+						    && locked == false) {
+							/* Attributes are
+							 * unlocked, show
+							 * because of overriding
+							 * display option
+							 */
+							prevent_dump = false;
+						}
+#endif
+					} else {
+						/* Normal attribute, OK to
+						 * dump
+						 */
+						prevent_dump = false;
+					}
+
+					if (prevent_dump == false) {
+						/* Use real data */
+						val_data = ATTR_TABLE[i].pData;
+						val_size = get_attr_length(i);
+						val_type = convert_attr_type(i);
+					} else {
+						/* Replace data with asterisks */
+						val_data = asterisk_data;
+						val_size = ASTERISK_DATA_SIZE;
+						val_type = PARAM_STR;
+					}
+
 					r = lcz_param_file_generate_file(
-						i, convert_attr_type(i),
-						ATTR_TABLE[i].pData, get_attr_length(i),
-						fstr);
+							i, val_type, val_data,
+							val_size, fstr);
+
 					if (r < 0) {
 						LOG_ERR("Error converting attribute table "
 							"into file (dump) [%u] status: %d",
@@ -779,6 +887,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 					} else {
 						count += 1;
 					}
+
 				}
 			}
 
@@ -900,7 +1009,7 @@ int attr_default(attr_id_t id)
 
 	if (entry != NULL) {
 		memcpy(entry->pData, entry->pDefault, entry->size);
-		show(entry);
+		(void)show(entry, true);
 		return 0;
 	} else {
 		return -EPERM;
@@ -1177,7 +1286,7 @@ static void change_handler(bool send_notifications)
 #endif
 
 		if (modified && !atomic_test_bit(quiet, i)) {
-			show(&ATTR_TABLE[i]);
+			show(&ATTR_TABLE[i], true);
 		}
 
 		if (modified && send_notifications &&
@@ -1217,7 +1326,7 @@ static void notification_handler(attr_id_t id)
 	}
 }
 
-static void show(const ate_t *const entry)
+static int show(const ate_t *const entry, bool change_handler)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
@@ -1225,6 +1334,60 @@ static void show(const ate_t *const entry)
 	uint32_t b = 0;
 	float f = 0.0;
 	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
+	bool prevent_show = true;
+
+	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+		/* Hidden attribute, do not show */
+		if ((entry->display_options &
+				DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		    change_handler == true) {
+			/* Attribute value has changed, show because of
+			 * overriding display option
+			 */
+			prevent_show = false;
+		}
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+				DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
+		    && attr_is_locked() == false) {
+			/* Attributes are unlocked, show because of overriding
+			 * display option
+			 */
+			prevent_show = false;
+		}
+#endif
+
+		if (prevent_show == true) {
+			return -EACCES;
+		}
+	} else if (entry->display_options &
+				DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+		/* Obscured attribute, show asterisks for value */
+		if ((entry->display_options &
+				DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		    change_handler == true) {
+			/* Attribute value has changed, show because of
+			 * overriding display option
+			 */
+			prevent_show = false;
+		}
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+				DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
+		    && attr_is_locked() == false) {
+			/* Attributes are unlocked, show because of overriding
+			 * display option
+			 */
+			prevent_show = false;
+		}
+#endif
+
+		if (prevent_show == true) {
+			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******", entry->id,
+				 entry->name);
+			return -EPERM;
+		}
+	}
 
 	switch (entry->type) {
 	case ATTR_TYPE_BOOL:
@@ -1287,6 +1450,8 @@ static void show(const ate_t *const entry)
 		LOG_HEXDUMP_DBG(entry->pData, entry->size, "");
 		break;
 	}
+
+	return 0;
 }
 
 /**
@@ -1911,7 +2076,7 @@ static void sys_workq_show_handler(struct k_work *item)
 	TAKE_MUTEX(attr_mutex);
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-		show(&ATTR_TABLE[i]);
+		(void)show(&ATTR_TABLE[i], false);
 		k_sleep(K_MSEC(CONFIG_ATTR_SHELL_SHOW_ALL_DELAY_MS));
 	}
 	GIVE_MUTEX(attr_mutex);

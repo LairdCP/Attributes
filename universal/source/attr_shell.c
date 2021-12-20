@@ -36,6 +36,7 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 			      char **argv);
 static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv);
+static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv);
 
 static int attr_shell_init(const struct device *device);
 
@@ -100,6 +101,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		  "If a prepare to read function exists it will be "
 		  "called to update parameter value",
 		  ats_get_cmd),
+	SHELL_CMD(size, NULL, "Get size of attribute <number or name>\n",
+		  ats_size_cmd),
 	SHELL_CMD(show, NULL, "Display all parameters", ats_show_cmd),
 #ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 	SHELL_CMD(quiet, NULL,
@@ -396,6 +399,23 @@ static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv)
 		r = attr_get(id, dummy, sizeof(dummy));
 		/* Negative status indicates value isn't readable from SMP. */
 		shell_print(shell, "get status: %d", r);
+	} else {
+		shell_error(shell, "Unexpected parameters");
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv)
+{
+	int r = -EPERM;
+	attr_id_t id = 0;
+
+	if ((argc == 2) && (argv[1] != NULL)) {
+		id = get_id(argv[1]);
+		r = attr_get_size(id);
+		/* Negative status indicates value isn't readable from SMP. */
+		shell_print(shell, "size status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
 		return -EINVAL;
