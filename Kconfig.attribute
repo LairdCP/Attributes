@@ -41,18 +41,98 @@ config ATTR_SHELL
 	bool "Enable Attribute Shell"
 	depends on SHELL
 
+if ATTR_SHELL
+
 config ATTR_SHELL_SHOW_ALL_DELAY_MS
 	int "Amount of time to delay between each debug log print"
-	depends on ATTR_SHELL
 	default 10
 	help
 	  This is used to prevent log system overflow.
 
 config ATTR_SHELL_FACTORY_RESET_MSG
 	bool "Enable generation of factory reset message from shell"
-	depends on ATTR_SHELL
 	depends on FRAMEWORK
 	default y if ATTR_SHELL && FRAMEWORK
+
+config ATTR_SHELL_LOCK
+	bool "Enable settings lock shell manipulation"
+	depends on ATTR_SETTINGS_LOCK
+	default y if SHELL && ATTR_SETTINGS_LOCK
+	help
+	  Allows the configuration lock to be enabled, disabled, set,
+	  removed and checked via the 'lock' shell commands.
+
+config ATTR_SHELL_DATA_MANIPULATION
+	bool "Enable data manipilation functions"
+	help
+	  Allows shell functions that can be used to manipulate data in
+	  the attribute module, bypassing restrictions.
+
+	  Note: As this bypasses limitations placed on the attributes
+	        module, it should not be used for secure production code.
+
+config ATTR_SHELL_SETTINGS_MANIPULATION
+	bool "Enable settings manipulation functions"
+	help
+	  Allows shell functions that can be used to manipulate settings
+	  of attributes in the attribute module.
+
+	  Note: As this can bypass limitations placed on the attributes
+	        module, it should not be used for secure production code.
+
+choice ATTR_SHELL_CONFIG_MANIPULATION_MODE
+	prompt "Configuration manipulation"
+	default ATTR_SHELL_CONFIG_MANIPULATION_ALL if !ATTR_SHELL_LOCK
+	default ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK if ATTR_SHELL_LOCK
+	help
+	  Allows shell functions that can be used to manipulate
+	  configuration in the attribute module.
+
+config ATTR_SHELL_CONFIG_MANIPULATION_ALL
+	bool "All enabled (unrestricted)"
+	help
+	  Allows all attribute shell configuration manipulation
+	  functions.
+
+	  Note: As this can bypass limitations placed on the attributes
+	        module, it should not be used for secure production code.
+
+config ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK
+	bool "All enabled (restricted with configuration lock)"
+	depends on ATTR_SHELL_LOCK
+	help
+	  Allows all attribute shell configuration manipulation
+	  functions, protected by the configuration lock.
+
+config ATTR_SHELL_CONFIG_MANIPULATION_LIMITED
+	bool "Limited functionality"
+	help
+	  Allows load and dump attribute shell configuration
+	  manipulation functions, other shell configuration functions
+	  are disabled.
+
+config ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK
+	bool "Limited functionality (restricted with configuration lock)"
+	depends on ATTR_SHELL_LOCK
+	help
+	  Allows load and dump attribute shell configuration
+	  manipulation functions, protected by the configuration lock,
+	  other shell configuration functions are disable.
+
+config ATTR_SHELL_CONFIG_MANIPULATION_NONE
+	bool "Disabled"
+	help
+	  Disables all attribute shell configuration manipulation
+	  functions.
+
+endchoice
+
+config ATTR_SHELL_QRTC_SET
+	bool "Enable QRTC set function"
+	help
+	  Allows setting the QRTC value from the shell.
+
+endif # ATTR_SHELL
 
 config ATTR_SHOW_FMT
 	string "Format for the attribute show command index name"
@@ -131,14 +211,6 @@ config ATTR_INDEX_SETTINGS_PASSCODE_STATUS
 	help
 	  The attribute index which holds the passcode status and is
 	  used to notify a client on the passcode entry result.
-
-config ATTR_SHELL_LOCK
-	bool "Enable settings lock shell manipulation"
-	depends on SHELL
-	default y if SHELL
-	help
-	  Allows the configuration lock to be enabled, disabled, set,
-	  removed and checked via the 'lock' shell commands.
 
 endif # ATTR_SETTINGS_LOCK
 
