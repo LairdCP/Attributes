@@ -33,7 +33,6 @@ AP_WIDTH = 36
 DEFINE_WIDTH = 20
 GS_CASE_WIDTH = 18
 TYPE_WIDTH = 24
-REMAP_WIDTH = 36
 MIN_MAX_WIDTH = 20
 
 BASE_FILE_PATH = "./custom/%PROJ%"
@@ -624,8 +623,6 @@ class attributes:
                         lst.insert(next_line, self.CreatePrepare(False))
                     elif "get string" in line:
                         lst.insert(next_line, self.CreateGetStringFunctions())
-                    elif "remap" in line:
-                        lst.insert(next_line, self.CreateGetStringRemap())
 
             fout.writelines(lst)
 
@@ -759,20 +756,6 @@ class attributes:
             if len(enum) != 0:
                 snake = inflection.underscore(name)
                 s = f"const char *const attr_get_string_{snake}(int value);\n"
-                lst.append(s)
-
-        return ''.join(lst)
-
-    def CreateGetStringRemap(self) -> str:
-        """
-        Map the camelCase function names into snake_case.
-        """
-        lst = []
-        for enum, camel in zip(self.enum, self.name):
-            if len(enum) != 0:
-                snake = inflection.underscore(camel)
-                s = "#define " + f"attr_get_string_{camel} ".ljust(REMAP_WIDTH)
-                s += f"attr_get_string_{snake}\n"
                 lst.append(s)
 
         return ''.join(lst)

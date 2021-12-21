@@ -29,92 +29,92 @@ extern "C" {
 
 /* pystart - attribute indices */
 #define ATTR_INDEX_lock                               2
-#define ATTR_INDEX_loadPath                           51
+#define ATTR_INDEX_load_path                          51
 /* pyend */
 
 /* pystart - attribute ids */
 #define ATTR_ID_location                              1
 #define ATTR_ID_passkey                               4
 #define ATTR_ID_lock                                  5
-#define ATTR_ID_firmwareVersion                       11
-#define ATTR_ID_resetReason                           12
-#define ATTR_ID_bluetoothAddress                      13
-#define ATTR_ID_resetCount                            14
-#define ATTR_ID_upTime                                16
-#define ATTR_ID_txPower                               59
-#define ATTR_ID_networkId                             60
-#define ATTR_ID_configVersion                         61
-#define ATTR_ID_hardwareVersion                       63
-#define ATTR_ID_attributeVersion                      93
+#define ATTR_ID_firmware_version                      11
+#define ATTR_ID_reset_reason                          12
+#define ATTR_ID_bluetooth_address                     13
+#define ATTR_ID_reset_count                           14
+#define ATTR_ID_up_time                               16
+#define ATTR_ID_tx_power                              59
+#define ATTR_ID_network_id                            60
+#define ATTR_ID_config_version                        61
+#define ATTR_ID_hardware_minor_version                63
+#define ATTR_ID_attribute_version                     93
 #define ATTR_ID_qrtc                                  94
-#define ATTR_ID_qrtcLastSet                           95
+#define ATTR_ID_qrtc_last_set                         95
 #define ATTR_ID_name                                  140
 #define ATTR_ID_board                                 142
-#define ATTR_ID_buildId                               143
-#define ATTR_ID_appType                               144
+#define ATTR_ID_build_id                              143
+#define ATTR_ID_app_type                              144
 #define ATTR_ID_mount                                 145
 #define ATTR_ID_commissioned                          146
-#define ATTR_ID_certStatus                            147
-#define ATTR_ID_rootCaName                            148
-#define ATTR_ID_clientCertName                        149
-#define ATTR_ID_clientKeyName                         150
+#define ATTR_ID_cert_status                           147
+#define ATTR_ID_root_ca_name                          148
+#define ATTR_ID_client_cert_name                      149
+#define ATTR_ID_client_key_name                       150
 #define ATTR_ID_endpoint                              151
 #define ATTR_ID_port                                  152
-#define ATTR_ID_clientId                              153
-#define ATTR_ID_topicPrefix                           154
-#define ATTR_ID_gatewayState                          155
-#define ATTR_ID_peerVerify                            156
-#define ATTR_ID_motionOdr                             168
-#define ATTR_ID_motionThresh                          169
-#define ATTR_ID_motionScale                           170
-#define ATTR_ID_motionDuration                        171
-#define ATTR_ID_motionAlarm                           172
-#define ATTR_ID_sdLogMaxSize                          173
-#define ATTR_ID_ctAesKey                              174
-#define ATTR_ID_gatewayId                             176
-#define ATTR_ID_centralState                          188
-#define ATTR_ID_sensorBluetoothAddress                189
-#define ATTR_ID_joinDelay                             190
-#define ATTR_ID_joinMin                               191
-#define ATTR_ID_joinMax                               192
-#define ATTR_ID_joinInterval                          193
-#define ATTR_ID_delayCloudReconnect                   195
-#define ATTR_ID_fotaControlPoint                      203
-#define ATTR_ID_fotaStatus                            204
-#define ATTR_ID_fotaFileName                          205
-#define ATTR_ID_fotaSize                              206
-#define ATTR_ID_fotaCount                             207
-#define ATTR_ID_loadPath                              208
-#define ATTR_ID_dumpPath                              209
+#define ATTR_ID_client_id                             153
+#define ATTR_ID_topic_prefix                          154
+#define ATTR_ID_gateway_state                         155
+#define ATTR_ID_peer_verify                           156
+#define ATTR_ID_motion_odr                            168
+#define ATTR_ID_motion_thresh                         169
+#define ATTR_ID_motion_scale                          170
+#define ATTR_ID_motion_duration                       171
+#define ATTR_ID_motion_alarm                          172
+#define ATTR_ID_sd_log_max_size                       173
+#define ATTR_ID_ct_aes_key                            174
+#define ATTR_ID_gateway_id                            176
+#define ATTR_ID_central_state                         188
+#define ATTR_ID_sensor_bluetooth_address              189
+#define ATTR_ID_join_delay                            190
+#define ATTR_ID_join_min                              191
+#define ATTR_ID_join_max                              192
+#define ATTR_ID_join_interval                         193
+#define ATTR_ID_delay_cloud_reconnect                 195
+#define ATTR_ID_fota_control_point                    203
+#define ATTR_ID_fota_status                           204
+#define ATTR_ID_fota_file_name                        205
+#define ATTR_ID_fota_size                             206
+#define ATTR_ID_fota_count                            207
+#define ATTR_ID_load_path                             208
+#define ATTR_ID_dump_path                             209
 #define ATTR_ID_floaty                                211
-#define ATTR_ID_generatePsk                           212
-#define ATTR_ID_lwm2mPsk                              213
-#define ATTR_ID_lwm2mClientId                         214
-#define ATTR_ID_lwm2mPeerUrl                          215
-#define ATTR_ID_cloudError                            217
-#define ATTR_ID_commissioningBusy                     218
-#define ATTR_ID_ethernetInitError                     221
-#define ATTR_ID_ethernetMAC                           222
-#define ATTR_ID_ethernetType                          223
-#define ATTR_ID_ethernetMode                          224
-#define ATTR_ID_ethernetCableDetected                 225
-#define ATTR_ID_ethernetSpeed                         226
-#define ATTR_ID_ethernetDuplex                        227
-#define ATTR_ID_ethernetIPAddress                     228
-#define ATTR_ID_ethernetNetmaskLength                 229
-#define ATTR_ID_ethernetGateway                       230
-#define ATTR_ID_ethernetDNS                           231
-#define ATTR_ID_ethernetStaticIPAddress               232
-#define ATTR_ID_ethernetStaticNetmaskLength           233
-#define ATTR_ID_ethernetStaticGateway                 234
-#define ATTR_ID_ethernetStaticDNS                     235
-#define ATTR_ID_ethernetDHCPLeaseTime                 236
-#define ATTR_ID_ethernetDHCPRenewTime                 237
-#define ATTR_ID_ethernetDHCPState                     238
-#define ATTR_ID_ethernetDHCPAttempts                  239
-#define ATTR_ID_sntpServer                            241
-#define ATTR_ID_blePrepareTimeout                     262
-#define ATTR_ID_lwm2mEnableBootstrap                  264
+#define ATTR_ID_generate_psk                          212
+#define ATTR_ID_lwm2m_psk                             213
+#define ATTR_ID_lwm2m_client_id                       214
+#define ATTR_ID_lwm2m_peer_url                        215
+#define ATTR_ID_cloud_error                           217
+#define ATTR_ID_commissioning_busy                    218
+#define ATTR_ID_ethernet_init_error                   221
+#define ATTR_ID_ethernet_mac                          222
+#define ATTR_ID_ethernet_type                         223
+#define ATTR_ID_ethernet_mode                         224
+#define ATTR_ID_ethernet_cable_detected               225
+#define ATTR_ID_ethernet_speed                        226
+#define ATTR_ID_ethernet_duplex                       227
+#define ATTR_ID_ethernet_ip_address                   228
+#define ATTR_ID_ethernet_netmask_length               229
+#define ATTR_ID_ethernet_gateway                      230
+#define ATTR_ID_ethernet_dns                          231
+#define ATTR_ID_ethernet_static_ip_address            232
+#define ATTR_ID_ethernet_static_netmask_length        233
+#define ATTR_ID_ethernet_static_gateway               234
+#define ATTR_ID_ethernet_static_dns                   235
+#define ATTR_ID_ethernet_dhcp_lease_time              236
+#define ATTR_ID_ethernet_dhcp_renew_time              237
+#define ATTR_ID_ethernet_dhcp_state                   238
+#define ATTR_ID_ethernet_dhcp_attempts                239
+#define ATTR_ID_sntp_server                           241
+#define ATTR_ID_ble_prepare_timeout                   262
+#define ATTR_ID_lwm2m_enable_bootstrap                264
 /* pyend */
 
 /******************************************************************************/
@@ -122,50 +122,51 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                      82
-#define ATTR_TABLE_MAX_ID                                    264
-#define ATTR_TABLE_WRITABLE_COUNT                            44
-#define ATTR_MAX_STR_LENGTH                                  254
-#define ATTR_MAX_STR_SIZE                                    255
-#define ATTR_MAX_BIN_SIZE                                    16
+#define ATTR_TABLE_SIZE                                         82
+#define ATTR_TABLE_MAX_ID                                       264
+#define ATTR_TABLE_WRITABLE_COUNT                               42
+#define ATTR_MAX_STR_LENGTH                                     254
+#define ATTR_MAX_STR_SIZE                                       255
+#define ATTR_MAX_BIN_SIZE                                       16
+#define ATTR_MAX_INT_SIZE                                       8
 
 /* Attribute Max String Lengths */
-#define ATTR_LOCATION_MAX_STR_SIZE                           33
-#define ATTR_FIRMWARE_VERSION_MAX_STR_SIZE                   12
-#define ATTR_RESET_REASON_MAX_STR_SIZE                       13
-#define ATTR_BLUETOOTH_ADDRESS_MAX_STR_SIZE                  13
-#define ATTR_ATTRIBUTE_VERSION_MAX_STR_SIZE                  12
-#define ATTR_NAME_MAX_STR_SIZE                               33
-#define ATTR_BOARD_MAX_STR_SIZE                              33
-#define ATTR_BUILD_ID_MAX_STR_SIZE                           65
-#define ATTR_APP_TYPE_MAX_STR_SIZE                           33
-#define ATTR_MOUNT_MAX_STR_SIZE                              33
-#define ATTR_ROOT_CA_NAME_MAX_STR_SIZE                       49
-#define ATTR_CLIENT_CERT_NAME_MAX_STR_SIZE                   49
-#define ATTR_CLIENT_KEY_NAME_MAX_STR_SIZE                    49
-#define ATTR_ENDPOINT_MAX_STR_SIZE                           255
-#define ATTR_PORT_MAX_STR_SIZE                               17
-#define ATTR_CLIENT_ID_MAX_STR_SIZE                          33
-#define ATTR_TOPIC_PREFIX_MAX_STR_SIZE                       33
-#define ATTR_GATEWAY_ID_MAX_STR_SIZE                         16
-#define ATTR_SENSOR_BLUETOOTH_ADDRESS_MAX_STR_SIZE           31
-#define ATTR_FOTA_FILE_NAME_MAX_STR_SIZE                     65
-#define ATTR_LOAD_PATH_MAX_STR_SIZE                          33
-#define ATTR_DUMP_PATH_MAX_STR_SIZE                          33
-#define ATTR_LWM2M_CLIENT_ID_MAX_STR_SIZE                    33
-#define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                     129
-#define ATTR_ETHERNET_IP_ADDRESS_MAX_STR_SIZE                16
-#define ATTR_ETHERNET_GATEWAY_MAX_STR_SIZE                   16
-#define ATTR_ETHERNET_DNS_MAX_STR_SIZE                       16
-#define ATTR_ETHERNET_STATIC_IP_ADDRESS_MAX_STR_SIZE         16
-#define ATTR_ETHERNET_STATIC_GATEWAY_MAX_STR_SIZE            16
-#define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                16
-#define ATTR_SNTP_SERVER_MAX_STR_SIZE                        65
+#define ATTR_LOCATION_MAX_STR_SIZE                              33
+#define ATTR_FIRMWARE_VERSION_MAX_STR_SIZE                      12
+#define ATTR_RESET_REASON_MAX_STR_SIZE                          13
+#define ATTR_BLUETOOTH_ADDRESS_MAX_STR_SIZE                     13
+#define ATTR_ATTRIBUTE_VERSION_MAX_STR_SIZE                     12
+#define ATTR_NAME_MAX_STR_SIZE                                  33
+#define ATTR_BOARD_MAX_STR_SIZE                                 33
+#define ATTR_BUILD_ID_MAX_STR_SIZE                              65
+#define ATTR_APP_TYPE_MAX_STR_SIZE                              33
+#define ATTR_MOUNT_MAX_STR_SIZE                                 33
+#define ATTR_ROOT_CA_NAME_MAX_STR_SIZE                          49
+#define ATTR_CLIENT_CERT_NAME_MAX_STR_SIZE                      49
+#define ATTR_CLIENT_KEY_NAME_MAX_STR_SIZE                       49
+#define ATTR_ENDPOINT_MAX_STR_SIZE                              255
+#define ATTR_PORT_MAX_STR_SIZE                                  17
+#define ATTR_CLIENT_ID_MAX_STR_SIZE                             33
+#define ATTR_TOPIC_PREFIX_MAX_STR_SIZE                          33
+#define ATTR_GATEWAY_ID_MAX_STR_SIZE                            16
+#define ATTR_SENSOR_BLUETOOTH_ADDRESS_MAX_STR_SIZE              31
+#define ATTR_FOTA_FILE_NAME_MAX_STR_SIZE                        65
+#define ATTR_LOAD_PATH_MAX_STR_SIZE                             33
+#define ATTR_DUMP_PATH_MAX_STR_SIZE                             33
+#define ATTR_LWM2M_CLIENT_ID_MAX_STR_SIZE                       33
+#define ATTR_LWM2M_PEER_URL_MAX_STR_SIZE                        129
+#define ATTR_ETHERNET_IP_ADDRESS_MAX_STR_SIZE                   16
+#define ATTR_ETHERNET_GATEWAY_MAX_STR_SIZE                      16
+#define ATTR_ETHERNET_DNS_MAX_STR_SIZE                          16
+#define ATTR_ETHERNET_STATIC_IP_ADDRESS_MAX_STR_SIZE            16
+#define ATTR_ETHERNET_STATIC_GATEWAY_MAX_STR_SIZE               16
+#define ATTR_ETHERNET_STATIC_DNS_MAX_STR_SIZE                   16
+#define ATTR_SNTP_SERVER_MAX_STR_SIZE                           65
 
 /* Attribute Byte Array Lengths */
-#define ATTR_CT_AES_KEY_SIZE                                 16
-#define ATTR_LWM2M_PSK_SIZE                                  16
-#define ATTR_ETHERNET_MAC_SIZE                               6
+#define ATTR_CT_AES_KEY_SIZE                                    16
+#define ATTR_LWM2M_PSK_SIZE                                     16
+#define ATTR_ETHERNET_MAC_SIZE                                  6
 /* pyend */
 
 /* pystart - enumerations */
@@ -317,9 +318,9 @@ BUILD_ASSERT(sizeof(enum ethernet_dhcp_state) == ATTR_SIZE_U8);
 /******************************************************************************/
 /* The weak implementations should be overridden in application. */
 /* pystart - prepare for read */
-int attr_prepare_upTime(void);
+int attr_prepare_up_time(void);
 int attr_prepare_qrtc(void);
-int attr_prepare_qrtcLastSet(void);
+int attr_prepare_qrtc_last_set(void);
 /* pyend */
 
 /* pystart - get string */
