@@ -698,7 +698,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	GIVE_MUTEX(attr_mutex);
 
 	if (r < 0) {
-		k_free(fstr);
+		k_free(*fstr);
 	}
 
 	return (r < 0) ? r : count;
