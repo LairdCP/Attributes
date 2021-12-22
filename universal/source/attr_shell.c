@@ -393,9 +393,8 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 			shell_error(shell, "Dump error %d", r);
 		} else {
 			shell_print(shell, "%s", fstr);
+			k_free(fstr);
 		}
-
-		k_free(fstr);
 
 	} else {
 		shell_error(shell, "Unexpected parameters");
