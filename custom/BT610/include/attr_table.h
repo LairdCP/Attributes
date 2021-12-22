@@ -29,7 +29,7 @@ extern "C" {
 
 /* pystart - attribute indices */
 #define ATTR_INDEX_lock                               5
-#define ATTR_INDEX_load_path                          175
+#define ATTR_INDEX_load_path                          173
 /* pyend */
 
 /* pystart - attribute ids */
@@ -202,14 +202,14 @@ extern "C" {
 #define ATTR_ID_boot_phy                              166
 #define ATTR_ID_mobile_app_disconnect                 167
 #define ATTR_ID_attr_save_error_code                  168
-#define ATTR_ID_settings_passcode_status              169
 #define ATTR_ID_recover_settings_count                170
 #define ATTR_ID_block_downgrades                      171
 #define ATTR_ID_security_request                      172
 #define ATTR_ID_security_level                        173
-#define ATTR_ID_lock_status                           174
 #define ATTR_ID_load_path                             208
 #define ATTR_ID_dump_path                             209
+#define ATTR_ID_settings_passcode_status              265
+#define ATTR_ID_lock_status                           266
 /* pyend */
 
 /******************************************************************************/
@@ -218,7 +218,7 @@ extern "C" {
 
 /* pystart - attribute constants */
 #define ATTR_TABLE_SIZE                                             177
-#define ATTR_TABLE_MAX_ID                                           209
+#define ATTR_TABLE_MAX_ID                                           266
 #define ATTR_TABLE_WRITABLE_COUNT                                   89
 #define ATTR_MAX_STR_LENGTH                                         32
 #define ATTR_MAX_STR_SIZE                                           33

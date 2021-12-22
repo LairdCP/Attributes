@@ -1020,7 +1020,7 @@ int attr_default(attr_id_t id)
 bool attr_is_locked(void)
 {
 	bool locked = true;
-	uint8_t lock_status = attr_get_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
+	uint8_t lock_status = attr_get_uint32(ATTR_ID_lock_status,
 					      LOCK_STATUS_NOT_SETUP);
 
 	if (lock_status == LOCK_STATUS_NOT_SETUP ||
@@ -1037,6 +1037,13 @@ __weak int attr_notify(attr_id_t id)
 	ARG_UNUSED(id);
 	return 0;
 }
+
+#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
+__weak void attr_save_status_notification(bool dirty)
+{
+	return;
+}
+#endif
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -1190,10 +1197,10 @@ static int save_attributes(void)
 
 	k_free(fstr);
 
-#ifdef CONFIG_ATTR_SAVE_STATUS_IN_NON_INIT_RAM
+#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
 	if (r >= 0) {
-		/* Clear unsaved data flag */
-		non_init_set_save_flag(false);
+		/* Notify application that data has been saved */
+		attr_save_status_notification(false);
 	}
 #endif
 
@@ -1216,8 +1223,9 @@ static int save_attributes(bool immediately)
 {
 	int rc = 0;
 
-#ifdef CONFIG_ATTR_SAVE_STATUS_IN_NON_INIT_RAM
-	non_init_set_save_flag(true);
+#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
+	/* Notify application that data needs to be saved */
+	attr_save_status_notification(true);
 #endif
 
 	if (immediately == true) {
@@ -1784,9 +1792,9 @@ static void attr_load_settings_lock(void)
 	int r;
 	uint8_t lock_enabled;
 	const struct attr_table_entry *const entry_lock = attr_map(
-						CONFIG_ATTR_INDEX_LOCK);
+						ATTR_ID_lock);
 	const struct attr_table_entry *const entry_lock_status = attr_map(
-						CONFIG_ATTR_INDEX_LOCK_STATUS);
+						ATTR_ID_lock_status);
 
 	if (attr_initialized == true) {
 		/* Setup is already complete */
@@ -1798,12 +1806,12 @@ static void attr_load_settings_lock(void)
 		/* Missing required attributes */
 		if (entry_lock == NULL) {
 			LOG_ERR("Missing lock attribute (%d), settings lock inoperable",
-				CONFIG_ATTR_INDEX_LOCK);
+				ATTR_ID_lock);
 		}
 
 		if (entry_lock_status == NULL) {
 			LOG_ERR("Missing lock status attribute (%d), settings lock inoperable",
-				CONFIG_ATTR_INDEX_LOCK_STATUS);
+				ATTR_ID_lock_status);
 		}
 	} else {
 		/* Set the current status of the lock */
@@ -1819,7 +1827,7 @@ static void attr_load_settings_lock(void)
 	}
 
 	/* Turn off the display on the terminal of the passcode */
-	attr_set_quiet(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE, true);
+	attr_set_quiet(ATTR_ID_settings_passcode, true);
 }
 #endif
 
@@ -2063,6 +2071,24 @@ int attr_force_save(void)
 	return 0;
 #endif
 }
+
+#ifdef CONFIG_ATTR_CONFIGURATION_VERSION
+int attr_update_config_version(void)
+{
+	uint8_t config_version;
+
+	if (attr_get(ATTR_ID_config_version, &config_version,
+		     sizeof(config_version)) == sizeof(config_version)) {
+		config_version++;
+		(void)attr_set_uint32(ATTR_ID_config_version,
+		(uint32_t)config_version);
+
+		return 0;
+	}
+
+	return -EIO;
+}
+#endif
 
 /******************************************************************************/
 /* System WorkQ context                                                       */

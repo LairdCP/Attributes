@@ -513,7 +513,8 @@ defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) || \
 defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 {
-	int r = -EPERM;
+	int r = -EINVAL;
+	bool modified;
 
 #if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
 defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
@@ -524,9 +525,30 @@ defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 #endif
 
 	if ((argc == 2) && (argv[1] != NULL)) {
-		r = attr_load(argv[1], NULL, NULL);
+		r = attr_load(argv[1],
+#ifdef CONFIG_ATTR_LOAD_FEEDBACK
+			      CONFIG_ATTR_SHELL_FEEDBACK_FILE,
+#else
+			      NULL,
+#endif
+			      &modified);
+
 		if (r < 0) {
-			shell_error(shell, "attr_ Load error");
+			shell_error(shell, "Attribute load error");
+		} else {
+#ifdef CONFIG_ATTR_CONFIGURATION_VERSION
+			/* Update the device configuration version if a
+			 * modification was made
+			 */
+			if (modified == true) {
+				attr_update_config_version();
+			}
+#endif
+
+#ifdef CONFIG_ATTR_LOAD_FEEDBACK
+			shell_print(shell, "Feedback data saved to: %s",
+				    CONFIG_ATTR_SHELL_FEEDBACK_FILE);
+#endif
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");

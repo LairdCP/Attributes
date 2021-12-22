@@ -173,6 +173,15 @@ config ATTR_SAVE_DELAY_MS
 	  change will be written back to the storage device (which will
 	  also include any additional changes up to the point of save).
 
+config ATTR_SAVE_STATUS_CALLBACK
+	bool "Save status callbacks"
+	help
+	  This will allow the application to be notified when the
+	  attributes are modified but not yet saved to the storage
+	  device or when saving to the storage device has completed.
+	  From the user application, attr_save_status_notification()
+	  needs to be implemented.
+
 endif # ATTR_DEFERRED_SAVE
 
 config ATTR_SETTINGS_LOCK
@@ -183,36 +192,12 @@ config ATTR_SETTINGS_LOCK
 	  passcode. Once set and enabled, the settings passcode must be
 	  entered prior to making changes to configuration.
 
-if ATTR_SETTINGS_LOCK
-
-config ATTR_INDEX_SETTINGS_PASSCODE
-	int "Attribute index for settings password value"
-	default 100
+config ATTR_CONFIGURATION_VERSION
+	bool "Configuration version attribute support"
 	help
-	  The attribute index which holds the passcode values. This
-	  attribute should be set so that is not printed out via the
-	  shell commands or parameter dumps.
-
-config ATTR_INDEX_LOCK
-	int "Attribute index for lock value"
-	default 5
-	help
-	  The attribute index which holds the saved lock status when
-	  the units powers up.
-
-config ATTR_INDEX_LOCK_STATUS
-	int "Attribute index for lock status"
-	help
-	  The attribute index which holds the current (active) lock
-	  status.
-
-config ATTR_INDEX_SETTINGS_PASSCODE_STATUS
-	int "Attribute index for settings passcode status"
-	help
-	  The attribute index which holds the passcode status and is
-	  used to notify a client on the passcode entry result.
-
-endif # ATTR_SETTINGS_LOCK
+	  Adds support for the configuration version attribute which is
+	  used as a volatile value to indicate the version of the
+	  running configuration (reset on power cycle or reboot).
 
 config MCUMGR_CMD_SENTRIUS_MGMT
 	bool "Enable the Sentrius MCUMGR interface"
@@ -220,15 +205,59 @@ config MCUMGR_CMD_SENTRIUS_MGMT
 	select CBOR_FLOATING_POINT
 	select CBOR_HALF_FLOAT_TYPE
 
+if MCUMGR_CMD_SENTRIUS_MGMT
+
 config SENTRIUS_MGMT_MEMFAULT_FILE_NAME
 	string "File name used for writing memfault data"
-	depends on MCUMGR_CMD_SENTRIUS_MGMT
 	depends on LCZ_MEMFAULT_FILE
 	default "/lfs/mflt.bin"
+
+config SENTRIUS_MGMT_FACTORY_RESET
+	bool "Factory reset request support"
+	help
+	  Adds support for issuing a factory reset command to the
+	  application.
+
+config SENTRIUS_MGMT_DUMP_USER_FILE_NAME
+	bool "Allow user-specified dump file name"
+	help
+	  Allows the user to select the output file name and path to
+	  dump the attributes to when using the SMP dump command,
+	  otherwise uses the value in the attribute.
 
 config MGMT_GROUP_ID_SENTRIUS
 	int "MCU manager group id"
 	default 65
+
+endif # MCUMGR_CMD_SENTRIUS_MGMT
+
+config ATTR_LOAD_FEEDBACK
+	bool "Create feedback files when loading parameters"
+	help
+	  When enabled, will create feedback files when the SMP or shell
+	  load parameter commands are used which can then be retrieved
+	  to see if any attributes could not be set.
+
+if ATTR_LOAD_FEEDBACK
+
+config SENTRIUS_MGMT_FEEDBACK_FILE
+	string "File name used for feedback for SMP load function"
+	default "/ext/load_bt_feedback.txt"
+	depends on MCUMGR_CMD_SENTRIUS_MGMT
+	help
+	  This is the full path and file name for the feedback file
+	  which is output when the load parameter management command is
+	  used.
+
+config ATTR_SHELL_FEEDBACK_FILE
+	string "File name used for feedback for shell load function"
+	default "/ext/load_shell_feedback.txt"
+	depends on ATTR_SHELL
+	help
+	  This is the full path and file name for the feedback file
+	  which is output when the load parameter shell command is used.
+
+endif # ATTR_LOAD_FEEDBACK
 
 config ATTR_DEVICE_OVERRIDE
 	bool "Enable attribute name override"

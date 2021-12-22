@@ -458,7 +458,7 @@ int attr_load(const char *abs_path, const char *feedback_path, bool *modified);
 /**
  * @brief Notification callback
  *
- * @note override weak impelmentation in application
+ * @note override weak implementation in application
  *
  * @param id of attribute that has changed.
  *
@@ -517,6 +517,23 @@ bool attr_is_locked(void);
  * @return int 0 on success, else negative errno.
  */
 int attr_force_save(void);
+
+/**
+ * @brief Update (increment) configuration version attribute
+ *
+ * @return int 0 on success, else negative errno.
+ */
+int attr_update_config_version(void);
+
+/**
+ * @brief Save status callback
+ *
+ * @note override weak implementation in application
+ *
+ * @param dirty false on attribute data saved to storage device, true on
+ * attribute modification made which has yet to be saved.
+ */
+void attr_save_status_notification(bool dirty);
 
 #ifdef __cplusplus
 }

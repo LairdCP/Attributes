@@ -64,11 +64,6 @@ SHELL_CMD_REGISTER(lock, &sub_lock, "Configuration lock", NULL);
 #define LOCK_KEY_FAILED_WAIT_TIME_SECONDS 3
 #define LOCK_DEFAULT_VALUE 123456
 
-BUILD_ASSERT(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE <= ATTR_TABLE_MAX_ID);
-BUILD_ASSERT(CONFIG_ATTR_INDEX_LOCK <= ATTR_TABLE_MAX_ID);
-BUILD_ASSERT(CONFIG_ATTR_INDEX_LOCK_STATUS <= ATTR_TABLE_MAX_ID);
-BUILD_ASSERT(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS <= ATTR_TABLE_MAX_ID);
-
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
@@ -79,11 +74,11 @@ static int lock_check_cmd(const struct shell *shell, size_t argc, char **argv)
 	uint8_t lock_status;
 	int r = 0;
 
-	r = attr_get(CONFIG_ATTR_INDEX_LOCK, &lock_enabled,
+	r = attr_get(ATTR_ID_lock, &lock_enabled,
 		     sizeof(lock_enabled));
 
 	if (r >= 0) {
-		r = attr_get(CONFIG_ATTR_INDEX_LOCK_STATUS, &lock_status,
+		r = attr_get(ATTR_ID_lock_status, &lock_status,
 				  sizeof(lock_status));
 
 		if (r >= 0) {
@@ -148,12 +143,12 @@ static int lock_set_cmd(const struct shell *shell, size_t argc, char **argv)
 
 			if (r == 0) {
 				r = attr_set_uint32(
-						CONFIG_ATTR_INDEX_SETTINGS_PASSCODE,
+						ATTR_ID_settings_passcode,
 						lock_code);
 			}
 
 			if (r == 0) {
-				r = attr_set_uint32(CONFIG_ATTR_INDEX_LOCK,
+				r = attr_set_uint32(ATTR_ID_lock,
 						    true);
 
 			}
@@ -165,7 +160,7 @@ static int lock_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				 * it with the lock command, but allows further
 				 * configuration changes to the unit until then
 				 */
-				r = attr_set_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
+				r = attr_set_uint32(ATTR_ID_lock_status,
 						    LOCK_STATUS_SETUP_DISENGAGED);
 			}
 
@@ -189,20 +184,20 @@ static int lock_set_cmd(const struct shell *shell, size_t argc, char **argv)
 
 static int lock_lock_cmd(const struct shell *shell, size_t argc, char **argv)
 {
-	enum settings_passcode_status passCodeStatus =
+	enum settings_passcode_status passcode_status =
 					SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
 
 	if (attr_is_locked() == false) {
 		/* Lock the settings */
-		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK, true);
-		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
+		attr_set_uint32(ATTR_ID_lock, true);
+		attr_set_uint32(ATTR_ID_lock_status,
 				    LOCK_STATUS_SETUP_ENGAGED);
-		passCodeStatus = SETTINGS_PASSCODE_STATUS_VALID_CODE;
+		passcode_status = SETTINGS_PASSCODE_STATUS_VALID_CODE;
 
 		/* Send feedback about the passcode */
-		attr_set_uint32(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
-				    passCodeStatus);
+		attr_set_uint32(ATTR_ID_settings_passcode_status,
+				    passcode_status);
 
 		shell_print(shell, "Configuration lock has been engaged");
 	} else {
@@ -215,7 +210,7 @@ static int lock_lock_cmd(const struct shell *shell, size_t argc, char **argv)
 
 static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 {
-	enum settings_passcode_status passCodeStatus =
+	enum settings_passcode_status passcode_status =
 					SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	uint32_t lock_code;
 	uint32_t real_lock_code;
@@ -235,7 +230,7 @@ static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 				r = -EPERM;
 			} else {
 				real_lock_code = attr_get_uint32(
-					CONFIG_ATTR_INDEX_SETTINGS_PASSCODE,
+					ATTR_ID_settings_passcode,
 					LOCK_DEFAULT_VALUE);
 				lock_code = strtoul(argv[1], NULL, 0);
 
@@ -243,14 +238,14 @@ static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 				if (real_lock_code == lock_code) {
 					/* Unlock the settings */
 					attr_set_uint32(
-						CONFIG_ATTR_INDEX_LOCK_STATUS,
+						ATTR_ID_lock_status,
 						LOCK_STATUS_SETUP_DISENGAGED);
-					passCodeStatus =
+					passcode_status =
 						SETTINGS_PASSCODE_STATUS_VALID_CODE;
 					shell_print(shell, "Configuration is "
 						    "now unlocked");
 				} else {
-					passCodeStatus =
+					passcode_status =
 						SETTINGS_PASSCODE_STATUS_INVALID_CODE;
 					shell_error(shell, "Invalid configuration"
 						    " lock key provided");
@@ -265,8 +260,8 @@ static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 
 				/* Send feedback to APP about the passcode */
 				attr_set_uint32(
-					CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
-					passCodeStatus);
+					ATTR_ID_settings_passcode_status,
+					passcode_status);
 			}
 		}
 	} else {
@@ -284,15 +279,15 @@ static int lock_unlock_cmd(const struct shell *shell, size_t argc, char **argv)
 
 static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 {
-	enum settings_passcode_status passCodeStatus =
+	enum settings_passcode_status passcode_status =
 					SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	uint32_t lock_code;
 	uint32_t real_lock_code;
 	int r = 0;
 
 	if (attr_is_locked() == false) {
-		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK, false);
-		attr_set_uint32(CONFIG_ATTR_INDEX_LOCK_STATUS,
+		attr_set_uint32(ATTR_ID_lock, false);
+		attr_set_uint32(ATTR_ID_lock_status,
 				    LOCK_STATUS_NOT_SETUP);
 	} else {
 		/* Configuration is locked, require lock key */
@@ -305,7 +300,7 @@ static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 				r = -EINVAL;
 			} else {
 				real_lock_code = attr_get_uint32(
-					CONFIG_ATTR_INDEX_SETTINGS_PASSCODE,
+					ATTR_ID_settings_passcode,
 					LOCK_DEFAULT_VALUE);
 				lock_code = strtoul(argv[1], NULL, 0);
 
@@ -322,16 +317,16 @@ static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 					 */
 					if (real_lock_code == lock_code) {
 						attr_set_uint32(
-							CONFIG_ATTR_INDEX_LOCK, false);
+							ATTR_ID_lock, false);
 						attr_set_uint32(
-							CONFIG_ATTR_INDEX_LOCK_STATUS,
+							ATTR_ID_lock_status,
 							LOCK_STATUS_NOT_SETUP);
 
 						shell_print(shell, "Configuration"
 							    " lock has been removed"
 							    " from");
 					} else {
-						passCodeStatus =
+						passcode_status =
 							SETTINGS_PASSCODE_STATUS_INVALID_CODE;
 						shell_error(shell, "Invalid configuration"
 							    " lock key provided");
@@ -347,8 +342,8 @@ static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 						 * the passcode
 						 */
 						attr_set_uint32(
-							CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
-							passCodeStatus);
+							ATTR_ID_settings_passcode_status,
+							passcode_status);
 					}
 				}
 			}
@@ -368,24 +363,24 @@ static int lock_remove_cmd(const struct shell *shell, size_t argc, char **argv)
 
 static int lock_error_cmd(const struct shell *shell, size_t argc, char **argv)
 {
-	enum settings_passcode_status passCodeStatus =
+	enum settings_passcode_status passcode_status =
 					SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
 
-	r = attr_get(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
-		     &passCodeStatus,
-		     sizeof(passCodeStatus));
+	r = attr_get(ATTR_ID_settings_passcode_status,
+		     &passcode_status,
+		     sizeof(passcode_status));
 
 	if (r >= 0) {
 		/* Clear status */
-		attr_set_uint32(CONFIG_ATTR_INDEX_SETTINGS_PASSCODE_STATUS,
+		attr_set_uint32(ATTR_ID_settings_passcode_status,
 				    SETTINGS_PASSCODE_STATUS_UNDEFINED);
 
-		shell_print(shell, "Lock last error: %d (%s)", passCodeStatus,
-			    (passCodeStatus == SETTINGS_PASSCODE_STATUS_VALID_CODE ?
-				"Valid code" : (passCodeStatus ==
+		shell_print(shell, "Lock last error: %d (%s)", passcode_status,
+			    (passcode_status == SETTINGS_PASSCODE_STATUS_VALID_CODE ?
+				"Valid code" : (passcode_status ==
 					SETTINGS_PASSCODE_STATUS_INVALID_CODE ?
-					"Invalid code" : (passCodeStatus ==
+					"Invalid code" : (passcode_status ==
 						SETTINGS_PASSCODE_STATUS_UNDEFINED ?
 						"No code entered" : "Unknown"))));
 	} else {
