@@ -18,6 +18,7 @@ extern "C" {
 /******************************************************************************/
 #include <stdint.h>
 #include <stddef.h>
+#include <shell/shell.h>
 
 #ifdef CONFIG_ATTR_BROADCAST
 #include "Framework.h"
@@ -393,20 +394,27 @@ int attr_set_mask64(attr_id_t id, uint8_t bit, uint8_t value);
 attr_id_t attr_get_id(const char *name);
 
 /**
- * @brief Print the value of an attribute (LOG_DBG)
+ * @brief Print the value of an attribute
  *
+ * @param shell pointer to shell instance
  * @param id an attribute id
  *
  * @retval negative error code, 0 on success
+ *
  */
-int attr_show(attr_id_t id);
+int attr_show(const struct shell *shell, attr_id_t id);
 
 /**
  * @brief Print all parameters to the console using system workq.
  *
+ * @param shell pointer to shell instance
+ *
  * @retval negative error code, 0 on success
+ *
+ * @note For remote execution using mcumgr, SHELL_BACKEND_DUMMY_BUF_SIZE
+ * must be set large enough to display all values
  */
-int attr_show_all(void);
+int attr_show_all(const struct shell *shell);
 
 /**
  * @brief Delete attribute file

@@ -93,6 +93,14 @@ static const char EMPTY_STRING[] = "";
 #define ATTR_SAVE_LATER
 #endif
 
+struct dump {
+	bool hide;
+	bool prevent;
+	const void *data;
+	size_t size;
+	param_t type;
+};
+
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -104,15 +112,10 @@ ATOMIC_DEFINE(attr_skip_broadcast, ATTR_TABLE_SIZE);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-#ifdef CONFIG_ATTR_SHELL
-static struct k_work work_show;
-#endif
-
 static ATOMIC_DEFINE(quiet, ATTR_TABLE_SIZE);
 static ATOMIC_DEFINE(notify, ATTR_TABLE_SIZE);
 
 static struct k_mutex attr_mutex;
-static struct k_mutex attr_work_mutex;
 static struct k_mutex attr_save_change_mutex;
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
@@ -158,6 +161,10 @@ static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 
 static int show(const ate_t *const entry, bool change_handler);
 
+static int allow_show(const ate_t *const entry, bool change_handler);
+static int allow_get(const ate_t *const entry);
+static struct dump dump_display_option_handler(attr_index_t index, bool locked);
+
 static param_t convert_attr_type(attr_index_t index);
 static size_t get_attr_length(attr_index_t index);
 static bool is_dump_rw(attr_index_t index);
@@ -173,10 +180,6 @@ static int64_t sign_extend64(const ate_t *const entry);
 static int initialize_quiet(void);
 
 static int attr_init(const struct device *device);
-
-#ifdef CONFIG_ATTR_SHELL
-static void sys_workq_show_handler(struct k_work *item);
-#endif
 
 extern void attr_table_initialize(void);
 extern void attr_table_factory_reset(void);
@@ -242,46 +245,11 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	ATTR_ENTRY_DECL(id);
 	size_t size;
 	int64_t extended;
-	int r = 0;
-	bool prevent_show = true;
+	int r = -EPERM;
 
 	if (entry != NULL) {
 		if (entry->readable) {
-			if (entry->display_options &
-			    DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
-				/* Hidden attribute */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-				if ((entry->display_options &
-				     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-				    attr_is_locked() == false) {
-					/* Attributes are unlocked, show
-					 * because of overriding display option
-					 */
-					prevent_show = false;
-				}
-#endif
-
-				if (prevent_show == true) {
-					r = -EACCES;
-				}
-			} else if (entry->display_options &
-				   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
-				/* Obscured attribute */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-				if ((entry->display_options &
-				     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-				    attr_is_locked() == false) {
-					/* Attributes are unlocked, show because
-					 * of overriding display option
-					 */
-					prevent_show = false;
-				}
-#endif
-				if (prevent_show == true) {
-					r = -EPERM;
-				}
-			}
-
+			r = allow_get(entry);
 			if (r == 0) {
 				r = prepare_for_read(entry);
 				if (r >= 0) {
@@ -745,25 +713,123 @@ attr_id_t attr_get_id(const char *name)
 	return ATTR_INVALID_ID;
 }
 
-int attr_show(attr_id_t id)
+static int shell_show(const struct shell *shell, const ate_t *const entry,
+		      bool change_handler)
 {
-	int rc = -EINVAL;
+	uint32_t u = 0;
+	int32_t i = 0;
+	uint32_t a = 0;
+	uint32_t b = 0;
+	float f = 0.0;
+	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
+	int r;
+
+	r = allow_show(entry, change_handler);
+	if (r < 0) {
+		if (r == -EPERM) {
+			shell_print(shell, CONFIG_ATTR_SHOW_FMT "******",
+				    entry->id, entry->name);
+		}
+		return r;
+	}
+
+	switch (entry->type) {
+	case ATTR_TYPE_BOOL:
+		memcpy(&u, entry->pData, entry->size);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
+			    entry->name, u ? "true" : "false");
+		break;
+
+	case ATTR_TYPE_U8:
+	case ATTR_TYPE_U16:
+	case ATTR_TYPE_U32:
+		memcpy(&u, entry->pData, entry->size);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%u %s", entry->id,
+			    entry->name, u, GET_ENUM_STRING(u));
+		break;
+
+	case ATTR_TYPE_S8:
+		i = (int32_t)(*(int8_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_S16:
+		i = (int32_t)(*(int16_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_S32:
+		i = *(int32_t *)entry->pData;
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_FLOAT:
+		memcpy(&f, entry->pData, entry->size);
+		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
+			 f);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
+			    entry->name, float_str);
+		break;
+
+	case ATTR_TYPE_STRING:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "'%s'", entry->id,
+			    entry->name, (char *)entry->pData);
+		break;
+
+	case ATTR_TYPE_U64:
+	case ATTR_TYPE_S64:
+		/* Replicate code used by log version of this function */
+		memcpy(&a, (uint8_t *)entry->pData, 4);
+		memcpy(&b, ((uint8_t *)entry->pData) + 4, 4);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "0x%08x %08x",
+			    entry->id, entry->name, b, a);
+		break;
+
+	default:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "size: %u", entry->id,
+			    entry->name, entry->size);
+		shell_hexdump(shell, entry->pData, entry->size);
+		break;
+	}
+
+	return 0;
+}
+
+int attr_show(const struct shell *shell, attr_id_t id)
+{
+	int r = -EINVAL;
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
-		TAKE_MUTEX(attr_mutex);
-		rc = show(entry, false);
-		GIVE_MUTEX(attr_mutex);
+		if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+			r = shell_show(shell, entry, false);
+			GIVE_MUTEX(attr_mutex);
+		} else {
+			r = -EWOULDBLOCK;
+		}
 	}
 
-	return rc;
+	return r;
 }
 
-int attr_show_all(void)
+int attr_show_all(const struct shell *shell)
 {
-	TAKE_MUTEX(attr_work_mutex);
-	k_work_submit(&work_show);
-	return 0;
+	int r = 0;
+	attr_index_t i;
+
+	if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
+			(void)shell_show(shell, &ATTR_TABLE[i], false);
+		}
+		GIVE_MUTEX(attr_mutex);
+	} else {
+		r = -EWOULDBLOCK;
+	}
+
+	return r;
 }
 
 int attr_delete(void)
@@ -779,12 +845,12 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	int count = 0;
 	bool (*dumpable)(attr_index_t) = is_dump_rw;
 	attr_index_t i;
-	bool prevent_dump = true;
-	const void *val_data;
-	size_t val_size;
-	param_t val_type;
+	struct dump dump;
+	bool locked = false;
+
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	bool locked = true;
+	/* Cache attribute locked value (read once before loop) */
+	locked = attr_is_locked();
 #endif
 
 	switch (type) {
@@ -799,11 +865,6 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		break;
 	}
 
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	/* Cache attribute locked value */
-	locked = attr_is_locked();
-#endif
-
 	/* Update all parameters that need to be prepared before reserving
 	 * the mutex - we want to avoid stacking up reservations of it,
 	 * and if an attribute value changes after this, it will still be
@@ -815,112 +876,37 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		}
 	}
 
-	/* Only proceed if prepares were executed OK */
-	if (r == 0) {
-		TAKE_MUTEX(attr_mutex);
-		do {
-			for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-				if (dumpable(i)) {
-					prevent_dump = true;
-					if (ATTR_TABLE[i].display_options &
-					    DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP) {
-						/* Hidden attribute, do not show */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-						if ((ATTR_TABLE[i]
-							     .display_options &
-						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
-						    locked == false) {
-							/* Attributes are
-							 * unlocked, show
-							 * because of overriding
-							 * display option
-							 */
-							prevent_dump = false;
-						}
-#endif
+	TAKE_MUTEX(attr_mutex);
+	do {
+		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
+			if (dumpable(i)) {
+				dump = dump_display_option_handler(i, locked);
+				if (dump.hide) {
+					continue;
+				}
 
-						if (prevent_dump == true) {
-							continue;
-						}
-					} else if (
-						ATTR_TABLE[i].display_options &
-						DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
-						/* Obscured attribute, show
-						 * asterisks for value
-						 */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-						if ((ATTR_TABLE[i]
-							     .display_options &
-						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
-						    locked == false) {
-							/* Attributes are
-							 * unlocked, show
-							 * because of overriding
-							 * display option
-							 */
-							prevent_dump = false;
-						}
-#endif
-					} else {
-						/* Normal attribute, OK to
-						 * dump
-						 */
-						prevent_dump = false;
-					}
+				r = lcz_param_file_generate_file(i, dump.type,
+								 dump.data,
+								 dump.size,
+								 fstr);
 
-					if (prevent_dump == false) {
-						/* Use real data */
-						val_data = ATTR_TABLE[i].pData;
-						val_size = get_attr_length(i);
-						val_type = convert_attr_type(i);
-					} else {
-						/* Replace data with asterisks,
-						 * use the same size as the data
-						 * up to 6 characters in length
-						 */
-						val_data = asterisk_data;
-						if (convert_attr_type(i) ==
-						    PARAM_STR) {
-							val_size = MIN(
-								ASTERISK_DATA_SIZE,
-								get_attr_length(
-									i));
-						} else {
-							val_size = MIN(
-								ASTERISK_DATA_SIZE,
-								get_attr_length(
-									i) *
-									2);
-						}
-						val_type = PARAM_STR;
-					}
-
-					r = lcz_param_file_generate_file(
-						i, val_type, val_data, val_size,
-						fstr);
-
-					if (r < 0) {
-						LOG_ERR("Error converting attribute table "
-							"into file (dump) [%u] status: %d",
-							ATTR_TABLE[i].id, r);
-						break;
-					} else {
-						count += 1;
-					}
+				if (r < 0) {
+					LOG_ERR("Error converting attribute table "
+						"into file (dump) [%u] status: %d",
+						ATTR_TABLE[i].id, r);
+					break;
+				} else {
+					count += 1;
 				}
 			}
+		}
 
-			/* Don't validate the file if any attribute errors
-			 * occurred. Break here to jump out the while(0)
-			 * loop
-			 */
-			BREAK_ON_ERROR(r);
+		/* Don't validate the file if any attribute errors occurred. */
+		BREAK_ON_ERROR(r);
 
-			r = lcz_param_file_validate_file(*fstr, strlen(*fstr));
-		} while (0);
-
-		GIVE_MUTEX(attr_mutex);
-	}
+		r = lcz_param_file_validate_file(*fstr, strlen(*fstr));
+	} while (0);
+	GIVE_MUTEX(attr_mutex);
 
 	if (r < 0) {
 		k_free(*fstr);
@@ -1354,14 +1340,69 @@ static void notification_handler(attr_id_t id)
 	}
 }
 
-static int show(const ate_t *const entry, bool change_handler)
+/**
+ * @brief This allows for permissions based on if the lock is active or
+ * not, e.g. if the configuration lock is active you can hide parameters you
+ * don't want seen.  Alternatively, obscure them to make it known that they're
+ * there but not show the value. Once unlocked, you can then allow the user
+ * to see those values.
+ *
+ * Examples of items that are conditionally readable.
+ *   The dev EUI on the BT620
+ *   LwM2M client ID on the MG100
+ *
+ */
+static int allow_get(const ate_t *const entry)
 {
-	uint32_t u = 0;
-	int32_t i = 0;
-	uint32_t a = 0;
-	uint32_t b = 0;
-	float f = 0.0;
-	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
+	int r = 0;
+	bool prevent_show = true;
+
+	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+		/* Hidden attribute */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		    attr_is_locked() == false) {
+			/* Attributes are unlocked, show
+			 * because of overriding display option
+			 */
+			prevent_show = false;
+		}
+#endif
+
+		if (prevent_show == true) {
+			r = -EACCES;
+		}
+	} else if (entry->display_options &
+		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+		/* Obscured attribute */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		    attr_is_locked() == false) {
+			/* Attributes are unlocked, show because
+			 * of overriding display option
+			 */
+			prevent_show = false;
+		}
+#endif
+		if (prevent_show == true) {
+			r = -EPERM;
+		}
+	}
+
+	return r;
+}
+
+/**
+ * @brief Use display options to determine if value should be shown
+ *
+ * @return int 0 - value can be shown
+ * @return int -EPERM - replace value with asterisks
+ * @return int -EACCES - hide value (don't display asterisks)
+ */
+static int allow_show(const ate_t *const entry, bool change_handler)
+{
 	bool prevent_show = true;
 
 	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
@@ -1411,10 +1452,94 @@ static int show(const ate_t *const entry, bool change_handler)
 #endif
 
 		if (prevent_show == true) {
-			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******", entry->id,
-				 entry->name);
 			return -EPERM;
 		}
+	}
+
+	return 0;
+}
+
+static struct dump dump_display_option_handler(attr_index_t index, bool locked)
+{
+	const struct attr_table_entry *entry = &ATTR_TABLE[index];
+	struct dump dump;
+
+	dump.hide = false;
+	dump.prevent = true;
+
+	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP) {
+		/* Hidden attribute, do not show */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+		    locked == false) {
+			/* Attributes are unlocked, show because of overriding
+			 * display option
+			 */
+			dump.prevent = false;
+		}
+#endif
+		if (dump.prevent) {
+			dump.hide = true;
+		}
+
+	} else if (entry->display_options &
+		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
+		/* Obscured attribute, show asterisks for value */
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+		if ((entry->display_options &
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+		    locked == false) {
+			/* Attributes are unlocked, show because of overriding
+			 * display option */
+			dump.prevent = false;
+		}
+#endif
+	} else {
+		/* Normal attribute, OK to dump */
+		dump.prevent = false;
+	}
+
+	if (dump.prevent == false) {
+		/* Use real data */
+		dump.data = ATTR_TABLE[index].pData;
+		dump.size = get_attr_length(index);
+		dump.type = convert_attr_type(index);
+	} else {
+		/* Replace data with asterisks, use the same size as the data
+		 * up to 6 characters in length
+		 */
+		dump.data = asterisk_data;
+		if (convert_attr_type(index) == PARAM_STR) {
+			dump.size =
+				MIN(ASTERISK_DATA_SIZE, get_attr_length(index));
+		} else {
+			dump.size = MIN(ASTERISK_DATA_SIZE,
+					get_attr_length(index) * 2);
+		}
+		dump.type = PARAM_STR;
+	}
+
+	return dump;
+}
+
+static int show(const ate_t *const entry, bool change_handler)
+{
+	uint32_t u = 0;
+	int32_t i = 0;
+	uint32_t a = 0;
+	uint32_t b = 0;
+	float f = 0.0;
+	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
+	int r;
+
+	r = allow_show(entry, change_handler);
+	if (r < 0) {
+		if (r == -EPERM) {
+			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******", entry->id,
+				 entry->name);
+		}
+		return r;
 	}
 
 	switch (entry->type) {
@@ -2111,27 +2236,6 @@ int attr_update_config_version(void)
 #endif
 
 /******************************************************************************/
-/* System WorkQ context                                                       */
-/******************************************************************************/
-#ifdef CONFIG_ATTR_SHELL
-static void sys_workq_show_handler(struct k_work *item)
-{
-	ARG_UNUSED(item);
-	attr_index_t i;
-
-	TAKE_MUTEX(attr_mutex);
-
-	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-		(void)show(&ATTR_TABLE[i], false);
-		k_sleep(K_MSEC(CONFIG_ATTR_SHELL_SHOW_ALL_DELAY_MS));
-	}
-	GIVE_MUTEX(attr_mutex);
-
-	GIVE_MUTEX(attr_work_mutex);
-}
-#endif
-
-/******************************************************************************/
 /* SYS INIT                                                                   */
 /******************************************************************************/
 static int attr_init(const struct device *device)
@@ -2140,7 +2244,6 @@ static int attr_init(const struct device *device)
 	int r = -EPERM;
 
 	k_mutex_init(&attr_mutex);
-	k_mutex_init(&attr_work_mutex);
 	k_mutex_init(&attr_save_change_mutex);
 
 	attr_table_initialize();
@@ -2159,10 +2262,6 @@ static int attr_init(const struct device *device)
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
 		r = load_attributes(ATTR_ABS_PATH, NULL, false, true, false);
 	}
-
-#ifdef CONFIG_ATTR_SHELL
-	k_work_init(&work_show, sys_workq_show_handler);
-#endif
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
 	k_work_init_delayable(&attr_save_delayed_work, save_attributes_work);
