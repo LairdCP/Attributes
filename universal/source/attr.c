@@ -923,7 +923,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	}
 
 	if (r < 0) {
-		k_free(fstr);
+		k_free(*fstr);
 		LOG_ERR("Error converting attribute table into file");
 	}
 
