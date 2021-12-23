@@ -1,0 +1,4 @@
+tests:
+  components.attr.display_options:
+    tags: attributes
+    harness: ztest

@@ -869,9 +869,21 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 						val_size = get_attr_length(i);
 						val_type = convert_attr_type(i);
 					} else {
-						/* Replace data with asterisks */
+						/* Replace data with asterisks,
+						 * use the same size as the data
+						 * up to 6 characters in length
+						 */
 						val_data = asterisk_data;
-						val_size = ASTERISK_DATA_SIZE;
+						if (convert_attr_type(i) ==
+							PARAM_STR) {
+							val_size = MIN(
+								ASTERISK_DATA_SIZE,
+								get_attr_length(i));
+						} else {
+							val_size = MIN(
+								ASTERISK_DATA_SIZE,
+								get_attr_length(i) * 2);
+						}
 						val_type = PARAM_STR;
 					}
 
@@ -2125,9 +2137,11 @@ static int attr_init(const struct device *device)
 
 	attr_table_initialize();
 
+#ifdef ATTR_INDEX_load_path
 	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) == 0) {
 		LOG_WRN("SMP load path should be different from attribute source");
 	}
+#endif
 
 	if (fsu_get_file_size_abs(ATTR_ABS_PATH) < 0) {
 		r = 0;

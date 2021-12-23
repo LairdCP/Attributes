@@ -1,0 +1,714 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "Test Parameters",
+    "version": "0.1.8"
+  },
+  "methods": {
+    "$ref": "file:./sentrius_methods.json"
+  },
+  "components": {
+    "contentDescriptors": {
+      "deviceParams": {
+        "name": "Device Parameters",
+        "schema": {
+          "name": "Sentrius Attributes",
+          "type": "array"
+        },
+        "x-device-parameters": [
+          {
+            "name": "sensor_name",
+            "summary": "Sensor Name",
+            "required": true,
+            "x-id": 0,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 23,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "BT610",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "attribute_version",
+            "summary": "The API attribute version that the firmware supports",
+            "required": true,
+            "x-id": 1,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 6,
+              "maximum": 11,
+              "x-ctype": "string",
+              "x-default": "0.1.00",
+              "x-example": "123.456.789",
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lock",
+            "summary": "Lock enabled: false = lock not setup, true = lock setup. See lock_status for details on if lock is active",
+            "required": true,
+            "x-id": 2,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "x-ctype": "bool",
+              "x-default": "false",
+              "x-example": "false",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writable": false,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "settings_passcode",
+            "summary": "Six digit numeric passcode to unlock device settings.",
+            "required": true,
+            "x-id": 3,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "x-ctype": "uint32_t",
+              "x-default": "123456",
+              "x-example": "987654",
+              "x-backup": true,
+              "x-lockable": false,
+              "x-broadcast": true,
+              "x-writable": true,
+              "x-readable": false,
+              "x-savable": true,
+              "x-validator": "cp32"
+            }
+          },
+          {
+            "name": "settings_passcode_status",
+            "summary": "Will return the status of current settings passcode entered",
+            "required": true,
+            "x-id": 4,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 2.0,
+              "x-default": "0",
+              "x-example": "1",
+              "x-lockable": false,
+              "x-savable": false,
+              "x-writable": false,
+              "x-readable": true,
+              "x-broadcast": false,
+              "enum": {
+                "UNDEFINED": 0,
+                "VALID_CODE": 1,
+                "INVALID_CODE": 2
+              }
+            }
+          },
+          {
+            "name": "lock_status",
+            "summary": "Lock status, 0 = lock not setup, 1 = lock setup and engaged, 2 = lock setup and disengaged",
+            "required": true,
+            "x-id": 5,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 2.0,
+              "x-default": "0",
+              "x-example": "0",
+              "x-savable": false,
+              "x-writable": false,
+              "x-readable": true,
+              "enum": {
+                "NOT_SETUP": 0,
+                "SETUP_ENGAGED": 1,
+                "SETUP_DISENGAGED": 2
+              }
+            }
+          },
+          {
+            "name": "test_a",
+            "summary": "obscure (show)",
+            "required": true,
+            "x-id": 6,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "1",
+              "x-example": "1",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true
+            }
+          },
+          {
+            "name": "test_b",
+            "summary": "hide (show)",
+            "required": true,
+            "x-id": 7,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "2",
+              "x-example": "2",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true
+            }
+          },
+          {
+            "name": "test_c",
+            "summary": "obscure (show) with unlocked override",
+            "required": true,
+            "x-id": 8,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "3",
+              "x-example": "3",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_d",
+            "summary": "hide (show) with unlocked override",
+            "required": true,
+            "x-id": 9,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "4",
+              "x-example": "4",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_e",
+            "summary": "obscure (dump)",
+            "required": true,
+            "x-id": 10,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "5",
+              "x-example": "5",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-dump": true
+            }
+          },
+          {
+            "name": "test_f",
+            "summary": "hide (dump)",
+            "required": true,
+            "x-id": 11,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "6",
+              "x-example": "6",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-dump": true
+            }
+          },
+          {
+            "name": "test_g",
+            "summary": "obscure (dump) with unlocked override",
+            "required": true,
+            "x-id": 12,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "7",
+              "x-example": "7",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_h",
+            "summary": "hide (dump) with unlocked override",
+            "required": true,
+            "x-id": 13,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "8",
+              "x-example": "8",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_i",
+            "summary": "obscure (show, dump)",
+            "required": true,
+            "x-id": 14,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "9",
+              "x-example": "9",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-obscure-in-dump": true
+            }
+          },
+          {
+            "name": "test_j",
+            "summary": "obscure (show) with unlocked override, obscure (dump)",
+            "required": true,
+            "x-id": 15,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "10",
+              "x-example": "10",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_k",
+            "summary": "obscure (show), obscure (dump) with unlocked override",
+            "required": true,
+            "x-id": 16,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "11",
+              "x-example": "11",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_l",
+            "summary": "hide (show), obscure (dump)",
+            "required": true,
+            "x-id": 17,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "12",
+              "x-example": "12",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-obscure-in-dump": true
+            }
+          },
+          {
+            "name": "test_m",
+            "summary": "hide (show) with unlocked override, obscure (dump)",
+            "required": true,
+            "x-id": 18,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "13",
+              "x-example": "13",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_n",
+            "summary": "hide (show), obscure (dump) with unlocked override",
+            "required": true,
+            "x-id": 19,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "14",
+              "x-example": "14",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_o",
+            "summary": "obscure (show), hide (dump)",
+            "required": true,
+            "x-id": 20,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "15",
+              "x-example": "15",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-hide-in-dump": true
+            }
+          },
+          {
+            "name": "test_p",
+            "summary": "obscure (show) with unlocked override, hide (dump)",
+            "required": true,
+            "x-id": 21,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "16",
+              "x-example": "16",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-hide-in-dump": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_q",
+            "summary": "obscure (show), hide (dump) with unlocked override",
+            "required": true,
+            "x-id": 22,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "17",
+              "x-example": "17",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-hide-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_r",
+            "summary": "hide (show, dump)",
+            "required": true,
+            "x-id": 23,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "18",
+              "x-example": "18",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-hide-in-dump": true
+            }
+          },
+          {
+            "name": "test_s",
+            "summary": "hide (show) with unlocked override, hide (dump)",
+            "required": true,
+            "x-id": 24,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "19",
+              "x-example": "19",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-hide-in-dump": true,
+              "x-show-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_t",
+            "summary": "hide (show), hide (dump) with unlocked override",
+            "required": true,
+            "x-id": 25,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "20",
+              "x-example": "20",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-hide-in-dump": true,
+              "x-dump-unlocked-override": true
+            }
+          },
+          {
+            "name": "test_u",
+            "summary": "obscure (show, dump) with unlocked override and show on change",
+            "required": true,
+            "x-id": 26,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "21",
+              "x-example": "21",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-show-unlocked-override": true,
+              "x-dump-unlocked-override": true,
+              "x-show-on-change": true
+            }
+          },
+          {
+            "name": "test_v",
+            "summary": "hide (show, dump) with unlocked override and show on change",
+            "required": true,
+            "x-id": 27,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "22",
+              "x-example": "22",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-hide-in-dump": true,
+              "x-show-unlocked-override": true,
+              "x-dump-unlocked-override": true,
+              "x-show-on-change": true
+            }
+          },
+          {
+            "name": "test_w",
+            "summary": "obscure (show, dump) with show on change",
+            "required": true,
+            "x-id": 28,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "23",
+              "x-example": "23",
+              "x-writable": true,
+              "x-readable": true,
+              "x-obscure-in-show": true,
+              "x-obscure-in-dump": true,
+              "x-show-on-change": true
+            }
+          },
+          {
+            "name": "test_x",
+            "summary": "hide (show, dump) with show on change",
+            "required": true,
+            "x-id": 29,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "x-ctype": "uint8_t",
+              "type": "integer",
+              "minimum": 0.0,
+              "maximum": 100.0,
+              "x-default": "24",
+              "x-example": "24",
+              "x-writable": true,
+              "x-readable": true,
+              "x-hide-in-show": true,
+              "x-hide-in-dump": true,
+              "x-show-on-change": true
+            }
+          },
+          {
+            "name": "load_path",
+            "summary": "(Default) Absolute file name for load parameters command",
+            "required": true,
+            "x-id": 50,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/params.txt",
+              "x-example": "/ext/params.txt",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dump_path",
+            "summary": "(Default) Absolute file name for dump command",
+            "required": true,
+            "x-id": 51,
+            "x-projects": [
+              "LockTest"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/dump.txt",
+              "x-example": "/ext/dump.txt",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          }
+        ]
+      }
+    }
+  }
+}
