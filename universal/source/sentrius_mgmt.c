@@ -18,22 +18,29 @@
 #include <tinycbor/cbor_buf_writer.h>
 #include "cborattr/cborattr.h"
 #include "mgmt/mgmt.h"
+
+#ifdef CONFIG_SHELL
+#include <shell/shell.h>
+#include <shell/shell_uart.h>
+#endif
+
+#ifdef CONFIG_BT
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
 #include <mgmt/mcumgr/smp_bt.h>
 #include <bluetooth/services/dfu_smp.h>
-#include <shell/shell.h>
-#include <shell/shell_uart.h>
+#include "lcz_bluetooth.h"
+#endif
 
 #include "attr.h"
-#ifdef CONFIG_LCZ_QRTC
-#include "lcz_qrtc.h"
-#endif
-#include "lcz_bluetooth.h"
 #include "file_system_utilities.h"
 #include "lcz_memfault.h"
 
 #include "sentrius_mgmt.h"
+
+#ifdef CONFIG_LCZ_QRTC
+#include "lcz_qrtc.h"
+#endif
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -101,8 +108,10 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr);
 
 static int factory_reset(struct mgmt_ctxt *ctxt);
 
+#ifdef CONFIG_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
+#endif
 
 /******************************************************************************/
 /* Local Data Definitions                                                     */
@@ -187,6 +196,7 @@ static union {
 
 static size_t buf_size;
 
+#ifdef CONFIG_BT
 struct smp_notification {
 	struct bt_dfu_smp_header header;
 	uint8_t buffer[MAX_PBUF_SIZE + CBOR_NOTIFICATION_OVERHEAD];
@@ -201,12 +211,14 @@ static struct {
 	struct bt_conn_cb conn_callbacks;
 	struct smp_notification cmd;
 } smp_ble;
+#endif
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 SYS_INIT(sentrius_mgmt_init, APPLICATION, 99);
 
+#ifdef CONFIG_BT
 /* Callback from attribute module */
 int attr_notify(attr_id_t Index)
 {
@@ -260,6 +272,7 @@ int attr_notify(attr_id_t Index)
 
 	return err;
 }
+#endif
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -270,13 +283,16 @@ static int sentrius_mgmt_init(const struct device *device)
 
 	mgmt_register_group(&sentrius_mgmt_group);
 
+#ifdef CONFIG_BT
 	smp_ble.conn_callbacks.connected = smp_ble_connected;
 	smp_ble.conn_callbacks.disconnected = smp_ble_disconnected;
 	bt_conn_cb_register(&smp_ble.conn_callbacks);
+#endif
 
 	return 0;
 }
 
+#ifdef CONFIG_BT
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err)
 {
 	/* Did a central connect to us? */
@@ -303,6 +319,7 @@ static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason)
 
 	attr_disable_notify();
 }
+#endif
 
 static int get_parameter(struct mgmt_ctxt *ctxt)
 {
