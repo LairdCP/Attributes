@@ -1083,6 +1083,8 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 		/* Clear status */
 		attr_set_uint32(ATTR_ID_settings_passcode_status,
 				SETTINGS_PASSCODE_STATUS_UNDEFINED);
+
+		r = 0;
 	}
 
 	/* Cbor encode result */
