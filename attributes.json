@@ -5037,6 +5037,7 @@
               "BL5340"
             ],
             "schema": {
+              "type": "integer",
               "x-ctype": "bool",
               "x-default": "false",
               "x-example": "true",
