@@ -18,6 +18,7 @@ extern "C" {
 /******************************************************************************/
 #include <stdint.h>
 #include <stddef.h>
+#include <shell/shell.h>
 
 #ifdef CONFIG_ATTR_BROADCAST
 #include "Framework.h"
@@ -374,14 +375,16 @@ attr_id_t attr_get_id(const char *name);
  *
  * @retval negative error code, 0 on success
  */
-int attr_show(attr_id_t id);
+int attr_show(const struct shell *shell, attr_id_t id);
 
 /**
  * @brief Print all parameters to the console using system workq.
+ * @note Depending on the number of attributes, the buffer may have
+ * to be increased to run this remotely.
  *
  * @retval negative error code, 0 on success
  */
-int attr_show_all(void);
+int attr_show_all(const struct shell *shell);
 
 /**
  * @brief Delete attribute file
