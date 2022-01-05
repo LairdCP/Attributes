@@ -15,15 +15,15 @@ config ATTR_BROADCAST
     bool "Send framework broadcast when values change"
     #depends on FRAMEWORK
     help
-        Broadcast flag must be set in attributes.json
+      Broadcast flag must be set in attributes.json
 
 config ATTR_INIT_PRIORITY
     int "Init priority Application for attribute module"
     range 2 99
     default 2
     help
-        Can't be higher than LCZ_PARAM_FILE_INIT_PRIORITY.
-        Recommended to be higher than main thread init priority.
+      Can't be higher than LCZ_PARAM_FILE_INIT_PRIORITY.
+      Recommended to be higher than main thread init priority.
 
 config ATTR_LOG_LEVEL
     int "Log level for Attributes module"
@@ -40,13 +40,6 @@ config ATTR_BREAK_ON_LOAD_FAILURE
 config ATTR_SHELL
     bool "Enable Attribute Shell"
     depends on SHELL
-
-config ATTR_SHELL_SHOW_ALL_DELAY_MS
-    int "Amount of time to delay between each debug log print"
-    depends on ATTR_SHELL
-    default 10
-    help
-        This is used to prevent log system overflow.
 
 config ATTR_SHELL_FACTORY_RESET_MSG
     bool "Enable generation of factory reset message from shell"

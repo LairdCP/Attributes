@@ -334,7 +334,7 @@ static int ats_query_cmd(const struct shell *shell, size_t argc, char **argv)
 	int r = -EPERM;
 
 	if ((argc == 2) && (argv[1] != NULL)) {
-		r = attr_show(get_id(argv[1]));
+		r = attr_show(shell, get_id(argv[1]));
 		shell_print(shell, "query status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
@@ -351,17 +351,19 @@ static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv)
 
 	if ((argc == 2) && (argv[1] != NULL)) {
 		id = get_id(argv[1]);
-		/* If the value changed, then prepare will cause a duplicate show. */
-		attr_show(id);
-		/* Discard data (assumes show is enabled). */
+		/* Get will call prepare. Data is displayed using show */
 		r = attr_get(id, dummy, sizeof(dummy));
-		/* Negative status indicates value isn't readable from SMP. */
+		/* Negative status indicates value isn't readable from SMP */
 		shell_print(shell, "get status: %d", r);
+		if (r >= 0) {
+			r = attr_show(shell, id);
+		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
@@ -407,7 +409,7 @@ static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	attr_show_all();
+	attr_show_all(shell);
 	return 0;
 }
 

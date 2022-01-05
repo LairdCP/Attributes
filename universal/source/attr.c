@@ -81,15 +81,10 @@ ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-#ifdef CONFIG_ATTR_SHELL
-static struct k_work work_show;
-#endif
-
 static ATOMIC_DEFINE(quiet, ATTR_TABLE_SIZE);
 static ATOMIC_DEFINE(notify, ATTR_TABLE_SIZE);
 
 static struct k_mutex attr_mutex;
-static struct k_mutex attr_work_mutex;
 
 static bool attr_initialized;
 
@@ -134,10 +129,6 @@ static int64_t sign_extend64(const ate_t *const entry);
 static int initialize_quiet(void);
 
 static int attr_init(const struct device *device);
-
-#ifdef CONFIG_ATTR_SHELL
-static void sys_workq_show_handler(struct k_work *item);
-#endif
 
 extern void attr_table_initialize(void);
 extern void attr_table_factory_reset(void);
@@ -616,25 +607,111 @@ attr_id_t attr_get_id(const char *name)
 	return ATTR_INVALID_ID;
 }
 
-int attr_show(attr_id_t id)
+static void shell_show(const struct shell *shell, const ate_t *const entry)
 {
-	ATTR_ENTRY_DECL(id);
+	uint32_t u = 0;
+	int32_t i = 0;
+	uint32_t a = 0;
+	uint32_t b = 0;
+	float f = 0.0;
+	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 
-	if (entry != NULL) {
-		TAKE_MUTEX(attr_mutex);
-		show(entry);
-		GIVE_MUTEX(attr_mutex);
-		return 0;
-	} else {
-		return -EINVAL;
+	switch (entry->type) {
+	case ATTR_TYPE_BOOL:
+		memcpy(&u, entry->pData, entry->size);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
+			    entry->name, u ? "true" : "false");
+		break;
+
+	case ATTR_TYPE_U8:
+	case ATTR_TYPE_U16:
+	case ATTR_TYPE_U32:
+		memcpy(&u, entry->pData, entry->size);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%u %s", entry->id,
+			    entry->name, u, GET_ENUM_STRING(u));
+		break;
+
+	case ATTR_TYPE_S8:
+		i = (int32_t)(*(int8_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_S16:
+		i = (int32_t)(*(int16_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_S32:
+		i = *(int32_t *)entry->pData;
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
+			    entry->name, i, GET_ENUM_STRING(i));
+		break;
+
+	case ATTR_TYPE_FLOAT:
+		memcpy(&f, entry->pData, entry->size);
+		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
+			 f);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
+			    entry->name, float_str);
+		break;
+
+	case ATTR_TYPE_STRING:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "'%s'", entry->id,
+			    entry->name, (char *)entry->pData);
+		break;
+
+	case ATTR_TYPE_U64:
+	case ATTR_TYPE_S64:
+		/* Replicate code used by log version of this function */
+		memcpy(&a, (uint8_t *)entry->pData, 4);
+		memcpy(&b, ((uint8_t *)entry->pData) + 4, 4);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "0x%08x %08x",
+			    entry->id, entry->name, b, a);
+		break;
+
+	default:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "size: %u", entry->id,
+			    entry->name, entry->size);
+		shell_hexdump(shell, entry->pData, entry->size);
+		break;
 	}
 }
 
-int attr_show_all(void)
+int attr_show(const struct shell *shell, attr_id_t id)
 {
-	TAKE_MUTEX(attr_work_mutex);
-	k_work_submit(&work_show);
-	return 0;
+	int r = -EINVAL;
+	ATTR_ENTRY_DECL(id);
+
+	if (entry != NULL) {
+		if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+			shell_show(shell, entry);
+			GIVE_MUTEX(attr_mutex);
+			r = 0;
+		} else {
+			r = -EWOULDBLOCK;
+		}
+	}
+
+	return r;
+}
+
+int attr_show_all(const struct shell *shell)
+{
+	int r = 0;
+	attr_index_t i;
+
+	if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
+			shell_show(shell, &ATTR_TABLE[i]);
+		}
+		GIVE_MUTEX(attr_mutex);
+	} else {
+		r = -EWOULDBLOCK;
+	}
+
+	return r;
 }
 
 int attr_delete(void)
@@ -1313,26 +1390,6 @@ static int64_t sign_extend64(const ate_t *const entry)
 }
 
 /******************************************************************************/
-/* System WorkQ context                                                       */
-/******************************************************************************/
-#ifdef CONFIG_ATTR_SHELL
-static void sys_workq_show_handler(struct k_work *item)
-{
-	ARG_UNUSED(item);
-	attr_index_t i;
-
-	TAKE_MUTEX(attr_mutex);
-	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-		show(&ATTR_TABLE[i]);
-		k_sleep(K_MSEC(CONFIG_ATTR_SHELL_SHOW_ALL_DELAY_MS));
-	}
-	GIVE_MUTEX(attr_mutex);
-
-	GIVE_MUTEX(attr_work_mutex);
-}
-#endif
-
-/******************************************************************************/
 /* SYS INIT                                                                   */
 /******************************************************************************/
 static int attr_init(const struct device *device)
@@ -1341,7 +1398,6 @@ static int attr_init(const struct device *device)
 	int r = -EPERM;
 
 	k_mutex_init(&attr_mutex);
-	k_mutex_init(&attr_work_mutex);
 
 	attr_table_initialize();
 
@@ -1356,10 +1412,6 @@ static int attr_init(const struct device *device)
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
 		r = load_attributes(ATTR_ABS_PATH, false, true);
 	}
-
-#ifdef CONFIG_ATTR_SHELL
-	k_work_init(&work_show, sys_workq_show_handler);
-#endif
 
 	initialize_quiet();
 
