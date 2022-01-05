@@ -1,5 +1,5 @@
 /**
- * @file sentrius_mgmt.c
+ * @file attribute_mgmt.c
  * @brief
  *
  * Copyright (c) 2021 Laird Connectivity
@@ -35,8 +35,7 @@
 #include "attr.h"
 #include "file_system_utilities.h"
 #include "lcz_memfault.h"
-
-#include "sentrius_mgmt.h"
+#include "attribute_mgmt.h"
 
 #ifdef CONFIG_LCZ_QRTC
 #include "lcz_qrtc.h"
@@ -96,7 +95,7 @@ static mgmt_handler_fn lock;
 static mgmt_handler_fn unlock;
 static mgmt_handler_fn get_unlock_error_code;
 
-static int sentrius_mgmt_init(const struct device *device);
+static int attribute_mgmt_init(const struct device *device);
 
 static int cbor_encode_attribute(CborEncoder *encoder,
 				 long long unsigned int param_id);
@@ -116,73 +115,73 @@ static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
-static const struct mgmt_handler SENTRIUS_MGMT_HANDLERS[] = {
-	[SENTRIUS_MGMT_ID_GET_PARAMETER] = {
+static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
+	[ATTRIBUTE_MGMT_ID_GET_PARAMETER] = {
 		.mh_write = NULL,
 		.mh_read = get_parameter
 	},
-	[SENTRIUS_MGMT_ID_SET_PARAMETER] = {
+	[ATTRIBUTE_MGMT_ID_SET_PARAMETER] = {
 		.mh_write = set_parameter,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_SET_RTC] = {
+	[ATTRIBUTE_MGMT_ID_SET_RTC] = {
 		.mh_write = set_rtc,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_GET_RTC] = {
+	[ATTRIBUTE_MGMT_ID_GET_RTC] = {
 		.mh_write = NULL,
 		.mh_read = get_rtc
 	},
-	[SENTRIUS_MGMT_ID_LOAD_PARAMETER_FILE] = {
+	[ATTRIBUTE_MGMT_ID_LOAD_PARAMETER_FILE] = {
 		.mh_write = load_parameter_file,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_DUMP_PARAMETER_FILE] = {
+	[ATTRIBUTE_MGMT_ID_DUMP_PARAMETER_FILE] = {
 		.mh_write = dump_parameter_file,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_FACTORY_RESET] = {
+	[ATTRIBUTE_MGMT_ID_FACTORY_RESET] = {
 		.mh_write = factory_reset,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_SET_NOTIFY] = {
+	[ATTRIBUTE_MGMT_ID_SET_NOTIFY] = {
 		.mh_write = set_notify,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_GET_NOTIFY] = {
+	[ATTRIBUTE_MGMT_ID_GET_NOTIFY] = {
 		.mh_write = NULL,
 		.mh_read = get_notify
 	},
-	[SENTRIUS_MGMT_ID_DISABLE_NOTIFY] = {
+	[ATTRIBUTE_MGMT_ID_DISABLE_NOTIFY] = {
 		.mh_write = disable_notify,
 		.mh_read = NULL
 	},
-	[SENTRIUS_MGMT_ID_CHECK_LOCK_STATUS] = {
+	[ATTRIBUTE_MGMT_ID_CHECK_LOCK_STATUS] = {
 		.mh_write = NULL,
 		.mh_read = check_lock_status,
 	},
-	[SENTRIUS_MGMT_ID_SET_LOCK_CODE] = {
+	[ATTRIBUTE_MGMT_ID_SET_LOCK_CODE] = {
 		.mh_write = set_lock_code,
 		.mh_read = NULL,
 	},
-	[SENTRIUS_MGMT_ID_LOCK] = {
+	[ATTRIBUTE_MGMT_ID_LOCK] = {
 		.mh_write = lock,
 		.mh_read = NULL,
 	},
-	[SENTRIUS_MGMT_ID_UNLOCK] = {
+	[ATTRIBUTE_MGMT_ID_UNLOCK] = {
 		.mh_write = unlock,
 		.mh_read = NULL,
 	},
-	[SENTRIUS_MGMT_ID_GET_UNLOCK_ERROR_CODE] = {
+	[ATTRIBUTE_MGMT_ID_GET_UNLOCK_ERROR_CODE] = {
 		.mh_write = NULL,
 		.mh_read = get_unlock_error_code,
 	}
 };
 
-static struct mgmt_group sentrius_mgmt_group = {
-	.mg_handlers = SENTRIUS_MGMT_HANDLERS,
-	.mg_handlers_count = SENTRIUS_MGMT_HANDLER_CNT,
-	.mg_group_id = CONFIG_MGMT_GROUP_ID_SENTRIUS,
+static struct mgmt_group attribute_mgmt_group = {
+	.mg_handlers = ATTRIBUTE_MGMT_HANDLERS,
+	.mg_handlers_count = ATTRIBUTE_MGMT_HANDLER_CNT,
+	.mg_group_id = CONFIG_MGMT_GROUP_ID_ATTRIBUTE,
 };
 
 /* Only one parameter is written or read at a time. */
@@ -216,7 +215,7 @@ static struct {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-SYS_INIT(sentrius_mgmt_init, APPLICATION, 99);
+SYS_INIT(attribute_mgmt_init, APPLICATION, 99);
 
 #ifdef CONFIG_BT
 /* Callback from attribute module */
@@ -262,9 +261,9 @@ int attr_notify(attr_id_t Index)
 		smp_ble.cmd.header.len_l8 =
 			(uint8_t)((payload_len >> 0) & 0xFF);
 		smp_ble.cmd.header.group_h8 = 0;
-		smp_ble.cmd.header.group_l8 = CONFIG_MGMT_GROUP_ID_SENTRIUS;
+		smp_ble.cmd.header.group_l8 = CONFIG_MGMT_GROUP_ID_ATTRIBUTE;
 		smp_ble.cmd.header.seq = 0;
-		smp_ble.cmd.header.id = SENTRIUS_MGMT_ID_GET_PARAMETER;
+		smp_ble.cmd.header.id = ATTRIBUTE_MGMT_ID_GET_PARAMETER;
 
 		err = smp_bt_tx_rsp(smp_ble.conn_handle, &smp_ble.cmd,
 				    total_len);
@@ -277,11 +276,11 @@ int attr_notify(attr_id_t Index)
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-static int sentrius_mgmt_init(const struct device *device)
+static int attribute_mgmt_init(const struct device *device)
 {
 	ARG_UNUSED(device);
 
-	mgmt_register_group(&sentrius_mgmt_group);
+	mgmt_register_group(&attribute_mgmt_group);
 
 #ifdef CONFIG_BT
 	smp_ble.conn_callbacks.connected = smp_ble_connected;
@@ -555,7 +554,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 
 	r = attr_load(param.buf,
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
-		      CONFIG_SENTRIUS_MGMT_FEEDBACK_FILE,
+		      CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
 #else
 		      NULL,
 #endif
@@ -568,8 +567,8 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	/* Encode the feedback file path. */
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "f");
 	err |= cbor_encode_text_string(
-	&ctxt->encoder, CONFIG_SENTRIUS_MGMT_FEEDBACK_FILE,
-	strlen(CONFIG_SENTRIUS_MGMT_FEEDBACK_FILE));
+	&ctxt->encoder, CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
+	strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE));
 
 #ifdef CONFIG_ATTR_CONFIGURATION_VERSION
 	/* If no error update the device configuration version */
@@ -598,7 +597,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 		  .type = CborAttrUnsignedIntegerType,
 		  .addr.uinteger = &type,
 		  .nodefault = true },
-#ifdef CONFIG_SENTRIUS_MGMT_DUMP_USER_FILE_NAME
+#ifdef CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME
 		{ .attribute = "p2",
 		  .type = CborAttrTextStringType,
 		  .addr.string = param.buf,
@@ -638,7 +637,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 
 static int factory_reset(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_SENTRIUS_MGMT_FACTORY_RESET
+#ifdef CONFIG_ATTRIBUTE_MGMT_FACTORY_RESET
 	CborError err = 0;
 	int r;
 #ifdef ATTR_ID_factory_reset_enable
@@ -661,7 +660,7 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 		}
 #endif
 
-		r = sentrius_mgmt_factory_reset();
+		r = attribute_mgmt_factory_reset();
 	}
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");

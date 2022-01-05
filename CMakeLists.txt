@@ -12,8 +12,8 @@ zephyr_sources_ifdef(CONFIG_ATTR_SHELL
     universal/source/attr_shell.c
 )
 
-zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_SENTRIUS_MGMT
-    universal/source/sentrius_mgmt.c
+zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_ATTRIBUTE_MGMT
+    universal/source/attribute_mgmt.c
 )
 
 if(CONFIG_ATTR_DEVICE_OVERRIDE)
@@ -66,6 +66,8 @@ endif()
 
 endif() # CONFIG_ATTR_DEVICE_OVERRIDE
 
+if(CONFIG_ATTR_SETTINGS_LOCK)
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK universal/source/shell_lock.c)
+endif()
 
 endif() # CONFIG_ATTR
