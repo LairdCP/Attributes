@@ -262,6 +262,12 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 						size = MIN(sizeof(int64_t),
 							   vlen);
 						memcpy(pv, &extended, size);
+
+						/* Return size of actual
+						 * datatype once the signed
+						 * value has been copied
+						 */
+						size = MIN(entry->size, size);
 					} else {
 						size = MIN(entry->size, vlen);
 						memcpy(pv, entry->pData, size);

@@ -101,10 +101,11 @@ static int attribute_mgmt_init(const struct device *device);
 static int cbor_encode_attribute(CborEncoder *encoder,
 				 long long unsigned int param_id);
 
-static void map_attr_to_cbor_attr(attr_id_t param_id,
-				  struct cbor_attr_t *cbor_attr);
+static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
+					    struct cbor_attr_t *cbor_attr);
 
-static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr);
+static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
+			 enum attr_type type);
 
 static int factory_reset(struct mgmt_ctxt *ctxt);
 
@@ -187,8 +188,14 @@ static struct mgmt_group attribute_mgmt_group = {
 
 /* Only one parameter is written or read at a time. */
 static union {
-	long long unsigned int uinteger;
-	long long int integer;
+	uint64_t uint64;
+	uint32_t uint32;
+	uint16_t uint16;
+	uint8_t uint8;
+	int64_t int64;
+	int32_t int32;
+	int16_t int16;
+	int8_t int8;
 	bool boolean;
 	char buf[MAX_PBUF_SIZE];
 	float fval;
@@ -371,16 +378,16 @@ static int cbor_encode_attribute(CborEncoder *encoder,
 	case ATTR_TYPE_S16:
 	case ATTR_TYPE_S32:
 	case ATTR_TYPE_S64:
-		size = attr_get(id, &param.integer, sizeof(param.integer));
-		err |= cbor_encode_int(encoder, param.integer);
+		size = attr_get(id, &param.int64, sizeof(param.int64));
+		err |= cbor_encode_int(encoder, param.int64);
 		break;
 
 	case ATTR_TYPE_U8:
 	case ATTR_TYPE_U16:
 	case ATTR_TYPE_U32:
 	case ATTR_TYPE_U64:
-		size = attr_get(id, &param.uinteger, sizeof(param.uinteger));
-		err |= cbor_encode_uint(encoder, param.uinteger);
+		size = attr_get(id, &param.uint64, sizeof(param.uint64));
+		err |= cbor_encode_uint(encoder, param.uint64);
 		break;
 
 	case ATTR_TYPE_STRING:
@@ -407,8 +414,8 @@ static int cbor_encode_attribute(CborEncoder *encoder,
 
 	default:
 		/* Add dummy r1 parameter */
-		param.uinteger = 0;
-		err |= cbor_encode_uint(encoder, param.uinteger);
+		param.uint64 = 0;
+		err |= cbor_encode_uint(encoder, param.uint64);
 		size = -EINVAL;
 		break;
 	}
@@ -425,6 +432,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	long long unsigned int param_id = INVALID_PARAM_ID;
 	struct CborValue saved_context = ctxt->it;
 	int set_result = -1;
+	enum attr_type type;
 
 	struct cbor_attr_t params_attr[] = {
 		{ .attribute = "p1",
@@ -446,7 +454,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-	map_attr_to_cbor_attr((attr_id_t)param_id, expected);
+	type = map_attr_to_cbor_attr((attr_id_t)param_id, expected);
 
 	/* If the type of object isn't found in the CBOR, then the client could
 	 * be trying to write the wrong type of value.
@@ -455,7 +463,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-	set_result = set_attribute((attr_id_t)param_id, expected);
+	set_result = set_attribute((attr_id_t)param_id, expected, type);
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
 	err |= cbor_encode_uint(&ctxt->encoder, param_id);
@@ -763,8 +771,8 @@ static int disable_notify(struct mgmt_ctxt *ctxt)
  * Map the CBOR attribute data structure to the type that is expected.
  * (Then read the CBOR again looking for the expected type.)
  */
-static void map_attr_to_cbor_attr(attr_id_t param_id,
-				  struct cbor_attr_t *cbor_attr)
+static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
+					    struct cbor_attr_t *cbor_attr)
 {
 	enum attr_type type = attr_get_type(param_id);
 
@@ -774,88 +782,124 @@ static void map_attr_to_cbor_attr(attr_id_t param_id,
 		cbor_attr->type = CborAttrBooleanType;
 		cbor_attr->addr.boolean = &param.boolean;
 		break;
+
 	case ATTR_TYPE_S8:
 	case ATTR_TYPE_S16:
 	case ATTR_TYPE_S32:
 	case ATTR_TYPE_S64:
-		param.integer = LLONG_MAX;
+		param.int64 = LLONG_MAX;
 		cbor_attr->type = CborAttrIntegerType;
-		cbor_attr->addr.integer = &param.integer;
+		cbor_attr->addr.integer = &param.int64;
 		break;
+
 	case ATTR_TYPE_U8:
 	case ATTR_TYPE_U16:
 	case ATTR_TYPE_U32:
 	case ATTR_TYPE_U64:
-		param.uinteger = ULLONG_MAX;
+		param.uint64 = ULLONG_MAX;
 		cbor_attr->type = CborAttrUnsignedIntegerType;
-		cbor_attr->addr.integer = &param.uinteger;
+		cbor_attr->addr.integer = &param.uint64;
 		break;
+
 	case ATTR_TYPE_STRING:
 		memset(param.buf, 0, MAX_PBUF_SIZE);
 		cbor_attr->type = CborAttrTextStringType;
 		cbor_attr->addr.string = param.buf;
 		cbor_attr->len = sizeof(param.buf);
 		break;
+
 	case ATTR_TYPE_FLOAT:
 		param.fval = FLOAT_MAX;
 		cbor_attr->type = CborAttrFloatType;
 		cbor_attr->addr.fval = &param.fval;
 		break;
+
 	case ATTR_TYPE_BYTE_ARRAY:
 		memset(param.buf, 0, MAX_PBUF_SIZE);
 		cbor_attr->type = CborAttrArrayType;
 		cbor_attr->addr.bytestring.data = param.buf;
 		cbor_attr->addr.bytestring.len = &buf_size;
 		break;
+
 	default:
 		cbor_attr->type = CborAttrNullType;
 		cbor_attr->attribute = NULL;
 		break;
 	};
+
+	return type;
 }
 
-static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr)
+static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
+			 enum attr_type type)
 {
 	int status = -EINVAL;
-	enum attr_type type = ATTR_TYPE_ANY;
 
-	/* It is safe to use ATTR_TYPE_ANY here because map_attr_to_cbor_attr
-	 * and subsequent cbor_read_object validate the type.
-	 */
-	switch (cbor_attr->type) {
-	case CborAttrIntegerType:
-		status = attr_set(id, type, cbor_attr->addr.integer,
-				  sizeof(int64_t), NULL);
-		break;
+	if (type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
+	    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64) {
+		if (type == ATTR_TYPE_S8) {
+			int8_t tmp_val = (int8_t)*cbor_attr->addr.integer;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_S16) {
+			int16_t tmp_val = (int16_t)*cbor_attr->addr.integer;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_S32) {
+			int32_t tmp_val = (int32_t)*cbor_attr->addr.integer;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_S64) {
+			status = attr_set(id, type, cbor_attr->addr.integer,
+					  sizeof(int64_t), NULL);
+		}
+	} else if (type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
+		   type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64) {
+		if (type == ATTR_TYPE_U8) {
+			uint8_t tmp_val = (uint8_t)*cbor_attr->addr.uinteger;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_U16) {
+			uint16_t tmp_val = (uint16_t)*cbor_attr->addr.uinteger;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_U32) {
+			uint32_t tmp_val = (uint32_t)*cbor_attr->addr.uinteger;
+			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
+					  NULL);
+		} else if (type == ATTR_TYPE_U64) {
+			status = attr_set(id, type, cbor_attr->addr.uinteger,
+					  sizeof(uint64_t), NULL);
+		}
+	} else {
+		switch (cbor_attr->type) {
+		case CborAttrTextStringType:
+			status = attr_set(id, type, cbor_attr->addr.string,
+					  strlen(cbor_attr->addr.string), NULL);
+			break;
 
-	case CborAttrUnsignedIntegerType:
-		status = attr_set(id, type, cbor_attr->addr.uinteger,
-				  sizeof(uint64_t), NULL);
-		break;
+		case CborAttrFloatType:
+			status = attr_set(id, type, cbor_attr->addr.fval,
+					  sizeof(float), NULL);
+			break;
 
-	case CborAttrTextStringType:
-		status = attr_set(id, type, cbor_attr->addr.string,
-				  strlen(cbor_attr->addr.string), NULL);
-		break;
+		case CborAttrBooleanType:
+			status = attr_set(id, type, cbor_attr->addr.boolean,
+					  sizeof(bool), NULL);
+			break;
 
-	case CborAttrFloatType:
-		status = attr_set(id, type, cbor_attr->addr.fval, sizeof(float),
-				  NULL);
-		break;
+		case CborAttrByteStringType:
+			status = attr_set(id, type,
+					  cbor_attr->addr.bytestring.data,
+					  *(cbor_attr->addr.bytestring.len),
+					  NULL);
+			break;
 
-	case CborAttrBooleanType:
-		status = attr_set(id, type, cbor_attr->addr.boolean,
-				  sizeof(bool), NULL);
-		break;
-
-	case CborAttrByteStringType:
-		status = attr_set(id, type, cbor_attr->addr.bytestring.data,
-				  *(cbor_attr->addr.bytestring.len), NULL);
-		break;
-
-	default:
-		break;
+		default:
+			break;
+		}
 	}
+
 	return status;
 }
 
