@@ -816,9 +816,10 @@ static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
 
 	case ATTR_TYPE_BYTE_ARRAY:
 		memset(param.buf, 0, MAX_PBUF_SIZE);
-		cbor_attr->type = CborAttrArrayType;
+		cbor_attr->type = CborAttrByteStringType;
 		cbor_attr->addr.bytestring.data = param.buf;
 		cbor_attr->addr.bytestring.len = &buf_size;
+		cbor_attr->len = sizeof(param.buf);
 		break;
 
 	default:
