@@ -40,15 +40,15 @@ static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv);
 
 static int attr_shell_init(const struct device *device);
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv);
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
 static int ats_factory_reset_cmd(const struct shell *shell, size_t argc,
 				 char **argv);
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv);
@@ -124,17 +124,17 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		"Value must be larger than upTime (ms) and LCZ_QRTC_MINIMUM_EPOCH",
 		ats_qrtc_cmd),
 #endif
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 	SHELL_CMD(load, NULL, "Load attributes from a file <abs file name>",
 		  ats_load_cmd),
 	SHELL_CMD(dump, NULL, "<0 = rw, 1 = w, 2 = ro> <abs_path>\n",
 		  ats_dump_cmd),
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
 	SHELL_CMD(
 		type, NULL,
 		"Display an attribute file\n"
@@ -277,7 +277,8 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 
 	if ((argc == 3) && (argv[1] != NULL) && (argv[2] != NULL)) {
 		id = get_id(argv[1]);
-		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]), NULL);
+		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]),
+			     NULL);
 	} else {
 		shell_error(shell, "Unexpected parameters");
 		return -EINVAL;
@@ -507,17 +508,17 @@ static int ats_qrtc_cmd(const struct shell *shell, size_t argc, char **argv)
 }
 #endif
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int r = -EINVAL;
 	bool modified;
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||            \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 	if (attr_is_locked() == true) {
 		shell_error(shell, "Configuration lock active");
 		return -EACCES;
@@ -564,8 +565,8 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 	int r = -EPERM;
 	int type;
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||            \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 	if (attr_is_locked() == true) {
 		shell_error(shell, "Configuration lock active");
 		return -EACCES;
@@ -607,8 +608,8 @@ defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
 	return 0;
 }
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) || \
-defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	uint8_t *buf;

@@ -224,7 +224,8 @@ bool attr_valid_id(attr_id_t id)
 	return (entry != NULL);
 }
 
-int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen, bool *modified)
+int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen,
+	     bool *modified)
 {
 	return set_internal(id, type, pv, vlen, true, modified);
 }
@@ -247,12 +248,12 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	if (entry != NULL) {
 		if (entry->readable) {
 			if (entry->display_options &
-					DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+			    DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
 				/* Hidden attribute */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 				if ((entry->display_options &
-					DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
-				    && attr_is_locked() == false) {
+				     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+				    attr_is_locked() == false) {
 					/* Attributes are unlocked, show
 					 * because of overriding display option
 					 */
@@ -264,12 +265,12 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 					r = -EACCES;
 				}
 			} else if (entry->display_options &
-					DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+				   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
 				/* Obscured attribute */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 				if ((entry->display_options &
-					DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
-				    && attr_is_locked() == false) {
+				     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+				    attr_is_locked() == false) {
 					/* Attributes are unlocked, show because
 					 * of overriding display option
 					 */
@@ -290,7 +291,8 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 					    entry->type == ATTR_TYPE_S16 ||
 					    entry->type == ATTR_TYPE_S8) {
 						extended = sign_extend64(entry);
-						size = MIN(sizeof(int64_t), vlen);
+						size = MIN(sizeof(int64_t),
+							   vlen);
 						memcpy(pv, &extended, size);
 					} else {
 						size = MIN(entry->size, vlen);
@@ -824,9 +826,10 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 					    DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP) {
 						/* Hidden attribute, do not show */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-						if ((ATTR_TABLE[i].display_options &
-							DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED)
-						    && locked == false) {
+						if ((ATTR_TABLE[i]
+							     .display_options &
+						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+						    locked == false) {
 							/* Attributes are
 							 * unlocked, show
 							 * because of overriding
@@ -839,15 +842,17 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 						if (prevent_dump == true) {
 							continue;
 						}
-					} else if (ATTR_TABLE[i].display_options &
-						   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
+					} else if (
+						ATTR_TABLE[i].display_options &
+						DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
 						/* Obscured attribute, show
 						 * asterisks for value
 						 */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-						if ((ATTR_TABLE[i].display_options &
-						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED)
-						    && locked == false) {
+						if ((ATTR_TABLE[i]
+							     .display_options &
+						     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+						    locked == false) {
 							/* Attributes are
 							 * unlocked, show
 							 * because of overriding
@@ -875,21 +880,24 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 						 */
 						val_data = asterisk_data;
 						if (convert_attr_type(i) ==
-							PARAM_STR) {
+						    PARAM_STR) {
 							val_size = MIN(
 								ASTERISK_DATA_SIZE,
-								get_attr_length(i));
+								get_attr_length(
+									i));
 						} else {
 							val_size = MIN(
 								ASTERISK_DATA_SIZE,
-								get_attr_length(i) * 2);
+								get_attr_length(
+									i) *
+									2);
 						}
 						val_type = PARAM_STR;
 					}
 
 					r = lcz_param_file_generate_file(
-							i, val_type, val_data,
-							val_size, fstr);
+						i, val_type, val_data, val_size,
+						fstr);
 
 					if (r < 0) {
 						LOG_ERR("Error converting attribute table "
@@ -899,7 +907,6 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 					} else {
 						count += 1;
 					}
-
 				}
 			}
 
@@ -1032,11 +1039,11 @@ int attr_default(attr_id_t id)
 bool attr_is_locked(void)
 {
 	bool locked = true;
-	uint8_t lock_status = attr_get_uint32(ATTR_ID_lock_status,
-					      LOCK_STATUS_NOT_SETUP);
+	uint8_t lock_status =
+		attr_get_uint32(ATTR_ID_lock_status, LOCK_STATUS_NOT_SETUP);
 
 	if (lock_status == LOCK_STATUS_NOT_SETUP ||
-		lock_status == LOCK_STATUS_SETUP_DISENGAGED) {
+	    lock_status == LOCK_STATUS_SETUP_DISENGAGED) {
 		locked = false;
 	}
 
@@ -1094,9 +1101,10 @@ static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 
 				if (modified != NULL) {
 					*modified = (atomic_test_bit(
-							attr_modified,
-							attr_table_index(entry))
-							== true);
+							     attr_modified,
+							     attr_table_index(
+								     entry)) ==
+						     true);
 				}
 
 				if (r == 0) {
@@ -1200,8 +1208,8 @@ static int save_attributes(void)
 			/* Checksums mismatch, data has changed, write the
 			 * file
 			 */
-			r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME, fstr,
-						      fstrlen);
+			r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME,
+						      fstr, fstrlen);
 			LOG_DBG("Wrote %d of %d bytes of parameters to file", r,
 				strlen(fstr));
 		}
@@ -1359,7 +1367,7 @@ static int show(const ate_t *const entry, bool change_handler)
 	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
 		/* Hidden attribute, do not show */
 		if ((entry->display_options &
-				DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		     DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1368,8 +1376,8 @@ static int show(const ate_t *const entry, bool change_handler)
 		}
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 		if ((entry->display_options &
-				DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
-		    && attr_is_locked() == false) {
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option
 			 */
@@ -1381,10 +1389,10 @@ static int show(const ate_t *const entry, bool change_handler)
 			return -EACCES;
 		}
 	} else if (entry->display_options &
-				DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
 		/* Obscured attribute, show asterisks for value */
 		if ((entry->display_options &
-				DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		     DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1393,8 +1401,8 @@ static int show(const ate_t *const entry, bool change_handler)
 		}
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 		if ((entry->display_options &
-				DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED)
-		    && attr_is_locked() == false) {
+		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option
 			 */
@@ -1704,8 +1712,9 @@ static bool is_writable(const ate_t *const entry)
 
 	if (!r) {
 		LOG_DBG("Id [%u] %s is %s", entry->id, entry->name,
-			(settings_locked == false ? "not writable" :
-			 "locked by settings passcode"));
+			(settings_locked == false ?
+				       "not writable" :
+				       "locked by settings passcode"));
 	}
 
 	return r;
@@ -1803,10 +1812,10 @@ static void attr_load_settings_lock(void)
 {
 	int r;
 	uint8_t lock_enabled;
-	const struct attr_table_entry *const entry_lock = attr_map(
-						ATTR_ID_lock);
-	const struct attr_table_entry *const entry_lock_status = attr_map(
-						ATTR_ID_lock_status);
+	const struct attr_table_entry *const entry_lock =
+		attr_map(ATTR_ID_lock);
+	const struct attr_table_entry *const entry_lock_status =
+		attr_map(ATTR_ID_lock_status);
 
 	if (attr_initialized == true) {
 		/* Setup is already complete */
@@ -1827,7 +1836,7 @@ static void attr_load_settings_lock(void)
 		}
 	} else {
 		/* Set the current status of the lock */
-		lock_enabled = *(uint8_t*)entry_lock->pData;
+		lock_enabled = *(uint8_t *)entry_lock->pData;
 
 		r = attr_write(entry_lock_status, ATTR_TYPE_ANY, &lock_enabled,
 			       sizeof(lock_enabled));
@@ -1864,24 +1873,24 @@ static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp)
 	if (result == ATTR_WRITE_ERROR_OK) {
 		attribute_type = attr_get_type(kvp->id);
 		switch (attribute_type) {
-			case (ATTR_TYPE_BOOL):
-			case (ATTR_TYPE_U8):
-			case (ATTR_TYPE_U16):
-			case (ATTR_TYPE_U32):
-			case (ATTR_TYPE_U64):
-			case (ATTR_TYPE_S8):
-			case (ATTR_TYPE_S16):
-			case (ATTR_TYPE_S32):
-			case (ATTR_TYPE_S64):
-			case (ATTR_TYPE_FLOAT):
-				result = diagnose_numeric_write_error(
-				kvp, attribute_type);
-				break;
-			case (ATTR_TYPE_STRING):
-				result = diagnose_string_write_error(kvp);
-				break;
-			default:
-				break;
+		case (ATTR_TYPE_BOOL):
+		case (ATTR_TYPE_U8):
+		case (ATTR_TYPE_U16):
+		case (ATTR_TYPE_U32):
+		case (ATTR_TYPE_U64):
+		case (ATTR_TYPE_S8):
+		case (ATTR_TYPE_S16):
+		case (ATTR_TYPE_S32):
+		case (ATTR_TYPE_S64):
+		case (ATTR_TYPE_FLOAT):
+			result = diagnose_numeric_write_error(kvp,
+							      attribute_type);
+			break;
+		case (ATTR_TYPE_STRING):
+			result = diagnose_string_write_error(kvp);
+			break;
+		default:
+			break;
 		}
 	}
 	return (result);
@@ -1897,7 +1906,6 @@ static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
 
 	attribute_entry = attr_map(kvp->id);
 
-
 	/* Get numeric data and length */
 	binlen = hex2bin(kvp->keystr, kvp->length, bin, sizeof(bin));
 	/* Make sure the data is valid for use */
@@ -1907,81 +1915,81 @@ static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
 	/* And only proceed if safe to do so */
 	if (result == ATTR_WRITE_ERROR_OK) {
 		switch (Type) {
-			case (ATTR_TYPE_U8):
-			case (ATTR_TYPE_BOOL):
-				if (*((uint8_t *)(bin)) > attribute_entry->max.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((uint8_t *)(bin)) <
-					   attribute_entry->min.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_U16):
-				if (*((uint16_t *)(bin)) > attribute_entry->max.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((uint16_t *)(bin)) <
-					   attribute_entry->min.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_U32):
-				if (*((uint32_t *)(bin)) > attribute_entry->max.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((uint32_t *)(bin)) <
-					   attribute_entry->min.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_U64):
-				if (*((uint64_t *)(bin)) > attribute_entry->max.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((uint64_t *)(bin)) <
-					   attribute_entry->min.ux) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_S8):
-				if (*((int8_t *)(bin)) > attribute_entry->max.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((int8_t *)(bin)) <
-					   attribute_entry->min.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_S16):
-				if (*((int16_t *)(bin)) > attribute_entry->max.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((int16_t *)(bin)) <
-					   attribute_entry->min.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_S32):
-				if (*((int32_t *)(bin)) > attribute_entry->max.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((int32_t *)(bin)) <
-					   attribute_entry->min.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_S64):
-				if (*((int64_t *)(bin)) > attribute_entry->max.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((int64_t *)(bin)) <
-					   attribute_entry->min.sx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			case (ATTR_TYPE_FLOAT):
-				if (*((float *)(bin)) > attribute_entry->max.fx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-				} else if (*((float *)(bin)) <
-					   attribute_entry->min.fx) {
-					result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-				}
-				break;
-			default:
-				break;
+		case (ATTR_TYPE_U8):
+		case (ATTR_TYPE_BOOL):
+			if (*((uint8_t *)(bin)) > attribute_entry->max.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((uint8_t *)(bin)) <
+				   attribute_entry->min.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_U16):
+			if (*((uint16_t *)(bin)) > attribute_entry->max.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((uint16_t *)(bin)) <
+				   attribute_entry->min.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_U32):
+			if (*((uint32_t *)(bin)) > attribute_entry->max.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((uint32_t *)(bin)) <
+				   attribute_entry->min.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_U64):
+			if (*((uint64_t *)(bin)) > attribute_entry->max.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((uint64_t *)(bin)) <
+				   attribute_entry->min.ux) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_S8):
+			if (*((int8_t *)(bin)) > attribute_entry->max.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((int8_t *)(bin)) <
+				   attribute_entry->min.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_S16):
+			if (*((int16_t *)(bin)) > attribute_entry->max.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((int16_t *)(bin)) <
+				   attribute_entry->min.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_S32):
+			if (*((int32_t *)(bin)) > attribute_entry->max.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((int32_t *)(bin)) <
+				   attribute_entry->min.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_S64):
+			if (*((int64_t *)(bin)) > attribute_entry->max.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((int64_t *)(bin)) <
+				   attribute_entry->min.sx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		case (ATTR_TYPE_FLOAT):
+			if (*((float *)(bin)) > attribute_entry->max.fx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+			} else if (*((float *)(bin)) <
+				   attribute_entry->min.fx) {
+				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+			}
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -2022,7 +2030,7 @@ static int build_feedback_file(const char *feedback_path, char *fstr,
 	uint16_t buffer_size = (ATTR_LOAD_FEEDBACK_ENTRY_SIZE * pairs) + 1;
 	/* Also be sure we align properly for malloc calls */
 	buffer_size = ((buffer_size / ATTR_LOAD_FEEDBACK_ALIGN_SIZE) *
-		      ATTR_LOAD_FEEDBACK_ALIGN_SIZE) +
+		       ATTR_LOAD_FEEDBACK_ALIGN_SIZE) +
 		      ATTR_LOAD_FEEDBACK_ALIGN_SIZE;
 
 	write_buffer = k_malloc(buffer_size);
@@ -2038,11 +2046,11 @@ static int build_feedback_file(const char *feedback_path, char *fstr,
 			next_kvp = &kvp[pair_index];
 			/* Diagnose the next parameter error */
 			attribute_write_error =
-			diagnose_parameter_write_error(next_kvp);
+				diagnose_parameter_write_error(next_kvp);
 			/* And add to our output file */
 			result = lcz_param_file_append_feedback(
-			next_kvp->id, attribute_write_error,
-			write_buffer);
+				next_kvp->id, attribute_write_error,
+				write_buffer);
 			/* Zero and less indicates an error occurred,
 			 * greater than zero an added length.
 			 */
@@ -2093,7 +2101,7 @@ int attr_update_config_version(void)
 		     sizeof(config_version)) == sizeof(config_version)) {
 		config_version++;
 		(void)attr_set_uint32(ATTR_ID_config_version,
-		(uint32_t)config_version);
+				      (uint32_t)config_version);
 
 		return 0;
 	}
@@ -2138,7 +2146,8 @@ static int attr_init(const struct device *device)
 	attr_table_initialize();
 
 #ifdef ATTR_INDEX_load_path
-	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) == 0) {
+	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) ==
+	    0) {
 		LOG_WRN("SMP load path should be different from attribute source");
 	}
 #endif
@@ -2169,4 +2178,3 @@ static int attr_init(const struct device *device)
 
 	return r;
 }
-

@@ -35,11 +35,12 @@
 #include "attr.h"
 #include "file_system_utilities.h"
 #include "lcz_memfault.h"
-#include "attribute_mgmt.h"
 
 #ifdef CONFIG_LCZ_QRTC
 #include "lcz_qrtc.h"
 #endif
+
+#include "attribute_mgmt.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -567,8 +568,8 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	/* Encode the feedback file path. */
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "f");
 	err |= cbor_encode_text_string(
-	&ctxt->encoder, CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
-	strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE));
+		&ctxt->encoder, CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
+		strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE));
 
 #ifdef CONFIG_ATTR_CONFIGURATION_VERSION
 	/* If no error update the device configuration version */
@@ -838,9 +839,8 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr)
 		break;
 
 	case CborAttrFloatType:
-		status =
-			attr_set(id, type, cbor_attr->addr.fval, sizeof(float),
-				 NULL);
+		status = attr_set(id, type, cbor_attr->addr.fval, sizeof(float),
+				  NULL);
 		break;
 
 	case CborAttrBooleanType:
@@ -967,7 +967,7 @@ static int lock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 	enum settings_passcode_status passcode_status =
-					SETTINGS_PASSCODE_STATUS_UNDEFINED;
+		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
 
 	if (attr_is_locked() == false) {
@@ -999,7 +999,7 @@ static int unlock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 	enum settings_passcode_status passcode_status =
-					SETTINGS_PASSCODE_STATUS_UNDEFINED;
+		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	long long unsigned int lock_code_tmp = ULLONG_MAX;
 	uint32_t lock_code;
 	uint32_t real_lock_code;
@@ -1023,8 +1023,8 @@ static int unlock(struct mgmt_ctxt *ctxt)
 	}
 
 	if (attr_is_locked() == true) {
-		real_lock_code = attr_get_uint32(ATTR_ID_settings_passcode,
-						 123456);
+		real_lock_code =
+			attr_get_uint32(ATTR_ID_settings_passcode, 123456);
 		lock_code = (uint32_t)lock_code_tmp;
 
 		/* Check if the passcode entered matches */
@@ -1072,7 +1072,7 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 	enum settings_passcode_status passcode_status =
-					SETTINGS_PASSCODE_STATUS_UNDEFINED;
+		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
 
 	r = attr_get(ATTR_ID_settings_passcode_status, &passcode_status,
