@@ -18,6 +18,7 @@
 #include "attr_table.h"
 #include "attr_table_private.h"
 #include "attr_custom_validator.h"
+#include "attr_validator.h"
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(attrval, CONFIG_ATTR_VALID_LOG_LEVEL);
