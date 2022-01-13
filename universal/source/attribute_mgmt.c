@@ -105,7 +105,7 @@ static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
 					    struct cbor_attr_t *cbor_attr);
 
 static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
-			 enum attr_type type);
+			 enum attr_type type, bool *modified);
 
 static int factory_reset(struct mgmt_ctxt *ctxt);
 
@@ -433,6 +433,9 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	struct CborValue saved_context = ctxt->it;
 	int set_result = -1;
 	enum attr_type type;
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+	bool modified = false;
+#endif
 
 	struct cbor_attr_t params_attr[] = {
 		{ .attribute = "p1",
@@ -463,12 +466,24 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-	set_result = set_attribute((attr_id_t)param_id, expected, type);
+	set_result = set_attribute((attr_id_t)param_id, expected, type,
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+				   &modified
+#else
+				   NULL
+#endif
+		     );
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
 	err |= cbor_encode_uint(&ctxt->encoder, param_id);
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
 	err |= cbor_encode_int(&ctxt->encoder, set_result);
+
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+	if (set_result == 0 && err == 0 && modified == true) {
+		(void)attr_update_config_version();
+	}
+#endif
 
 	return MGMT_STATUS_CHECK(err);
 }
@@ -832,68 +847,73 @@ static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
 }
 
 static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
-			 enum attr_type type)
+			 enum attr_type type, bool *modified)
 {
 	int status = -EINVAL;
+
+	if (modified != NULL) {
+		modified = false;
+	}
 
 	if (type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
 	    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64) {
 		if (type == ATTR_TYPE_S8) {
 			int8_t tmp_val = (int8_t)*cbor_attr->addr.integer;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_S16) {
 			int16_t tmp_val = (int16_t)*cbor_attr->addr.integer;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_S32) {
 			int32_t tmp_val = (int32_t)*cbor_attr->addr.integer;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_S64) {
 			status = attr_set(id, type, cbor_attr->addr.integer,
-					  sizeof(int64_t), NULL);
+					  sizeof(int64_t), modified);
 		}
 	} else if (type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
 		   type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64) {
 		if (type == ATTR_TYPE_U8) {
 			uint8_t tmp_val = (uint8_t)*cbor_attr->addr.uinteger;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_U16) {
 			uint16_t tmp_val = (uint16_t)*cbor_attr->addr.uinteger;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_U32) {
 			uint32_t tmp_val = (uint32_t)*cbor_attr->addr.uinteger;
 			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  NULL);
+					  modified);
 		} else if (type == ATTR_TYPE_U64) {
 			status = attr_set(id, type, cbor_attr->addr.uinteger,
-					  sizeof(uint64_t), NULL);
+					  sizeof(uint64_t), modified);
 		}
 	} else {
 		switch (cbor_attr->type) {
 		case CborAttrTextStringType:
 			status = attr_set(id, type, cbor_attr->addr.string,
-					  strlen(cbor_attr->addr.string), NULL);
+					  strlen(cbor_attr->addr.string),
+					  modified);
 			break;
 
 		case CborAttrFloatType:
 			status = attr_set(id, type, cbor_attr->addr.fval,
-					  sizeof(float), NULL);
+					  sizeof(float), modified);
 			break;
 
 		case CborAttrBooleanType:
 			status = attr_set(id, type, cbor_attr->addr.boolean,
-					  sizeof(bool), NULL);
+					  sizeof(bool), modified);
 			break;
 
 		case CborAttrByteStringType:
 			status = attr_set(id, type,
 					  cbor_attr->addr.bytestring.data,
 					  *(cbor_attr->addr.bytestring.len),
-					  NULL);
+					  modified);
 			break;
 
 		default:

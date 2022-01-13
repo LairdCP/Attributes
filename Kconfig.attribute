@@ -222,6 +222,14 @@ config MGMT_GROUP_ID_ATTRIBUTE
 	int "MCU manager group id for attribute management"
 	default 65
 
+config ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+	bool "Increment config version from SMP set parameter"
+	depends on ATTR_CONFIGURATION_VERSION
+	help
+	  Will increment the configuration version attribute upon a
+	  successful SMP set parameter being executed, requires the
+	  config version attribute to be present.
+
 endif # MCUMGR_CMD_ATTRIBUTE_MGMT
 
 config ATTR_LOAD_FEEDBACK
