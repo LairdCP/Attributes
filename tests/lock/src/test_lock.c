@@ -1204,7 +1204,7 @@ void test_attr_show_with_lock_engaged(void)
 
 	reset_mock_buffer();
 	enable_logging = true;
-	rc = attr_show(ATTR_ID_test_u);
+	rc = attr_show(NULL, ATTR_ID_test_u);
 	enable_logging = false;
 	zassert_equal(rc, -EPERM, "Failed to show obscured test_u value");
 	zassert_not_null(strstr(mock_buffer, "[26] test_u " ASTERISK_RESPONSE),
@@ -1212,7 +1212,7 @@ void test_attr_show_with_lock_engaged(void)
 
 	reset_mock_buffer();
 	enable_logging = true;
-	rc = attr_show(ATTR_ID_test_v);
+	rc = attr_show(NULL, ATTR_ID_test_v);
 	enable_logging = false;
 	zassert_equal(rc, -EACCES, "Failed to ensure test_v value is hidden");
 	zassert_is_null(strstr(mock_buffer, "test_v"),
@@ -1222,7 +1222,7 @@ void test_attr_show_with_lock_engaged(void)
 
 	reset_mock_buffer();
 	enable_logging = true;
-	rc = attr_show(ATTR_ID_test_w);
+	rc = attr_show(NULL, ATTR_ID_test_w);
 	enable_logging = false;
 	zassert_equal(rc, -EPERM, "Failed to show obscured test_w value");
 	zassert_not_null(strstr(mock_buffer, "[28] test_w " ASTERISK_RESPONSE),
@@ -1230,7 +1230,7 @@ void test_attr_show_with_lock_engaged(void)
 
 	reset_mock_buffer();
 	enable_logging = true;
-	rc = attr_show(ATTR_ID_test_x);
+	rc = attr_show(NULL, ATTR_ID_test_x);
 	enable_logging = false;
 	zassert_equal(rc, -EACCES, "Failed to ensure test_x value is hidden");
 	zassert_is_null(strstr(mock_buffer, "test_x"),
