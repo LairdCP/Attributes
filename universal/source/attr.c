@@ -724,8 +724,6 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 {
 	uint32_t u = 0;
 	int32_t i = 0;
-	uint32_t a = 0;
-	uint32_t b = 0;
 	float f = 0.0;
 	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
@@ -754,6 +752,11 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 			    entry->name, u, GET_ENUM_STRING(u));
 		break;
 
+	case ATTR_TYPE_U64:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRIu64,
+			    entry->id, entry->name, *(uint64_t *)entry->pData);
+		break;
+
 	case ATTR_TYPE_S8:
 		i = (int32_t)(*(int8_t *)entry->pData);
 		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
@@ -772,6 +775,11 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 			    entry->name, i, GET_ENUM_STRING(i));
 		break;
 
+	case ATTR_TYPE_S64:
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRId64,
+			    entry->id, entry->name, *(int64_t *)entry->pData);
+		break;
+
 	case ATTR_TYPE_FLOAT:
 		memcpy(&f, entry->pData, entry->size);
 		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
@@ -783,15 +791,6 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 	case ATTR_TYPE_STRING:
 		shell_print(shell, CONFIG_ATTR_SHOW_FMT "'%s'", entry->id,
 			    entry->name, (char *)entry->pData);
-		break;
-
-	case ATTR_TYPE_U64:
-	case ATTR_TYPE_S64:
-		/* Replicate code used by log version of this function */
-		memcpy(&a, (uint8_t *)entry->pData, 4);
-		memcpy(&b, ((uint8_t *)entry->pData) + 4, 4);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "0x%08x %08x",
-			    entry->id, entry->name, b, a);
 		break;
 
 	default:
@@ -1533,8 +1532,6 @@ static int show(const ate_t *const entry, bool change_handler)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
-	uint32_t a = 0;
-	uint32_t b = 0;
 	float f = 0.0;
 	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
@@ -1563,6 +1560,11 @@ static int show(const ate_t *const entry, bool change_handler)
 			 u, GET_ENUM_STRING(u));
 		break;
 
+	case ATTR_TYPE_U64:
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRIu64, entry->id,
+			 entry->name, *(uint64_t *)entry->pData);
+		break;
+
 	case ATTR_TYPE_S8:
 		i = (int32_t)(*(int8_t *)entry->pData);
 		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", entry->id, entry->name,
@@ -1581,6 +1583,11 @@ static int show(const ate_t *const entry, bool change_handler)
 			 i, GET_ENUM_STRING(i));
 		break;
 
+	case ATTR_TYPE_S64:
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRId64, entry->id,
+			 entry->name, *(int64_t *)entry->pData);
+		break;
+
 	case ATTR_TYPE_FLOAT:
 		memcpy(&f, entry->pData, entry->size);
 		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
@@ -1592,15 +1599,6 @@ static int show(const ate_t *const entry, bool change_handler)
 	case ATTR_TYPE_STRING:
 		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "'%s'", entry->id, entry->name,
 			 log_strdup((char *)entry->pData));
-		break;
-
-	case ATTR_TYPE_U64:
-	case ATTR_TYPE_S64:
-		/* These weren't printing properly */
-		memcpy(&a, (uint8_t *)entry->pData, 4);
-		memcpy(&b, ((uint8_t *)entry->pData) + 4, 4);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "0x%08x %08x", entry->id,
-			 entry->name, b, a);
 		break;
 
 	default:
