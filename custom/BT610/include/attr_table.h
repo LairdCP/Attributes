@@ -219,7 +219,7 @@ extern "C" {
 /* pystart - attribute constants */
 #define ATTR_TABLE_SIZE                                             177
 #define ATTR_TABLE_MAX_ID                                           266
-#define ATTR_TABLE_WRITABLE_COUNT                                   143
+#define ATTR_TABLE_WRITABLE_COUNT                                   142
 #define ATTR_MAX_STR_LENGTH                                         32
 #define ATTR_MAX_STR_SIZE                                           33
 #define ATTR_MAX_BIN_SIZE                                           8
