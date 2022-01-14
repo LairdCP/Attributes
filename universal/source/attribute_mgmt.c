@@ -273,7 +273,7 @@ int attr_notify(attr_id_t Index)
 		smp_ble.cmd.header.seq = 0;
 		smp_ble.cmd.header.id = ATTRIBUTE_MGMT_ID_GET_PARAMETER;
 
-		err = smp_bt_tx_rsp(smp_ble.conn_handle, &smp_ble.cmd,
+		err = smp_bt_notify(smp_ble.conn_handle, &smp_ble.cmd,
 				    total_len);
 	} while (0);
 
