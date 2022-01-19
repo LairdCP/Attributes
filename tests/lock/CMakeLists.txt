@@ -11,7 +11,6 @@ src/cddl/decode_lock.c
 src/cbor/zcbor_common.c
 src/cbor/zcbor_encode.c
 src/cbor/zcbor_decode.c
-src/dummy_smp.c
 src/test*.c)
 
 zephyr_include_directories(${CMAKE_SOURCE_DIR}/src/cddl

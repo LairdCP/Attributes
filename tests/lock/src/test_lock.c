@@ -322,16 +322,10 @@ static uint8_t mock_buffer[384];
 static uint8_t log_output_buf[8];
 static uint32_t mock_len;
 static bool enable_logging = false;
-static uint8_t smp_send_buffer[384];
-static uint16_t smp_send_pos = 0;
-static bool enable_smp = false;
-static uint8_t smp_receive_buffer[384];
-static uint8_t smp_receive_pos = 0;
 static uint8_t tmp_buffer[384];
 static int16_t message_size = 0;
 static uint8_t sequence = 1;
 static struct net_buf *nb = NULL;
-static struct k_sem smp_data_ready_sem;
 
 const struct log_backend_api log_backend_test_api = { .process = NULL,
 						      .put = NULL,
@@ -352,34 +346,9 @@ LOG_BACKEND_DEFINE(log_backend_test, log_backend_test_api, true);
 /******************************************************************************/
 static void clear_smp_buffers(void)
 {
-	k_sem_reset(&smp_data_ready_sem);
-
 	memset(tmp_buffer, 0, sizeof(tmp_buffer));
 	message_size = 0;
-	memset(smp_receive_buffer, 0, sizeof(smp_receive_buffer));
-	smp_receive_pos = 0;
-	memset(smp_send_buffer, 0, sizeof(smp_send_buffer));
-	smp_send_pos = 0;
-}
-
-static int smp_receive(const void *data, int len, void *arg)
-{
-	uint16_t data_size =
-		MIN(len, (sizeof(smp_receive_buffer) - smp_receive_pos - 1));
-
-	if (enable_smp == true) {
-		memcpy(&smp_receive_buffer[smp_receive_pos], data, data_size);
-		smp_receive_pos += data_size;
-	}
-
-	return 0;
-}
-
-static void wait_for_smp_data(void)
-{
-	zassert_ok(k_sem_take(&smp_data_ready_sem,
-			      K_SECONDS(SMP_DATA_READY_WAIT_TIME_S)),
-		   "SMP data ready timeout");
+	smp_dummy_clear_state();
 }
 
 static int8_t create_cbor_header(uint8_t *buffer, uint8_t op,
@@ -661,19 +630,17 @@ static int32_t create_get_parameter_command(uint8_t *buffer,
 void test_attr_setup(void)
 {
 	attr_factory_reset();
-
-	k_sem_init(&smp_data_ready_sem, 0, 1);
 }
 
 void test_attr_each_setup(void)
 {
 	clear_smp_buffers();
-	enable_smp = true;
+	smp_dummy_enable();
 }
 
 void test_attr_each_end(void)
 {
-	enable_smp = false;
+	smp_dummy_disable();
 
 	/* Clean up */
 	mcumgr_buf_free(nb);
@@ -697,22 +664,24 @@ void test_lock_check_not_setup(void)
 		      "Error generating check lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
-	zassert_equal(smp_send_pos, SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
+	zassert_equal(smp_dummy_get_send_pos(),
+		      SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP (base64-decoded) message size");
@@ -755,22 +724,24 @@ void test_lock_check_setup_not_locked(void)
 		      "Error generating check lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
-	zassert_equal(smp_send_pos, SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
+	zassert_equal(smp_dummy_get_send_pos(),
+		      SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP (base64-decoded) message size");
@@ -813,22 +784,24 @@ void test_lock_check_setup_locked(void)
 		      "Error generating check lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
-	zassert_equal(smp_send_pos, SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
+	zassert_equal(smp_dummy_get_send_pos(),
+		      SMP_CONSOLE_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_CHECK_LOCK_STATUS_SIZE,
 		      "Unexpected received SMP (base64-decoded) message size");
@@ -862,6 +835,8 @@ void test_lock_set_code_a(void)
 	bool success;
 	struct set_lock_code_result set_lock_code_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_set_lock_command(tmp_buffer, sizeof(tmp_buffer),
 					       sequence, LOCK_CODE_A);
@@ -872,9 +847,10 @@ void test_lock_set_code_a(void)
 		      "Error generating set lock code command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set lock code command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_LOCK_CODE_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_LOCK_CODE_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -885,10 +861,12 @@ void test_lock_set_code_a(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_LOCK_CODE_MIN_SIZE &&
@@ -924,6 +902,8 @@ void test_lock_set_code_b(void)
 	bool success;
 	struct set_lock_code_result set_lock_code_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_set_lock_command(tmp_buffer, sizeof(tmp_buffer),
 					       sequence, LOCK_CODE_B);
@@ -934,9 +914,10 @@ void test_lock_set_code_b(void)
 		      "Error generating set lock code command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set lock code command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_LOCK_CODE_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_LOCK_CODE_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -947,10 +928,12 @@ void test_lock_set_code_b(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_LOCK_CODE_MIN_SIZE &&
@@ -986,6 +969,8 @@ void test_lock_set_code_c_failure(void)
 	bool success;
 	struct set_lock_code_result set_lock_code_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_set_lock_command(tmp_buffer, sizeof(tmp_buffer),
 					       sequence, LOCK_CODE_C);
@@ -996,9 +981,10 @@ void test_lock_set_code_c_failure(void)
 		      "Error generating set lock code command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set lock code command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_LOCK_CODE_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_LOCK_CODE_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1009,10 +995,12 @@ void test_lock_set_code_c_failure(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_LOCK_CODE_MIN_SIZE &&
@@ -1049,6 +1037,7 @@ void test_lock_enable_lock(void)
 	bool success;
 	struct lock_result lock_result_data;
 	uint32_t size_out;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_lock_command(tmp_buffer, sizeof(tmp_buffer), sequence);
@@ -1059,19 +1048,22 @@ void test_lock_enable_lock(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_LOCK_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos, SMP_CONSOLE_COMMAND_LOCK_SIZE,
+	zassert_equal(smp_dummy_get_receive_pos(),
+		      SMP_CONSOLE_COMMAND_LOCK_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_LOCK_MIN_SIZE &&
 			     smp_send_pos <= SMP_CONSOLE_RESPONSE_LOCK_MAX_SIZE,
@@ -1103,6 +1095,8 @@ void test_lock_deactivate_lock_a(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_A, 0);
@@ -1113,9 +1107,10 @@ void test_lock_deactivate_lock_a(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1124,10 +1119,12 @@ void test_lock_deactivate_lock_a(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1161,6 +1158,8 @@ void test_lock_deactivate_lock_a_failure(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_A, 0);
@@ -1171,9 +1170,10 @@ void test_lock_deactivate_lock_a_failure(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1182,10 +1182,12 @@ void test_lock_deactivate_lock_a_failure(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1220,6 +1222,8 @@ void test_lock_deactivate_lock_b(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_B, 0);
@@ -1230,9 +1234,10 @@ void test_lock_deactivate_lock_b(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1241,10 +1246,12 @@ void test_lock_deactivate_lock_b(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1278,6 +1285,8 @@ void test_lock_deactivate_lock_c_failure(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_C, 0);
@@ -1288,9 +1297,10 @@ void test_lock_deactivate_lock_c_failure(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1299,10 +1309,12 @@ void test_lock_deactivate_lock_c_failure(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1337,6 +1349,8 @@ void test_lock_disable_lock_a(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_A, 1);
@@ -1347,9 +1361,10 @@ void test_lock_disable_lock_a(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1358,10 +1373,12 @@ void test_lock_disable_lock_a(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1397,6 +1414,8 @@ void test_lock_disable_lock_a_failure(void)
 	uint32_t size_out;
 	int64_t time_start;
 	int64_t time_difference;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_A, 1);
@@ -1407,14 +1426,15 @@ void test_lock_disable_lock_a_failure(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
 
 	/* Get the time prior to sending the command */
 	time_start = k_uptime_get();
 
 	/* Send the command */
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1423,7 +1443,8 @@ void test_lock_disable_lock_a_failure(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get the time difference since before the packet was sent and ensure the valid is close to the expected wait time */
 	time_difference = k_uptime_delta(&time_start);
@@ -1432,7 +1453,8 @@ void test_lock_disable_lock_a_failure(void)
 		       "Invalid delay time when wrong lock code was entered");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1467,6 +1489,8 @@ void test_lock_disable_lock_b(void)
 	bool success;
 	struct unlock_result unlock_result_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_B, 1);
@@ -1477,9 +1501,10 @@ void test_lock_disable_lock_b(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1488,10 +1513,12 @@ void test_lock_disable_lock_b(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1527,6 +1554,8 @@ void test_lock_disable_lock_c_failure(void)
 	uint32_t size_out;
 	int64_t time_start;
 	int64_t time_difference;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_unlock_command(tmp_buffer, sizeof(tmp_buffer),
 					     sequence, LOCK_CODE_C, 1);
@@ -1537,14 +1566,15 @@ void test_lock_disable_lock_c_failure(void)
 		      "Error generating enable lock command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating enable lock command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
 
 	/* Get the time prior to sending the command */
 	time_start = k_uptime_get();
 
 	/* Send the command */
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_UNLOCK_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_UNLOCK_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1553,7 +1583,8 @@ void test_lock_disable_lock_c_failure(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get the time difference since before the packet was sent and ensure the valid is close to the expected wait time */
 	time_difference = k_uptime_delta(&time_start);
@@ -1562,7 +1593,8 @@ void test_lock_disable_lock_c_failure(void)
 		       "Invalid delay time when wrong lock code was entered");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(smp_send_pos >= SMP_CONSOLE_RESPONSE_UNLOCK_MIN_SIZE &&
 			     smp_send_pos <=
@@ -1607,23 +1639,24 @@ void test_lock_check_error_undefined(void)
 		      "Error generating check lock error command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock error command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
-	zassert_equal(smp_send_pos,
+	zassert_equal(smp_dummy_get_send_pos(),
 		      SMP_CONSOLE_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
@@ -1667,23 +1700,24 @@ void test_lock_check_error_valid(void)
 		      "Error generating check lock error command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock error command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
-	zassert_equal(smp_send_pos,
+	zassert_equal(smp_dummy_get_send_pos(),
 		      SMP_CONSOLE_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
@@ -1727,23 +1761,24 @@ void test_lock_check_error_invalid(void)
 		      "Error generating check lock error command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating check lock error command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_equal(message_size, SMP_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected CBOR message size");
-	zassert_equal(smp_receive_pos,
+	zassert_equal(smp_dummy_get_receive_pos(),
 		      SMP_CONSOLE_COMMAND_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
-	zassert_equal(smp_send_pos,
+	zassert_equal(smp_dummy_get_send_pos(),
 		      SMP_CONSOLE_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
 		      "Unexpected received SMP message size");
 	zassert_equal(nb->len, SMP_RESPONSE_GET_UNLOCK_ERROR_CODE_SIZE,
@@ -1839,6 +1874,8 @@ void test_lock_set_uint8(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value = ATTR_TEST_VAL_U8_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -1852,9 +1889,10 @@ void test_lock_set_uint8(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1865,10 +1903,12 @@ void test_lock_set_uint8(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -1909,6 +1949,8 @@ void test_lock_set_uint8_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value = ATTR_TEST_VAL_U8_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -1922,9 +1964,10 @@ void test_lock_set_uint8_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -1935,10 +1978,12 @@ void test_lock_set_uint8_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -1980,6 +2025,8 @@ void test_lock_set_int8(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int8_t test_value = ATTR_TEST_VAL_S8_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -1993,9 +2040,10 @@ void test_lock_set_int8(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2006,10 +2054,12 @@ void test_lock_set_int8(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2050,6 +2100,8 @@ void test_lock_set_int8_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int8_t test_value = ATTR_TEST_VAL_S8_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2063,9 +2115,10 @@ void test_lock_set_int8_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2076,10 +2129,12 @@ void test_lock_set_int8_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2121,6 +2176,8 @@ void test_lock_set_uint16(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint16_t test_value = ATTR_TEST_VAL_U16_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2134,9 +2191,10 @@ void test_lock_set_uint16(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2147,10 +2205,12 @@ void test_lock_set_uint16(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2191,6 +2251,8 @@ void test_lock_set_uint16_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint16_t test_value = ATTR_TEST_VAL_U16_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2204,9 +2266,10 @@ void test_lock_set_uint16_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2217,10 +2280,12 @@ void test_lock_set_uint16_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2262,6 +2327,8 @@ void test_lock_set_int16(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int16_t test_value = ATTR_TEST_VAL_S16_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2275,9 +2342,10 @@ void test_lock_set_int16(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2288,10 +2356,12 @@ void test_lock_set_int16(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2332,6 +2402,8 @@ void test_lock_set_int16_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int16_t test_value = ATTR_TEST_VAL_S16_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2345,9 +2417,10 @@ void test_lock_set_int16_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2358,10 +2431,12 @@ void test_lock_set_int16_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2403,6 +2478,8 @@ void test_lock_set_uint32(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint32_t test_value = ATTR_TEST_VAL_U32_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2416,9 +2493,10 @@ void test_lock_set_uint32(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2429,10 +2507,12 @@ void test_lock_set_uint32(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2473,6 +2553,8 @@ void test_lock_set_uint32_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint32_t test_value = ATTR_TEST_VAL_U32_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2486,9 +2568,10 @@ void test_lock_set_uint32_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2499,10 +2582,12 @@ void test_lock_set_uint32_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2544,6 +2629,8 @@ void test_lock_set_int32(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int32_t test_value = ATTR_TEST_VAL_S32_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2557,9 +2644,10 @@ void test_lock_set_int32(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2570,10 +2658,12 @@ void test_lock_set_int32(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2614,6 +2704,8 @@ void test_lock_set_int32_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	int32_t test_value = ATTR_TEST_VAL_S32_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2627,9 +2719,10 @@ void test_lock_set_int32_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2640,10 +2733,12 @@ void test_lock_set_int32_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2685,6 +2780,8 @@ void test_lock_set_bool(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	bool test_value = true;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2698,9 +2795,10 @@ void test_lock_set_bool(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2711,10 +2809,12 @@ void test_lock_set_bool(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2755,6 +2855,8 @@ void test_lock_set_bool_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	bool test_value = true;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2768,9 +2870,10 @@ void test_lock_set_bool_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2781,10 +2884,12 @@ void test_lock_set_bool_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2826,6 +2931,8 @@ void test_lock_set_string(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value[] = ATTR_TEST_VAL_STRING_VALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2839,9 +2946,10 @@ void test_lock_set_string(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2852,10 +2960,12 @@ void test_lock_set_string(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2896,6 +3006,8 @@ void test_lock_set_string_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value[] = ATTR_TEST_VAL_STRING_INVALID;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_set_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -2909,9 +3021,10 @@ void test_lock_set_string_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2922,10 +3035,12 @@ void test_lock_set_string_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -2967,6 +3082,8 @@ void test_lock_set_byte_array(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value[] = { ATTR_TEST_VAL_BYTE_ARRAY_VALID };
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_set_parameter_command(
 		tmp_buffer, sizeof(tmp_buffer), sequence,
@@ -2979,9 +3096,10 @@ void test_lock_set_byte_array(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -2992,10 +3110,12 @@ void test_lock_set_byte_array(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -3036,6 +3156,8 @@ void test_lock_set_byte_array_fail(void)
 	struct set_parameter_result set_parameter_data;
 	uint32_t size_out;
 	uint8_t test_value[] = { ATTR_TEST_VAL_BYTE_ARRAY_INVALID };
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size = create_set_parameter_command(
 		tmp_buffer, sizeof(tmp_buffer), sequence,
@@ -3048,9 +3170,10 @@ void test_lock_set_byte_array_fail(void)
 		      "Error generating set parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating set parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_SET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_SET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3061,10 +3184,12 @@ void test_lock_set_byte_array_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 	zassert_true(
 		smp_send_pos >= SMP_CONSOLE_RESPONSE_SET_PARAMETER_MIN_SIZE &&
@@ -3128,6 +3253,8 @@ void test_lock_get_uint8(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3139,9 +3266,10 @@ void test_lock_get_uint8(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3152,10 +3280,12 @@ void test_lock_get_uint8(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3205,6 +3335,8 @@ void test_lock_get_uint8_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3216,9 +3348,10 @@ void test_lock_get_uint8_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3229,10 +3362,12 @@ void test_lock_get_uint8_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3282,6 +3417,8 @@ void test_lock_get_int8(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3293,9 +3430,10 @@ void test_lock_get_int8(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3306,10 +3444,12 @@ void test_lock_get_int8(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3359,6 +3499,8 @@ void test_lock_get_int8_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3370,9 +3512,10 @@ void test_lock_get_int8_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3383,10 +3526,12 @@ void test_lock_get_int8_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3438,6 +3583,8 @@ void test_lock_get_uint16(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3450,9 +3597,10 @@ void test_lock_get_uint16(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3463,10 +3611,12 @@ void test_lock_get_uint16(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3516,6 +3666,8 @@ void test_lock_get_uint16_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3528,9 +3680,10 @@ void test_lock_get_uint16_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3541,10 +3694,12 @@ void test_lock_get_uint16_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3596,6 +3751,8 @@ void test_lock_get_int16(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3607,9 +3764,10 @@ void test_lock_get_int16(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3620,10 +3778,12 @@ void test_lock_get_int16(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3673,6 +3833,8 @@ void test_lock_get_int16_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3684,9 +3846,10 @@ void test_lock_get_int16_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3697,10 +3860,12 @@ void test_lock_get_int16_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3752,6 +3917,8 @@ void test_lock_get_uint32(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3764,9 +3931,10 @@ void test_lock_get_uint32(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3777,10 +3945,12 @@ void test_lock_get_uint32(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3830,6 +4000,8 @@ void test_lock_get_uint32_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3842,9 +4014,10 @@ void test_lock_get_uint32_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3855,10 +4028,12 @@ void test_lock_get_uint32_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3910,6 +4085,8 @@ void test_lock_get_int32(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3921,9 +4098,10 @@ void test_lock_get_int32(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -3934,10 +4112,12 @@ void test_lock_get_int32(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -3987,6 +4167,8 @@ void test_lock_get_int32_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -3998,9 +4180,10 @@ void test_lock_get_int32_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4011,10 +4194,12 @@ void test_lock_get_int32_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4066,6 +4251,8 @@ void test_lock_get_bool(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -4077,9 +4264,10 @@ void test_lock_get_bool(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4090,10 +4278,12 @@ void test_lock_get_bool(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4141,6 +4331,8 @@ void test_lock_get_string(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -4153,9 +4345,10 @@ void test_lock_get_string(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4166,10 +4359,12 @@ void test_lock_get_string(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4223,6 +4418,8 @@ void test_lock_get_string_fail(void)
 	bool success;
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -4235,9 +4432,10 @@ void test_lock_get_string_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4248,10 +4446,12 @@ void test_lock_get_string_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4307,6 +4507,8 @@ void test_lock_get_byte_array(void)
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
 	uint8_t cmp_buf[] = { ATTR_TEST_VAL_BYTE_ARRAY_VALID };
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -4319,9 +4521,10 @@ void test_lock_get_byte_array(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4332,10 +4535,12 @@ void test_lock_get_byte_array(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4390,6 +4595,8 @@ void test_lock_get_byte_array_fail(void)
 	struct get_parameter_result get_parameter_data;
 	uint32_t size_out;
 	uint8_t cmp_buf[] = { ATTR_TEST_VAL_BYTE_ARRAY_INVALID };
+	uint16_t smp_receive_pos;
+	uint16_t smp_send_pos;
 
 	message_size =
 		create_get_parameter_command(tmp_buffer, sizeof(tmp_buffer),
@@ -4402,9 +4609,10 @@ void test_lock_get_byte_array_fail(void)
 		      "Error generating get parameter command");
 	zassert_not_equal(message_size, 0,
 			  "Error generating get parameter command");
-	rc = mcumgr_serial_tx_pkt(tmp_buffer, message_size, smp_receive, NULL);
+	rc = smp_dummy_tx_pkt(tmp_buffer, message_size);
+	smp_receive_pos = smp_dummy_get_receive_pos();
 	zassert_equal(rc, 0, "Error generating SMP command");
-	dummy_mcumgr_add_data(smp_receive_buffer, smp_receive_pos);
+	smp_dummy_add_data();
 	zassert_true((message_size >= SMP_COMMAND_GET_PARAMETER_MIN_SIZE &&
 		      message_size <= SMP_COMMAND_GET_PARAMETER_MAX_SIZE),
 		     "Unexpected CBOR message size");
@@ -4415,10 +4623,12 @@ void test_lock_get_byte_array_fail(void)
 		     "Unexpected SMP message size");
 
 	/* Wait for the SMP command to be processed and a response to be received */
-	wait_for_smp_data();
+	zassert_ok(smp_dummy_wait_for_data(SMP_DATA_READY_WAIT_TIME_S),
+		   "SMP data ready timeout");
 
 	/* Get raw SMP data as a net buffer and check the header is valid */
-	nb = smp_dummy_process_frag_outgoing(smp_send_buffer, smp_send_pos);
+	nb = smp_dummy_get_outgoing();
+	smp_send_pos = smp_dummy_get_send_pos();
 	zassert_not_null(nb, "Net buffer with SMP response should not be null");
 
 	zassert_true(
@@ -4464,24 +4674,6 @@ void test_lock_get_byte_array_fail(void)
 		memcmp(get_parameter_data._get_parameter_result_r1_bstr.value,
 		       cmp_buf, sizeof(cmp_buf)),
 		0, "Get parameter result attribute byte array is not correct");
-}
-
-int dummy_mcumgr_send_raw(const void *data, int len, void *arg)
-{
-	uint16_t data_size =
-		MIN(len, (sizeof(smp_send_buffer) - smp_send_pos - 1));
-
-	if (enable_smp == true) {
-		memcpy(&smp_send_buffer[smp_send_pos], data, data_size);
-		smp_send_pos += data_size;
-
-		if (smp_receive_buffer[(smp_receive_pos - 1)] == 0x0a) {
-			/* End character of SMP over console message has been received */
-			k_sem_give(&smp_data_ready_sem);
-		}
-	}
-
-	return 0;
 }
 
 /******************************************************************************/
