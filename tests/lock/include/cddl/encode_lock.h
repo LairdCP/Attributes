@@ -1,7 +1,7 @@
 /*
- * Generated using cddl_gen version 0.3.99
- * https://github.com/NordicSemiconductor/cddl-gen
- * Generated with a default_max_qty of 3
+ * Generated using zcbor version 0.3.99
+ * https://github.com/NordicSemiconductor/zcbor
+ * Generated with a --default-max-qty of 3
  */
 
 #ifndef ENCODE_LOCK_H__
@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "cbor_encode.h"
+#include "zcbor_encode.h"
 #include "lock_types.h"
 
 #if DEFAULT_MAX_QTY != 3

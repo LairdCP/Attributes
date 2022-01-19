@@ -1,7 +1,7 @@
 /*
- * Generated using cddl_gen version 0.3.99
- * https://github.com/NordicSemiconductor/cddl-gen
- * Generated with a default_max_qty of 3
+ * Generated using zcbor version 0.3.99
+ * https://github.com/NordicSemiconductor/zcbor
+ * Generated with a --default-max-qty of 3
  */
 
 #ifndef ENCODE_LOCK_TYPES_H__
@@ -11,8 +11,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "cbor_encode.h"
+#include "zcbor_encode.h"
 
+/** Which value for --default-max-qty this file was created with.
+ *
+ *  The define is used in the other generated file to do a build-time
+ *  compatibility check.
+ *
+ *  See `zcbor --help` for more information about --default-max-qty
+ */
 #define DEFAULT_MAX_QTY 3
 
 struct empty_map {
@@ -57,8 +64,8 @@ struct set_parameter {
 		bool _set_parameter_p2_bool;
 		uint32_t _set_parameter_p2_uint;
 		int32_t _set_parameter_p2_int;
-		cbor_string_type_t _set_parameter_p2_tstr;
-		cbor_string_type_t _set_parameter_p2_bstr;
+		zcbor_string_type_t _set_parameter_p2_tstr;
+		zcbor_string_type_t _set_parameter_p2_bstr;
 	};
 	enum {
 		_set_parameter_p2_bool,
@@ -85,8 +92,8 @@ struct get_parameter_result {
 		bool _get_parameter_result_r1_bool;
 		uint32_t _get_parameter_result_r1_uint;
 		int32_t _get_parameter_result_r1_int;
-		cbor_string_type_t _get_parameter_result_r1_tstr;
-		cbor_string_type_t _get_parameter_result_r1_bstr;
+		zcbor_string_type_t _get_parameter_result_r1_tstr;
+		zcbor_string_type_t _get_parameter_result_r1_bstr;
 	};
 	enum {
 		_get_parameter_result_r1_bool,
