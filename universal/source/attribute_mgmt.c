@@ -40,6 +40,12 @@
 #include "lcz_qrtc.h"
 #endif
 
+#ifdef CONFIG_FRAMEWORK
+#include <Framework.h>
+#include <framework_ids.h>
+#include <framework_msgcodes.h>
+#endif
+
 #include "attribute_mgmt.h"
 
 /******************************************************************************/
@@ -76,6 +82,13 @@
 #define MGMT_STATUS_CHECK(x) ((x != 0) ? MGMT_ERR_ENOMEM : 0)
 
 #define LOCK_INVALID_WAIT_TIME_MS 1500
+
+#ifdef CONFIG_FRAMEWORK
+#define ATTR_FRAMEWORK_BROADCAST(msg)                                          \
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_ATTR, msg)
+#else
+#define ATTR_FRAMEWORK_BROADCAST(msg)
+#endif
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -472,7 +485,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 #else
 				   NULL
 #endif
-		     );
+	);
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
 	err |= cbor_encode_uint(&ctxt->encoder, param_id);
@@ -518,6 +531,8 @@ static int set_rtc(struct mgmt_ctxt *ctxt)
 	if (r == 0 && epoch < UINT32_MAX) {
 		r = attr_set_uint32(ATTR_ID_qrtc_last_set, epoch);
 		t = lcz_qrtc_set_epoch(epoch);
+
+		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_RTC_SET);
 	} else if (r == 0 && epoch >= UINT32_MAX) {
 		r = -EINVAL;
 		t = lcz_qrtc_get_epoch();
@@ -685,6 +700,10 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 #endif
 
 		r = attribute_mgmt_factory_reset();
+
+		if (r == 0) {
+			ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_FACTORY_RESET);
+		}
 	}
 
 	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
@@ -1012,6 +1031,8 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 		 */
 		r = attr_set_uint32(ATTR_ID_lock_status,
 				    LOCK_STATUS_SETUP_DISENGAGED);
+
+		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
 	/* Cbor encode result */
@@ -1044,6 +1065,8 @@ static int lock(struct mgmt_ctxt *ctxt)
 		/* Send feedback about the passcode */
 		attr_set_uint32(ATTR_ID_settings_passcode_status,
 				passcode_status);
+
+		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
 	/* Cbor encode result */
@@ -1117,6 +1140,10 @@ static int unlock(struct mgmt_ctxt *ctxt)
 		/* User has requested to remove the lock entirely */
 		attr_set_uint32(ATTR_ID_lock, false);
 		attr_set_uint32(ATTR_ID_lock_status, LOCK_STATUS_NOT_SETUP);
+	}
+
+	if (r == 0) {
+		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
 	/* Cbor encode result */

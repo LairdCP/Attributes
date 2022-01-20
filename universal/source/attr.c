@@ -33,6 +33,11 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 #include "BufferPool.h"
 #endif
 
+#ifdef CONFIG_ATTR_BROADCAST
+#include <framework_ids.h>
+#include <framework_msgcodes.h>
+#endif
+
 /******************************************************************************/
 /* Global Constants, Macros and type Definitions                              */
 /******************************************************************************/
