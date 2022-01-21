@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(attr, 4);
+LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 
 #define LOG_SHOW LOG_INF
 
