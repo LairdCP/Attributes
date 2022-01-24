@@ -2,7 +2,7 @@
  * @file attribute_mgmt.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -36,12 +36,9 @@
 #include "file_system_utilities.h"
 #include "lcz_memfault.h"
 
-#ifdef CONFIG_LCZ_QRTC
-#include "lcz_qrtc.h"
-#endif
-
 #ifdef CONFIG_FRAMEWORK
 #include <Framework.h>
+#include <FrameworkMacros.h>
 #include <framework_ids.h>
 #include <framework_msgcodes.h>
 #endif
@@ -499,69 +496,6 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 #endif
 
 	return MGMT_STATUS_CHECK(err);
-}
-
-static int set_rtc(struct mgmt_ctxt *ctxt)
-{
-#ifdef CONFIG_LCZ_QRTC
-	CborError err = 0;
-	int r = 0;
-	int t = 0;
-	long long unsigned int epoch = ULLONG_MAX;
-
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &epoch,
-		  .nodefault = true },
-		END_OF_CBOR_ATTR_ARRAY
-	};
-
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
-		return MGMT_ERR_EINVAL;
-	}
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	if (attr_is_locked() == true) {
-		r = -EACCES;
-		t = lcz_qrtc_get_epoch();
-	}
-#endif
-
-	if (r == 0 && epoch < UINT32_MAX) {
-		r = attr_set_uint32(ATTR_ID_qrtc_last_set, epoch);
-		t = lcz_qrtc_set_epoch(epoch);
-
-		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_RTC_SET);
-	} else if (r == 0 && epoch >= UINT32_MAX) {
-		r = -EINVAL;
-		t = lcz_qrtc_get_epoch();
-	}
-
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "t");
-	err |= cbor_encode_int(&ctxt->encoder, t);
-
-	return MGMT_STATUS_CHECK(err);
-#else
-	return MGMT_ERR_ENOTSUP;
-#endif
-}
-
-static int get_rtc(struct mgmt_ctxt *ctxt)
-{
-#ifdef CONFIG_LCZ_QRTC
-	int t = lcz_qrtc_get_epoch();
-	CborError err = 0;
-
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "t");
-	err |= cbor_encode_int(&ctxt->encoder, t);
-
-	return MGMT_STATUS_CHECK(err);
-#else
-	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int load_parameter_file(struct mgmt_ctxt *ctxt)

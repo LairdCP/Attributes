@@ -1,9 +1,9 @@
 /**
  * @file attribute_mgmt.h
  *
- * @brief SMP interface for Sentrius Command Group
+ * @brief SMP interface for Attribute Command Group
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -35,8 +35,6 @@ extern "C" {
 typedef enum {
 	ATTRIBUTE_MGMT_ID_GET_PARAMETER = 1,
 	ATTRIBUTE_MGMT_ID_SET_PARAMETER,
-	ATTRIBUTE_MGMT_ID_SET_RTC,
-	ATTRIBUTE_MGMT_ID_GET_RTC,
 	ATTRIBUTE_MGMT_ID_LOAD_PARAMETER_FILE,
 	ATTRIBUTE_MGMT_ID_DUMP_PARAMETER_FILE,
 	ATTRIBUTE_MGMT_ID_FACTORY_RESET,
