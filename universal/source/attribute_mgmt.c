@@ -92,8 +92,6 @@
 /******************************************************************************/
 static mgmt_handler_fn get_parameter;
 static mgmt_handler_fn set_parameter;
-static mgmt_handler_fn set_rtc;
-static mgmt_handler_fn get_rtc;
 static mgmt_handler_fn load_parameter_file;
 static mgmt_handler_fn dump_parameter_file;
 static mgmt_handler_fn factory_reset;
@@ -135,14 +133,6 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_SET_PARAMETER] = {
 		.mh_write = set_parameter,
 		.mh_read = NULL
-	},
-	[ATTRIBUTE_MGMT_ID_SET_RTC] = {
-		.mh_write = set_rtc,
-		.mh_read = NULL
-	},
-	[ATTRIBUTE_MGMT_ID_GET_RTC] = {
-		.mh_write = NULL,
-		.mh_read = get_rtc
 	},
 	[ATTRIBUTE_MGMT_ID_LOAD_PARAMETER_FILE] = {
 		.mh_write = load_parameter_file,
