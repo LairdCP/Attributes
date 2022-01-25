@@ -71,14 +71,20 @@ enum attr_write_error {
 	ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH
 };
 
-enum attr_display_options {
-       DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW = 0x1,
-       DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW = 0x2,
-       DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED = 0x4,
-       DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP = 0x8,
-       DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP = 0x10,
-       DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED = 0x20,
-       DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE = 0x40
+enum attr_flags {
+	FLAGS_WRITABLE = 0x1,
+	FLAGS_READABLE = 0x2,
+	FLAGS_LOCKABLE = 0x4,
+	FLAGS_BROADCAST = 0x8,
+	FLAGS_SAVABLE = 0x10,
+	FLAGS_DEPRECATED = 0x20,
+	FLAGS_OBSCURE_IN_SHOW = 0x40,
+	FLAGS_HIDE_IN_SHOW = 0x80,
+	FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED = 0x100,
+	FLAGS_OBSCURE_IN_DUMP = 0x200,
+	FLAGS_HIDE_IN_DUMP = 0x400,
+	FLAGS_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED = 0x800,
+	FLAGS_SHOW_ON_CHANGE = 0x1000
 };
 
 struct attr_min_max {
@@ -101,13 +107,7 @@ struct attr_table_entry {
 	const size_t size;
 	get_string_function *gsf;
 	const enum attr_type type;
-	const bool savable;
-	const bool writable;
-	const bool readable;
-	const bool lockable;
-	const bool broadcast;
-	const bool deprecated;
-	const enum attr_display_options display_options;
+	const enum attr_flags flags;
 	int (*const validator)(const ate_t *const, void *, size_t, bool);
 	int (*const prepare)(void);
 	const struct attr_min_max min;

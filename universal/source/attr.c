@@ -253,7 +253,7 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	int r = -EPERM;
 
 	if (entry != NULL) {
-		if (entry->readable) {
+		if (entry->flags & FLAGS_READABLE) {
 			r = allow_get(entry);
 			if (r == 0) {
 				r = prepare_for_read(entry);
@@ -650,12 +650,15 @@ float attr_get_float(attr_id_t id, float alt)
 
 const char *attr_get_name(attr_id_t id)
 {
-	ATTR_ENTRY_DECL(id);
 	const char *s = EMPTY_STRING;
+#ifdef CONFIG_ATTR_STRING_NAME
+	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
 		s = (const char *)entry->name;
 	}
+#endif
+
 	return s;
 }
 
@@ -714,6 +717,7 @@ int attr_set_mask64(attr_id_t id, uint8_t Bit, uint8_t value)
 
 attr_id_t attr_get_id(const char *name)
 {
+#ifdef CONFIG_ATTR_STRING_NAME
 	attr_index_t i;
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
@@ -721,6 +725,8 @@ attr_id_t attr_get_id(const char *name)
 			return ATTR_TABLE[i].id;
 		}
 	}
+#endif
+
 	return ATTR_INVALID_ID;
 }
 
@@ -986,7 +992,7 @@ int attr_set_notify(attr_id_t id, bool value)
 	int r = -EPERM;
 
 	if (entry != NULL) {
-		if (entry->readable) {
+		if (entry->flags & FLAGS_READABLE) {
 			atomic_set_bit_to(notify, attr_table_index(entry),
 					  value);
 			r = 0;
@@ -1128,7 +1134,8 @@ static int save_single(const ate_t *const entry)
 	int r = 0;
 
 	if (atomic_test_bit(attr_modified, attr_table_index(entry))) {
-		if (entry->savable && !entry->deprecated) {
+		if ((entry->flags & FLAGS_SAVABLE) &&
+		    !(entry->flags & FLAGS_DEPRECATED)) {
 			r = save_attributes(ATTR_SAVE_LATER);
 		}
 	}
@@ -1163,8 +1170,8 @@ static int save_attributes(void)
 	 */
 	do {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-			if (ATTR_TABLE[i].savable &&
-			    !ATTR_TABLE[i].deprecated) {
+			if ((ATTR_TABLE[i].flags & FLAGS_SAVABLE) &&
+			    !(ATTR_TABLE[i].flags & FLAGS_DEPRECATED)) {
 				r = lcz_param_file_generate_file(
 					ATTR_TABLE[i].id, convert_attr_type(i),
 					ATTR_TABLE[i].pData, get_attr_length(i),
@@ -1302,7 +1309,8 @@ static void change_handler(bool send_notifications)
 		skip_broadcast = atomic_test_bit(attr_skip_broadcast, i);
 
 #ifdef CONFIG_ATTR_BROADCAST
-		if (modified && ATTR_TABLE[i].broadcast && !skip_broadcast) {
+		if (modified && (ATTR_TABLE[i].flags & FLAGS_BROADCAST)
+		    && !skip_broadcast) {
 			if (pb != NULL) {
 				pb->list[pb->count++] = ATTR_TABLE[i].id;
 			}
@@ -1367,11 +1375,11 @@ static int allow_get(const ate_t *const entry)
 	int r = 0;
 	bool prevent_show = true;
 
-	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+	if (entry->flags & FLAGS_HIDE_IN_SHOW) {
 		/* Hidden attribute */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
 		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show
 			 * because of overriding display option
@@ -1383,12 +1391,12 @@ static int allow_get(const ate_t *const entry)
 		if (prevent_show == true) {
 			r = -EACCES;
 		}
-	} else if (entry->display_options &
-		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+	} else if (entry->flags &
+		   FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
 		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show because
 			 * of overriding display option
@@ -1415,10 +1423,10 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 {
 	bool prevent_show = true;
 
-	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW) {
+	if (entry->flags & FLAGS_HIDE_IN_SHOW) {
 		/* Hidden attribute, do not show */
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		if ((entry->flags &
+		     FLAGS_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1426,8 +1434,8 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 			prevent_show = false;
 		}
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
 		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option
@@ -1439,11 +1447,11 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 		if (prevent_show == true) {
 			return -EACCES;
 		}
-	} else if (entry->display_options &
-		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW) {
+	} else if (entry->flags &
+		   FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute, show asterisks for value */
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE) &&
+		if ((entry->flags &
+		     FLAGS_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1451,8 +1459,8 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 			prevent_show = false;
 		}
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
 		    attr_is_locked() == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option
@@ -1477,11 +1485,11 @@ static struct dump dump_display_option_handler(attr_index_t index, bool locked)
 	dump.hide = false;
 	dump.prevent = true;
 
-	if (entry->display_options & DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP) {
+	if (entry->flags & FLAGS_HIDE_IN_DUMP) {
 		/* Hidden attribute, do not show */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
 		    locked == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option
@@ -1493,12 +1501,12 @@ static struct dump dump_display_option_handler(attr_index_t index, bool locked)
 			dump.hide = true;
 		}
 
-	} else if (entry->display_options &
-		   DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP) {
+	} else if (entry->flags &
+		   FLAGS_OBSCURE_IN_DUMP) {
 		/* Obscured attribute, show asterisks for value */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->display_options &
-		     DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
+		if ((entry->flags &
+		     FLAGS_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
 		    locked == false) {
 			/* Attributes are unlocked, show because of overriding
 			 * display option */
@@ -1828,8 +1836,8 @@ static bool is_writable(const ate_t *const entry)
 	bool r = false;
 	bool settings_locked = 0;
 
-	if (entry->writable) {
-		if (entry->lockable) {
+	if (entry->flags & FLAGS_WRITABLE) {
+		if (entry->flags & FLAGS_LOCKABLE) {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 			settings_locked = attr_is_locked();
 
@@ -1859,7 +1867,8 @@ static bool is_dump_rw(attr_index_t index)
 	const ate_t *const entry = &ATTR_TABLE[index];
 	bool b = false;
 
-	if (entry->readable && !entry->deprecated) {
+	if ((entry->flags & FLAGS_READABLE) &&
+	    !(entry->flags & FLAGS_DEPRECATED)) {
 		b = true;
 	}
 
@@ -1871,7 +1880,9 @@ static bool is_dump_w(attr_index_t index)
 	const ate_t *const entry = &ATTR_TABLE[index];
 	bool b = false;
 
-	if (entry->readable && !entry->deprecated && entry->writable) {
+	if ((entry->flags & FLAGS_READABLE) &&
+	    !(entry->flags & FLAGS_DEPRECATED) &&
+	    (entry->flags & FLAGS_WRITABLE)) {
 		b = true;
 	}
 	return b;
@@ -1882,7 +1893,9 @@ static bool is_dump_ro(attr_index_t index)
 	const ate_t *const entry = &ATTR_TABLE[index];
 	bool b = false;
 
-	if (entry->readable && !entry->deprecated && !entry->writable) {
+	if ((entry->flags & FLAGS_READABLE) &&
+	    !(entry->flags & FLAGS_DEPRECATED) &&
+	    !(entry->flags & FLAGS_WRITABLE)) {
 		b = true;
 	}
 	return b;

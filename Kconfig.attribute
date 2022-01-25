@@ -36,6 +36,13 @@ config ATTR_FILE_NAME
 config ATTR_BREAK_ON_LOAD_FAILURE
 	bool "Stop loading on first failure"
 
+config ATTR_STRING_NAME
+	bool "Enable string name storage/retrieval"
+	default y
+	help
+	  Will allow storage and retrieval of attribute names, this will
+	  increase flash usage somewhat.
+
 config ATTR_SHELL
 	bool "Enable Attribute Shell"
 	depends on SHELL

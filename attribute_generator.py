@@ -3,7 +3,7 @@
 #
 # @brief Generate C code from JSON API document.
 #
-# Copyright (c) 2018-2021 Laird Connectivity
+# Copyright (c) 2018-2022 Laird Connectivity
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -17,13 +17,6 @@ import math
 
 ATTRIBUTE_VERSION_ARRAY_INDEX = 93
 JSON_INDENT = '  '
-DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW = 0b1
-DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW = 0b10
-DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED = 0b100
-DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP = 0b1000
-DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP = 0b10000
-DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED = 0b100000
-DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE = 0b1000000
 
 # Left Justified Field Widths
 ID_WIDTH = 54
@@ -34,18 +27,26 @@ DEFINE_WIDTH = 20
 GS_CASE_WIDTH = 18
 TYPE_WIDTH = 24
 MIN_MAX_WIDTH = 20
+OPTION_BITMASK_WIDTH = 6
 
 BASE_FILE_PATH = "./custom/%PROJ%"
 HEADER_FILE_PATH = "%BASE%/include/"
 SOURCE_FILE_PATH = "%BASE%/source/"
 TABLE_FILE_NAME = "attr_table"
 
-
-def ToYesNo(b) -> str:
-    if b:
-        return "y"
-    else:
-        return "n"
+WRITABLE_FLAG = 0x1
+READABLE_FLAG = 0x2
+LOCKABLE_FLAG = 0x4
+BROADCAST_FLAG = 0x8
+SAVABLE_FLAG = 0x10
+DEPRECATED_FLAG = 0x20
+DISPLAY_OBSCURE_IN_SHOW_FLAG = 0x40
+DISPLAY_HIDE_IN_SHOW_FLAG = 0x80
+DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG = 0x100
+DISPLAY_OBSCURE_IN_DUMP_FLAG = 0x200
+DISPLAY_HIDE_IN_DUMP_FLAG = 0x400
+DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG = 0x800
+DISPLAY_SHOW_ON_CHANGE_FLAG = 0x1000
 
 def ToInt(b) -> str:
     return math.trunc(b)
@@ -250,25 +251,25 @@ class attributes:
                                         p['name'])
 
                     if (obscureInShow == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_SHOW
+                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_SHOW_FLAG
 
                     if (hideInShow == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_HIDE_IN_SHOW
+                        displayOptionsBitmask |= DISPLAY_HIDE_IN_SHOW_FLAG
 
                     if (showUnlockedOverride == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED
+                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG
 
                     if (obscureInDump == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_OBSCURE_IN_DUMP
+                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_DUMP_FLAG
 
                     if (hideInDump == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_HIDE_IN_DUMP
+                        displayOptionsBitmask |= DISPLAY_HIDE_IN_DUMP_FLAG
 
                     if (dumpUnlockedOverride == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED
+                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG
 
                     if (showOnChange == 1):
-                        displayOptionsBitmask |= DISPLAY_OPTIONS_BITMASK_SHOW_ON_CHANGE
+                        displayOptionsBitmask |= DISPLAY_SHOW_ON_CHANGE_FLAG
 
                     self.displayOptions.append(displayOptionsBitmask)
                     self.validator.append(GetStringField(a, 'x-validator'))
@@ -418,17 +419,28 @@ class attributes:
         """
         attributeTable = []
         for i in range(self.projectAttributeCount):
-            writable = ToYesNo(self.writable[i])
-            readable = ToYesNo(self.readable[i])
-            lockable = ToYesNo(self.lockable[i])
-            broadcast = ToYesNo(self.broadcast[i])
-            savable = ToYesNo(self.savable[i])
-            deprecated = ToYesNo(self.deprecated[i])
-            displayOptions = ToInt(self.displayOptions[i])
+
+            opts = ToInt(self.displayOptions[i])
+
+            if (self.writable[i]):
+                opts |= WRITABLE_FLAG
+            if (self.readable[i]):
+                opts |= READABLE_FLAG
+            if (self.lockable[i]):
+                opts |= LOCKABLE_FLAG
+            if (self.broadcast[i]):
+                opts |= BROADCAST_FLAG
+            if (self.savable[i]):
+                opts |= SAVABLE_FLAG
+            if (self.deprecated[i]):
+                opts |= DEPRECATED_FLAG
+
+            opts = hex(opts)
+
             result = f"\t[{i:<3}] = " \
                 + "{ " + f"{self.id[i]:<3}, " \
-                + f"{self.GetAttributeMacro(i)}, {self.GetType(i).ljust(TYPE_WIDTH)}, {savable}, " \
-                + f"{writable}, {readable}, {lockable}, {broadcast}, {deprecated}, {displayOptions}, " \
+                + f"{self.GetAttributeMacro(i)}, {self.GetType(i).ljust(TYPE_WIDTH)}, " \
+                + f"{opts.ljust(OPTION_BITMASK_WIDTH)}, " \
                 + f"{self.GetValidatorString(i)}, {self.GetPrepareString(i)}, " \
                 + f"{self.CreateMinMaxString(i)}" \
                 + " }," \
