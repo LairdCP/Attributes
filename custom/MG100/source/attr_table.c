@@ -220,7 +220,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.resetCount = 0,
 	.upTime = 0,
 	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.40",
+	.attributeVersion = "0.4.42",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -741,8 +741,10 @@ const char *const attr_get_string_lte_sleep_state(int value)
 {
 	switch (value) {
 		case 0:           return "Uninitialized";
-		case 1:           return "Asleep";
+		case 1:           return "Hibernate";
 		case 2:           return "Awake";
+		case 3:           return "Lite Hibernate";
+		case 4:           return "Sleep";
 		default:          return "?";
 	}
 }
