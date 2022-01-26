@@ -28,6 +28,11 @@
 #include "FrameworkMacros.h"
 #endif
 
+#ifdef CONFIG_FWK_AUTO_GENERATE_FILES
+#include <framework_ids.h>
+#include <framework_msgcodes.h>
+#endif
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
