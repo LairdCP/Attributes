@@ -2,7 +2,7 @@
  * @file attr_custom_validator.h
  * @brief Validators custom to a particular project.
  *
- * Copyright (c) 2021-2022 Laird Connectivity
+ * Copyright (c) 2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */

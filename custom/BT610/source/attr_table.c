@@ -2,7 +2,7 @@
  * @file attr_table.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -123,7 +123,6 @@ typedef struct rw_attribute {
 	enum boot_phy boot_phy;
 	bool block_downgrades;
 	char load_path[32 + 1];
-	char dump_path[32 + 1];
 	/* pyend */
 } rw_attribute_t;
 
@@ -220,8 +219,7 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.analog_alarms_enable = 0,
 	.boot_phy = 0,
 	.block_downgrades = 0,
-	.load_path = "/lfs/params.txt",
-	.dump_path = "/lfs/dump.txt"
+	.load_path = "/lfs/params.txt"
 	/* pyend */
 };
 
@@ -309,6 +307,7 @@ typedef struct ro_attribute {
 	uint8_t recover_settings_count;
 	bool security_request;
 	int8_t security_level;
+	char dump_path[32 + 1];
 	enum settings_passcode_status settings_passcode_status;
 	enum lock_status lock_status;
 	/* pyend */
@@ -341,7 +340,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.magnet_state = false,
 	.param_path = "/ext",
 	.battery_age = 0,
-	.attribute_version = "0.4.95",
+	.attribute_version = "0.4.104",
 	.qrtc = 0,
 	.connection_timeout_sec = 60,
 	.log_file_status = 0,
@@ -398,6 +397,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.recover_settings_count = 0,
 	.security_request = 0,
 	.security_level = 0,
+	.dump_path = "/lfs/dump.txt",
 	.settings_passcode_status = 0,
 	.lock_status = 0
 	/* pyend */
@@ -456,14 +456,14 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[5  ] = { 5  , RW_ATTRX(lock)                          , ATTR_TYPE_BOOL          , 0x16  , av_bool             , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[6  ] = { 6  , RW_ATTRX(power_sense_interval)          , ATTR_TYPE_U32           , 0x1f  , av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 86400      },
 	[7  ] = { 7  , RW_ATTRX(temperature_sense_interval)    , ATTR_TYPE_U32           , 0x1f  , av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 86400      },
-	[8  ] = { 8  , RW_ATTRX(aggregation_count)             , ATTR_TYPE_U8            , 0x17  , av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 32         },
+	[8  ] = { 8  , RW_ATTRX(aggregation_count)             , ATTR_TYPE_U8            , 0x37  , av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[9  ] = { 9  , RW_ATTRX(digital_output_1_state)        , ATTR_TYPE_BOOL          , 0x1f  , av_bool             , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[10 ] = { 10 , RW_ATTRX(digital_output_2_state)        , ATTR_TYPE_BOOL          , 0x1f  , av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[11 ] = { 11 , RO_ATTRS(firmware_version)              , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
 	[12 ] = { 12 , RO_ATTRS(reset_reason)                  , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
 	[13 ] = { 13 , RO_ATTRS(bluetooth_address)             , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
 	[14 ] = { 14 , RO_ATTRX(reset_count)                   , ATTR_TYPE_U32           , 0x2   , av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[15 ] = { 15 , RO_ATTRS(bootloader_version)            , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
+	[15 ] = { 15 , RO_ATTRS(bootloader_version)            , ATTR_TYPE_STRING        , 0x22  , av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
 	[16 ] = { 16 , RO_ATTRX(up_time)                       , ATTR_TYPE_S64           , 0x2   , av_int64            , attr_prepare_up_time                , .min.ux = 0         , .max.ux = 0          },
 	[17 ] = { 17 , RW_ATTRX(high_temp_1_thresh_1)          , ATTR_TYPE_FLOAT         , 0x1f  , av_float            , NULL                                , .min.fx = -128.0    , .max.fx = 127.0      },
 	[18 ] = { 18 , RW_ATTRX(high_temp_1_thresh_2)          , ATTR_TYPE_FLOAT         , 0x1f  , av_float            , NULL                                , .min.fx = -128.0    , .max.fx = 127.0      },
@@ -507,7 +507,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[56 ] = { 56 , RW_ATTRX(analog_4_delta_thresh)         , ATTR_TYPE_FLOAT         , 0x1f  , av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 15000.0    },
 	[57 ] = { 57 , RW_ATTRX(active_mode)                   , ATTR_TYPE_BOOL          , 0x1b  , av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[58 ] = { 58 , RW_ATTRE(advertising_phy)               , ATTR_TYPE_BOOL          , 0x1f  , av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[59 ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , 0x1b  , av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
+	[59 ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , 0x1b  , av_tx_power         , NULL                                , .min.sx = -40       , .max.sx = 8          },
 	[60 ] = { 60 , RW_ATTRX(network_id)                    , ATTR_TYPE_U16           , 0x1f  , av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[61 ] = { 61 , RO_ATTRX(config_version)                , ATTR_TYPE_U8            , 0xa   , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
 	[62 ] = { 62 , RW_ATTRE(config_type)                   , ATTR_TYPE_U8            , 0x1f  , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
@@ -622,7 +622,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[171] = { 172, RO_ATTRX(security_request)              , ATTR_TYPE_BOOL          , 0x409 , av_bool             , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[172] = { 173, RO_ATTRX(security_level)                , ATTR_TYPE_S8            , 0x2   , av_int8             , attr_prepare_security_level         , .min.sx = -1        , .max.sx = 4          },
 	[173] = { 208, RW_ATTRS(load_path)                     , ATTR_TYPE_STRING        , 0x13  , av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[174] = { 209, RW_ATTRS(dump_path)                     , ATTR_TYPE_STRING        , 0x13  , av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[174] = { 209, RO_ATTRS(dump_path)                     , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[175] = { 265, RO_ATTRE(settings_passcode_status)      , ATTR_TYPE_U8            , 0x2   , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          },
 	[176] = { 266, RO_ATTRE(lock_status)                   , ATTR_TYPE_U8            , 0x2   , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 2          }
 	/* pyend */

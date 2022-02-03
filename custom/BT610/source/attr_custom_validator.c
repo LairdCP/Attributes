@@ -2,7 +2,7 @@
  * @file attr_custom_validator.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -44,7 +44,7 @@ int av_tx_power(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	CHECK_ENTRY();
 	int32_t value = *((int32_t *)pv);
 
-	/* Values supported by nRF5340 */
+	/* Values supported by nRF52840 */
 	bool valid = false;
 	switch (value) {
 	case -40:
@@ -52,14 +52,15 @@ int av_tx_power(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	case -16:
 	case -12:
 	case -8:
-	case -7:
-	case -6:
-	case -5:
 	case -4:
-	case -3:
-	case -2:
-	case -1:
 	case 0:
+	case 2:
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
 		valid = true;
 		break;
 
