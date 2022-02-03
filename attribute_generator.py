@@ -157,7 +157,11 @@ class attributes:
             new_version = f'{major}.{minor}.{build}'
             data['info']['version'] = new_version
             try:
-                data['components']['contentDescriptors']['deviceParams']['x-device-parameters'][ATTRIBUTE_VERSION_ARRAY_INDEX]['schema']['x-default'] = new_version
+                version_index = ATTRIBUTE_VERSION_ARRAY_INDEX
+                while (data['components']['contentDescriptors']['deviceParams']['x-device-parameters'][version_index]['x-id'] < ATTRIBUTE_VERSION_ARRAY_INDEX):
+                    version_index = version_index + 1
+
+                data['components']['contentDescriptors']['deviceParams']['x-device-parameters'][version_index]['schema']['x-default'] = new_version
             except:
                 print("Unable to write api version")
 
