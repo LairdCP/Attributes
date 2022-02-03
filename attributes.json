@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.97"
+    "version": "0.4.99"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -23,7 +23,7 @@
             "x-id": 0,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "string",
@@ -46,7 +46,7 @@
             "x-id": 1,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -70,7 +70,7 @@
             "x-id": 2,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -93,7 +93,7 @@
             "x-id": 3,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -115,7 +115,7 @@
             "x-id": 4,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -140,7 +140,7 @@
             "x-id": 5,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -164,7 +164,7 @@
             "x-id": 6,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -187,7 +187,7 @@
             "x-id": 7,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -209,8 +209,7 @@
             "required": true,
             "x-id": 8,
             "x-projects": [
-              "BT610",
-              "BT510"
+              "BT610"
             ],
             "schema": {
               "type": "integer",
@@ -222,7 +221,8 @@
               "x-lockable": true,
               "x-savable": true,
               "x-writable": true,
-              "x-readable": true
+              "x-readable": true,
+              "x-deprecated": true
             }
           },
           {
@@ -274,7 +274,7 @@
             "x-id": 11,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -295,7 +295,7 @@
             "x-id": 12,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -315,7 +315,7 @@
             "x-id": 13,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -336,7 +336,7 @@
             "x-id": 14,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -354,8 +354,7 @@
             "required": true,
             "x-id": 15,
             "x-projects": [
-              "BT610",
-              "BT510"
+              "BT610"
             ],
             "schema": {
               "type": "string",
@@ -364,7 +363,8 @@
               "x-ctype": "string",
               "x-default": "0.0",
               "x-example": "0.0",
-              "x-readable": true
+              "x-readable": true,
+              "x-deprecated": true
             }
           },
           {
@@ -374,7 +374,7 @@
             "x-id": 16,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -1275,7 +1275,7 @@
             "x-id": 57,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -1295,7 +1295,8 @@
             "required": true,
             "x-id": 58,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -1320,7 +1321,7 @@
             "x-id": 59,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -1344,7 +1345,7 @@
             "x-id": 60,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -1369,7 +1370,7 @@
             "x-id": 61,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -1393,7 +1394,7 @@
             "x-id": 62,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -1425,7 +1426,7 @@
             "x-id": 63,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -1574,7 +1575,7 @@
             "x-id": 70,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "float",
@@ -1695,7 +1696,7 @@
             "x-id": 75,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100"
             ],
             "schema": {
@@ -2024,7 +2025,7 @@
             "x-id": 89,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -2044,7 +2045,7 @@
             "x-id": 90,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -2056,6 +2057,26 @@
                 "FAR_DOOR_OPEN": true,
                 "NEAR_DOOR_CLOSED": false
               }
+            }
+          },
+          {
+            "name": "param_path",
+            "summary": "Folder on file system used for Parse/Dump commands",
+            "required": true,
+            "x-id": 91,
+            "x-projects": [
+              "BT520"
+            ],
+            "schema": {
+              "type": "string",
+              "minimum": 2,
+              "maximum": 8,
+              "x-ctype": "string",
+              "x-default": "/ramfs",
+              "x-example": "/lfs",
+              "x-lockable": false,
+              "x-savable": false,
+              "x-readable": true
             }
           },
           {
@@ -2085,7 +2106,7 @@
             "x-id": 92,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "number",
@@ -2102,7 +2123,7 @@
             "x-id": 93,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -2111,7 +2132,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.97",
+              "x-default": "0.4.99",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2123,7 +2144,7 @@
             "x-id": 94,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -2143,7 +2164,7 @@
             "x-id": 95,
             "x-projects": [
               "BT610",
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -2251,7 +2272,8 @@
             "required": true,
             "x-id": 100,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -2529,7 +2551,8 @@
             "required": true,
             "x-id": 113,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -2548,7 +2571,8 @@
             "required": true,
             "x-id": 114,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -2568,7 +2592,7 @@
             "x-id": 115,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3706,7 +3730,8 @@
             "required": true,
             "x-id": 166,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3734,7 +3759,8 @@
             "required": true,
             "x-id": 167,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3758,7 +3784,8 @@
             "required": true,
             "x-id": 168,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3806,7 +3833,8 @@
             "required": true,
             "x-id": 171,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3854,7 +3882,8 @@
             "required": true,
             "x-id": 173,
             "x-projects": [
-              "BT610"
+              "BT610",
+              "BT520"
             ],
             "schema": {
               "type": "integer",
@@ -3915,7 +3944,7 @@
             "required": true,
             "x-id": 143,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -3936,7 +3965,7 @@
             "required": true,
             "x-id": 144,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -3956,7 +3985,7 @@
             "required": true,
             "x-id": 145,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -4436,7 +4465,7 @@
             "required": true,
             "x-id": 168,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -4458,7 +4487,7 @@
             "required": true,
             "x-id": 169,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -4480,7 +4509,7 @@
             "required": true,
             "x-id": 170,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -4502,7 +4531,7 @@
             "required": true,
             "x-id": 171,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -4524,7 +4553,7 @@
             "required": true,
             "x-id": 172,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -5230,7 +5259,7 @@
             "required": true,
             "x-id": 208,
             "x-projects": [
-              "BT510",
+              "BT520",
               "BT610",
               "MG100",
               "BL5340"
@@ -5252,8 +5281,44 @@
             "required": true,
             "x-id": 209,
             "x-projects": [
-              "BT510",
-              "BT610",
+              "BT520"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/ramfs/dump.txt",
+              "x-example": "/ext/dump.txt",
+              "x-savable": false,
+              "x-writable": false,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dump_path",
+            "summary": "(Default) Absolute file name for dump command",
+            "required": true,
+            "x-id": 209,
+            "x-projects": [
+              "BT610"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/dump.txt",
+              "x-example": "/ext/dump.txt",
+              "x-savable": false,
+              "x-writable": false,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dump_path",
+            "summary": "(Default) Absolute file name for dump command",
+            "required": true,
+            "x-id": 209,
+            "x-projects": [
               "MG100",
               "BL5340"
             ],
@@ -5291,7 +5356,7 @@
             "required": false,
             "x-id": 211,
             "x-projects": [
-              "BT510",
+              "BT520",
               "MG100",
               "BL5340"
             ],
@@ -6344,7 +6409,7 @@
             "x-id": 265,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "x-ctype": "uint8_t",
@@ -6372,7 +6437,7 @@
             "x-id": 266,
             "x-projects": [
               "BT610",
-              "BT510"
+              "BT520"
             ],
             "schema": {
               "x-ctype": "uint8_t",

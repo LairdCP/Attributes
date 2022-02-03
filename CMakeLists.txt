@@ -19,9 +19,9 @@ zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_ATTRIBUTE_MGMT
 if(CONFIG_ATTR_DEVICE_OVERRIDE)
 
 if(CONFIG_ATTR_DEVICE_OVERRIDE_SOURCE_FOLDER)
-set(ATTR_CUSTOM_PATH_BASE "${CMAKE_SOURCE_DIR}")
+    set(ATTR_CUSTOM_PATH_BASE "${CMAKE_SOURCE_DIR}")
 else()
-set(ATTR_CUSTOM_PATH_BASE "custom")
+    set(ATTR_CUSTOM_PATH_BASE "custom")
 endif() # ATTR_DEVICE_OVERRIDE_SOURCE_FOLDER
 
 zephyr_include_directories(${ATTR_CUSTOM_PATH_BASE}/${CONFIG_ATTR_DEVICE_OVERRIDE_NAME}/include)
@@ -64,6 +64,14 @@ zephyr_sources(
 )
 endif()
 
+if(CONFIG_BOARD_BT520)
+zephyr_include_directories(custom/BT520/include)
+zephyr_sources(
+    custom/BT520/source/attr_table.c
+    custom/BT520/source/attr_custom_validator.c
+)
+endif()
+
 endif() # CONFIG_ATTR_DEVICE_OVERRIDE
 
 if(CONFIG_ATTR_SETTINGS_LOCK)
@@ -71,9 +79,9 @@ zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK universal/source/shell_lock.c)
 endif()
 
 if(CONFIG_FRAMEWORK)
-# Add framework ID and msgcode files
-add_fwk_id_file(${CMAKE_CURRENT_SOURCE_DIR}/framework/attr_ids.h)
-add_fwk_msgcode_file(${CMAKE_CURRENT_SOURCE_DIR}/framework/attr_msgcodes.h)
+    # Add framework ID and msgcode files
+    add_fwk_id_file(${CMAKE_CURRENT_SOURCE_DIR}/framework/attr_ids.h)
+    add_fwk_msgcode_file(${CMAKE_CURRENT_SOURCE_DIR}/framework/attr_msgcodes.h)
 endif()
 
 endif() # CONFIG_ATTR
