@@ -6423,7 +6423,7 @@
               "x-example": "1",
               "x-lockable": false,
               "x-savable": false,
-              "x-writeable": false,
+              "x-writable": false,
               "x-readable": true,
               "x-broadcast": false,
               "enum": {
@@ -6450,7 +6450,7 @@
               "x-default": "0",
               "x-example": "0",
               "x-savable": false,
-              "x-writeable": false,
+              "x-writable": false,
               "x-readable": true,
               "enum": {
                 "NOT_SETUP": 0,
