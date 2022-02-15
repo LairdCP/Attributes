@@ -47,6 +47,7 @@ DISPLAY_OBSCURE_IN_DUMP_FLAG = 0x200
 DISPLAY_HIDE_IN_DUMP_FLAG = 0x400
 DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG = 0x800
 DISPLAY_SHOW_ON_CHANGE_FLAG = 0x1000
+NOTIFY_IF_VALUE_UNCHANGED = 0x2000
 
 def ToInt(b) -> str:
     return math.trunc(b)
@@ -232,6 +233,7 @@ class attributes:
                     hideInDump = GetBoolField(a, 'x-hide-in-dump')
                     dumpUnlockedOverride = GetBoolField(a, 'x-dump-unlocked-override')
                     showOnChange = GetBoolField(a, 'x-show-on-change')
+                    notifyIfUnchanged = GetBoolField(a, 'x-notify-if-unchanged')
                     displayOptionsBitmask = 0
 
                     if (hideInShow == 1 and obscureInShow == 1):
@@ -274,6 +276,9 @@ class attributes:
 
                     if (showOnChange == 1):
                         displayOptionsBitmask |= DISPLAY_SHOW_ON_CHANGE_FLAG
+
+                    if (notifyIfUnchanged == 1):
+                        displayOptionsBitmask |= NOTIFY_IF_VALUE_UNCHANGED
 
                     self.displayOptions.append(displayOptionsBitmask)
                     self.validator.append(GetStringField(a, 'x-validator'))

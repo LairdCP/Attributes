@@ -112,6 +112,7 @@ struct dump {
 extern const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE];
 
 ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
+ATOMIC_DEFINE(attr_unchanged, ATTR_TABLE_SIZE);
 ATOMIC_DEFINE(attr_skip_broadcast, ATTR_TABLE_SIZE);
 
 /******************************************************************************/
@@ -1146,6 +1147,8 @@ static void change_single(const ate_t *const entry, bool send_notifications)
 {
 	if (atomic_test_bit(attr_modified, attr_table_index(entry))) {
 		change_handler(send_notifications);
+	} else if (atomic_test_bit(attr_unchanged, attr_table_index(entry))) {
+		change_handler(send_notifications);
 	}
 }
 
@@ -1289,6 +1292,7 @@ static void change_handler(bool send_notifications)
 {
 	attr_index_t i;
 	bool modified;
+	bool unchanged;
 	bool skip_broadcast;
 
 #ifdef CONFIG_ATTR_BROADCAST
@@ -1306,10 +1310,11 @@ static void change_handler(bool send_notifications)
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		modified = atomic_test_bit(attr_modified, i);
+		unchanged = atomic_test_bit(attr_unchanged, i);
 		skip_broadcast = atomic_test_bit(attr_skip_broadcast, i);
 
 #ifdef CONFIG_ATTR_BROADCAST
-		if (modified && (ATTR_TABLE[i].flags & FLAGS_BROADCAST)
+		if ((modified || unchanged) && (ATTR_TABLE[i].flags & FLAGS_BROADCAST)
 		    && !skip_broadcast) {
 			if (pb != NULL) {
 				pb->list[pb->count++] = ATTR_TABLE[i].id;
@@ -1317,16 +1322,17 @@ static void change_handler(bool send_notifications)
 		}
 #endif
 
-		if (modified && !atomic_test_bit(quiet, i)) {
+		if ((modified || unchanged) && !atomic_test_bit(quiet, i)) {
 			show(&ATTR_TABLE[i], true);
 		}
 
-		if (modified && send_notifications &&
+		if ((modified || unchanged) && send_notifications &&
 		    atomic_test_bit(notify, i)) {
 			notification_handler(ATTR_TABLE[i].id);
 		}
 
 		atomic_clear_bit(attr_modified, i);
+		atomic_clear_bit(attr_unchanged, i);
 		atomic_clear_bit(attr_skip_broadcast, i);
 	}
 
@@ -1769,6 +1775,8 @@ static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
 		if (mask_modified) {
 			if (entry != NULL) {
 				atomic_clear_bit(attr_modified,
+						 attr_table_index(entry));
+				atomic_clear_bit(attr_unchanged,
 						 attr_table_index(entry));
 			}
 		}

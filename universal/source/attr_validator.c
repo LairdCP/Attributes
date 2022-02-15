@@ -42,6 +42,7 @@
 extern const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE];
 
 extern atomic_t attr_modified[];
+extern atomic_t attr_unchanged[];
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -61,7 +62,15 @@ int av_string(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			memset(entry->pData, 0, entry->size);
 			strncpy(entry->pData, pv, vlen);
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && vlen >= entry->min.ux &&
+			   memcmp(entry->pData, pv, vlen) == 0) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
+
 		r = 0;
 	}
 	return r;
@@ -77,6 +86,12 @@ int av_array(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && (memcmp(entry->pData, pv, vlen) != 0)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			memcpy(entry->pData, pv, vlen);
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && memcmp(entry->pData, pv, vlen) == 0) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -93,6 +108,12 @@ int av_uint64(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	if (do_write && value != *((uint64_t *)entry->pData)) {
 		atomic_set_bit(attr_modified, attr_table_index(entry));
 		*((uint64_t *)entry->pData) = value;
+	} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+		   do_write && value == *((uint64_t *)entry->pData)) {
+		/* Value is unchanged but flag is set to update upon setting
+		 * the same value
+		 */
+		atomic_set_bit(attr_unchanged, attr_table_index(entry));
 	}
 	return 0;
 }
@@ -109,6 +130,12 @@ int av_uint32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((uint32_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((uint32_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((uint32_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -127,6 +154,12 @@ int av_uint16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((uint16_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((uint16_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((uint16_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -145,6 +178,12 @@ int av_uint8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((uint8_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((uint8_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((uint8_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -163,6 +202,12 @@ int av_bool(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((bool *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((bool *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((bool *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -179,6 +224,12 @@ int av_int64(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	if (do_write && value != *((int64_t *)entry->pData)) {
 		atomic_set_bit(attr_modified, attr_table_index(entry));
 		*((int64_t *)entry->pData) = value;
+	} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+		   do_write && value == *((int64_t *)entry->pData)) {
+		/* Value is unchanged but flag is set to update upon setting the
+		 * same value
+		 */
+		atomic_set_bit(attr_unchanged, attr_table_index(entry));
 	}
 	return 0;
 }
@@ -196,6 +247,12 @@ int av_int32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((int32_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((int32_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((int32_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -215,6 +272,12 @@ int av_int16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((int16_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((int16_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((int16_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -234,6 +297,12 @@ int av_int8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((int8_t *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((int8_t *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((int8_t *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
@@ -253,6 +322,12 @@ int av_float(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 		if (do_write && value != *((float *)entry->pData)) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			*((float *)entry->pData) = value;
+		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
+			   do_write && value == *((float *)entry->pData)) {
+			/* Value is unchanged but flag is set to update upon
+			 * setting the same value
+			 */
+			atomic_set_bit(attr_unchanged, attr_table_index(entry));
 		}
 		r = 0;
 	}
