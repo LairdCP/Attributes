@@ -140,7 +140,7 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr);
 static int factory_reset(struct mgmt_ctxt *ctxt);
 static int sha_256(struct mgmt_ctxt *ctxt);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
 #endif
@@ -251,7 +251,7 @@ static union {
 
 static size_t buf_size;
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 struct smp_notification {
 	struct bt_dfu_smp_header header;
 	uint8_t buffer[MAX_PBUF_SIZE + CBOR_NOTIFICATION_OVERHEAD];
@@ -273,7 +273,7 @@ static struct {
 /******************************************************************************/
 SYS_INIT(sentrius_mgmt_init, APPLICATION, 99);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 /* callback from attribute module */
 int attr_notify(attr_id_t Index)
 {
@@ -338,7 +338,7 @@ static int sentrius_mgmt_init(const struct device *device)
 
 	mgmt_register_group(&sentrius_mgmt_group);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 	smp_ble.conn_callbacks.connected = smp_ble_connected;
 	smp_ble.conn_callbacks.disconnected = smp_ble_disconnected;
 	bt_conn_cb_register(&smp_ble.conn_callbacks);
@@ -347,7 +347,7 @@ static int sentrius_mgmt_init(const struct device *device)
 	return 0;
 }
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err)
 {
 	/* Did a central connect to us? */
