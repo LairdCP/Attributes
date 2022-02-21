@@ -24,7 +24,7 @@
 #include <shell/shell_uart.h>
 #endif
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
 #include <mgmt/mcumgr/smp_bt.h>
@@ -117,7 +117,7 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
 
 static int factory_reset(struct mgmt_ctxt *ctxt);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
 #endif
@@ -203,7 +203,7 @@ static union {
 
 static size_t buf_size;
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 struct smp_notification {
 	struct bt_dfu_smp_header header;
 	uint8_t buffer[MAX_PBUF_SIZE + CBOR_NOTIFICATION_OVERHEAD];
@@ -225,7 +225,7 @@ static struct {
 /******************************************************************************/
 SYS_INIT(attribute_mgmt_init, APPLICATION, 99);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 /* Callback from attribute module */
 int attr_notify(attr_id_t Index)
 {
@@ -290,7 +290,7 @@ static int attribute_mgmt_init(const struct device *device)
 
 	mgmt_register_group(&attribute_mgmt_group);
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 	smp_ble.conn_callbacks.connected = smp_ble_connected;
 	smp_ble.conn_callbacks.disconnected = smp_ble_disconnected;
 	bt_conn_cb_register(&smp_ble.conn_callbacks);
@@ -299,7 +299,7 @@ static int attribute_mgmt_init(const struct device *device)
 	return 0;
 }
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_connected(struct bt_conn *conn, uint8_t err)
 {
 	/* Did a central connect to us? */
