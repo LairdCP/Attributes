@@ -281,8 +281,10 @@ enum lte_startup_state {
 
 enum lte_sleep_state {
 	LTE_SLEEP_STATE_UNINITIALIZED = 0,
-	LTE_SLEEP_STATE_ASLEEP = 1,
+	LTE_SLEEP_STATE_HIBERNATE = 1,
 	LTE_SLEEP_STATE_AWAKE = 2,
+	LTE_SLEEP_STATE_LITE_HIBERNATE = 3,
+	LTE_SLEEP_STATE_SLEEP = 4,
 };
 
 enum lte_rat {

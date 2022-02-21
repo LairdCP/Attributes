@@ -220,7 +220,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.up_time = 0,
 	.config_version = 0,
 	.power_voltage_mv = 0,
-	.attribute_version = "0.4.97",
+	.attribute_version = "0.4.106",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
@@ -337,7 +337,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[5  ] = { 13 , RO_ATTRS(bluetooth_address)             , ATTR_TYPE_STRING        , 0x2   , av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
 	[6  ] = { 14 , RO_ATTRX(reset_count)                   , ATTR_TYPE_U32           , 0x2   , av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[7  ] = { 16 , RO_ATTRX(up_time)                       , ATTR_TYPE_S64           , 0x2   , av_int64            , attr_prepare_up_time                , .min.ux = 0         , .max.ux = 0          },
-	[8  ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , 0x1b  , av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
+	[8  ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , 0x1b  , av_tx_power         , NULL                                , .min.sx = -40       , .max.sx = 8          },
 	[9  ] = { 60 , RW_ATTRX(network_id)                    , ATTR_TYPE_U16           , 0x1f  , av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[10 ] = { 61 , RO_ATTRX(config_version)                , ATTR_TYPE_U8            , 0xa   , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
 	[11 ] = { 63 , RW_ATTRX(hardware_minor_version)        , ATTR_TYPE_U8            , 0x1b  , av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
@@ -730,8 +730,10 @@ const char *const attr_get_string_lte_sleep_state(int value)
 {
 	switch (value) {
 		case 0:           return "Uninitialized";
-		case 1:           return "Asleep";
+		case 1:           return "Hibernate";
 		case 2:           return "Awake";
+		case 3:           return "Lite Hibernate";
+		case 4:           return "Sleep";
 		default:          return "?";
 	}
 }
