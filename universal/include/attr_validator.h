@@ -2,7 +2,7 @@
  * @file attr_validator.h
  * @brief Validators common to attribute system
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -38,7 +38,8 @@ extern "C" {
  * @note Control point (cp) validators don't require the value being set
  * to be different than the current value.
  *
- * @return int negative error code, 0 on success
+ * @return int 0 on success
+ * @return int negative attr_write_error error code when data isn't valid
  */
 int av_string(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
 int av_array(const ate_t *const entry, void *pv, size_t vlen, bool do_write);

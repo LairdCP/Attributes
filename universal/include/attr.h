@@ -2,7 +2,7 @@
  * @file attr_.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -439,6 +439,15 @@ int attr_show_all(const struct shell *shell);
  * @retval negative error code, 0 on success
  */
 int attr_delete(void);
+
+/**
+ * @brief Helper function
+ *
+ * @param value error code
+ *
+ * @return const char* const string representation of error code
+ */
+const char *const attr_get_string_set_error(int value);
 
 #endif /* CONFIG_ATTR_SHELL */
 

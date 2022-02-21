@@ -18,6 +18,7 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 #include <zephyr.h>
 #include <init.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <logging/log_ctrl.h>
 #include <sys/util.h>
 #include <sys/crc.h>
@@ -191,9 +192,6 @@ extern void attr_table_initialize(void);
 extern void attr_table_factory_reset(void);
 
 static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp);
-static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
-							  enum attr_type Type);
-static enum attr_write_error diagnose_string_write_error(param_kvp_t *kvp);
 
 static int build_empty_feedback_file(const char *feedback_path);
 static int build_feedback_file(const char *feedback_path, char *fstr,
@@ -788,8 +786,8 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 		break;
 
 	case ATTR_TYPE_U64:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRIu64,
-			    entry->id, entry->name, *(uint64_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRIu64, entry->id,
+			    entry->name, *(uint64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_S8:
@@ -811,8 +809,8 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 		break;
 
 	case ATTR_TYPE_S64:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRId64,
-			    entry->id, entry->name, *(int64_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRId64, entry->id,
+			    entry->name, *(int64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_FLOAT:
@@ -875,6 +873,28 @@ int attr_show_all(const struct shell *shell)
 int attr_delete(void)
 {
 	return fsu_delete_abs(ATTR_ABS_PATH);
+}
+
+const char *const attr_get_string_set_error(int value)
+{
+	switch (abs(value)) {
+	case ATTR_WRITE_ERROR_OK:
+		return "success";
+	case ATTR_WRITE_ERROR_NUMERIC_TOO_LOW:
+		return "too low";
+	case ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH:
+		return "too high";
+	case ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS:
+		return "too many characters";
+	case ATTR_WRITE_ERROR_PARAMETER_READ_ONLY:
+		return "read only value";
+	case ATTR_WRITE_ERROR_PARAMETER_UNKNOWN:
+		return "attribute ID unknown";
+	case ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH:
+		return "invalid length";
+	default:
+		return "unknown error";
+	}
 }
 
 #endif /* CONFIG_ATTR_SHELL */
@@ -1337,8 +1357,9 @@ static void change_handler(bool send_notifications)
 		skip_broadcast = atomic_test_bit(attr_skip_broadcast, i);
 
 #ifdef CONFIG_ATTR_BROADCAST
-		if ((modified || unchanged) && (ATTR_TABLE[i].flags & FLAGS_BROADCAST)
-		    && !skip_broadcast) {
+		if ((modified || unchanged) &&
+		    (ATTR_TABLE[i].flags & FLAGS_BROADCAST) &&
+		    !skip_broadcast) {
 			if (pb != NULL) {
 				pb->list[pb->count++] = ATTR_TABLE[i].id;
 			}
@@ -1420,8 +1441,7 @@ static int allow_get(const ate_t *const entry)
 		if (prevent_show == true) {
 			r = -EACCES;
 		}
-	} else if (entry->flags &
-		   FLAGS_OBSCURE_IN_SHOW) {
+	} else if (entry->flags & FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 		if ((entry->flags &
@@ -1454,8 +1474,7 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 
 	if (entry->flags & FLAGS_HIDE_IN_SHOW) {
 		/* Hidden attribute, do not show */
-		if ((entry->flags &
-		     FLAGS_SHOW_ON_CHANGE) &&
+		if ((entry->flags & FLAGS_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1476,11 +1495,9 @@ static int allow_show(const ate_t *const entry, bool change_handler)
 		if (prevent_show == true) {
 			return -EACCES;
 		}
-	} else if (entry->flags &
-		   FLAGS_OBSCURE_IN_SHOW) {
+	} else if (entry->flags & FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute, show asterisks for value */
-		if ((entry->flags &
-		     FLAGS_SHOW_ON_CHANGE) &&
+		if ((entry->flags & FLAGS_SHOW_ON_CHANGE) &&
 		    change_handler == true) {
 			/* Attribute value has changed, show because of
 			 * overriding display option
@@ -1530,8 +1547,7 @@ static struct dump dump_display_option_handler(attr_index_t index, bool locked)
 			dump.hide = true;
 		}
 
-	} else if (entry->flags &
-		   FLAGS_OBSCURE_IN_DUMP) {
+	} else if (entry->flags & FLAGS_OBSCURE_IN_DUMP) {
 		/* Obscured attribute, show asterisks for value */
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 		if ((entry->flags &
@@ -1685,7 +1701,7 @@ static int load_attributes(const char *fname, const char *feedback_path,
 				   &error_count, skip_non_writeable);
 
 			if (error_count != 0) {
-				/* Error occured during verification, no point
+				/* Error occurred during verification, no point
 				 * in continuing
 				 */
 				r = -EINVAL;
@@ -2033,159 +2049,45 @@ static void attr_load_settings_lock(void)
 static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp)
 {
 	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
-	enum attr_type attribute_type;
-
-	/* The following apply to all parameter types.
-	 * Known parameter index?
-	 */
-	if (!attr_valid_id(kvp->id)) {
-		result = ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
-	}
-	if (result == ATTR_WRITE_ERROR_OK) {
-		/* Writable parameter? */
-		if (!is_writable(attr_map(kvp->id))) {
-			result = ATTR_WRITE_ERROR_PARAMETER_READ_ONLY;
-		}
-	}
-	/* If not diagnosed used type specific handlers */
-	if (result == ATTR_WRITE_ERROR_OK) {
-		attribute_type = attr_get_type(kvp->id);
-		switch (attribute_type) {
-		case (ATTR_TYPE_BOOL):
-		case (ATTR_TYPE_U8):
-		case (ATTR_TYPE_U16):
-		case (ATTR_TYPE_U32):
-		case (ATTR_TYPE_U64):
-		case (ATTR_TYPE_S8):
-		case (ATTR_TYPE_S16):
-		case (ATTR_TYPE_S32):
-		case (ATTR_TYPE_S64):
-		case (ATTR_TYPE_FLOAT):
-			result = diagnose_numeric_write_error(kvp,
-							      attribute_type);
-			break;
-		case (ATTR_TYPE_STRING):
-			result = diagnose_string_write_error(kvp);
-			break;
-		default:
-			break;
-		}
-	}
-	return (result);
-}
-
-static enum attr_write_error diagnose_numeric_write_error(param_kvp_t *kvp,
-							  enum attr_type Type)
-{
-	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
-	const struct attr_table_entry *attribute_entry;
+	const struct attr_table_entry *entry;
 	uint8_t bin[ATTR_MAX_BIN_SIZE];
 	size_t binlen;
 
-	attribute_entry = attr_map(kvp->id);
-
-	/* Get numeric data and length */
-	binlen = hex2bin(kvp->keystr, kvp->length, bin, sizeof(bin));
-	/* Make sure the data is valid for use */
-	if (binlen <= 0) {
-		result = ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
-	}
-	/* And only proceed if safe to do so */
-	if (result == ATTR_WRITE_ERROR_OK) {
-		switch (Type) {
-		case (ATTR_TYPE_U8):
-		case (ATTR_TYPE_BOOL):
-			if (*((uint8_t *)(bin)) > attribute_entry->max.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((uint8_t *)(bin)) <
-				   attribute_entry->min.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_U16):
-			if (*((uint16_t *)(bin)) > attribute_entry->max.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((uint16_t *)(bin)) <
-				   attribute_entry->min.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_U32):
-			if (*((uint32_t *)(bin)) > attribute_entry->max.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((uint32_t *)(bin)) <
-				   attribute_entry->min.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_U64):
-			if (*((uint64_t *)(bin)) > attribute_entry->max.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((uint64_t *)(bin)) <
-				   attribute_entry->min.ux) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_S8):
-			if (*((int8_t *)(bin)) > attribute_entry->max.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((int8_t *)(bin)) <
-				   attribute_entry->min.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_S16):
-			if (*((int16_t *)(bin)) > attribute_entry->max.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((int16_t *)(bin)) <
-				   attribute_entry->min.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_S32):
-			if (*((int32_t *)(bin)) > attribute_entry->max.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((int32_t *)(bin)) <
-				   attribute_entry->min.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_S64):
-			if (*((int64_t *)(bin)) > attribute_entry->max.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((int64_t *)(bin)) <
-				   attribute_entry->min.sx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		case (ATTR_TYPE_FLOAT):
-			if (*((float *)(bin)) > attribute_entry->max.fx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
-			} else if (*((float *)(bin)) <
-				   attribute_entry->min.fx) {
-				result = ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
-			}
-			break;
-		default:
+	entry = attr_map(kvp->id);
+	do {
+		/* Does ID map to a valid table index? */
+		if (entry == NULL) {
+			result = ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
 			break;
 		}
-	}
 
-	return (result);
-}
+		if (!is_writable(entry)) {
+			result = ATTR_WRITE_ERROR_PARAMETER_READ_ONLY;
+			break;
+		}
 
-static enum attr_write_error diagnose_string_write_error(param_kvp_t *kvp)
-{
-	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
-	const struct attr_table_entry *attribute_entry;
+		/* If not diagnosed, run validator to get details. */
+		if (entry->type == ATTR_TYPE_STRING) {
+			result = entry->validator(entry, kvp->keystr,
+						  kvp->length, false);
+		} else {
+			binlen = hex2bin(kvp->keystr, kvp->length, bin,
+					 sizeof(bin));
+			/* Make sure the data is valid for use */
+			if (binlen > 0) {
+				result = entry->validator(entry, bin, binlen,
+							  false);
+			} else {
+				result =
+					ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
+			}
+		}
+		break;
 
-	attribute_entry = attr_map(kvp->id);
+	} while (1);
 
-	if (attribute_entry->size < kvp->length) {
-		result = ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS;
-	}
-
-	return (result);
+	/* Validators return negative error codes */
+	return abs(result);
 }
 
 static int build_feedback_file(const char *feedback_path, char *fstr,
@@ -2295,7 +2197,7 @@ void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
 	*max_id = ATTR_TABLE_MAX_ID;
 }
 
-int attr_get_entry_details(uint16_t index, attr_id_t *id, const char * name,
+int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
 			   size_t *size, enum attr_type *type,
 			   enum attr_flags *flags, bool *prepared,
 			   const struct attr_min_max *min,
@@ -2316,7 +2218,6 @@ int attr_get_entry_details(uint16_t index, attr_id_t *id, const char * name,
 
 	return 0;
 }
-
 
 /******************************************************************************/
 /* SYS INIT                                                                   */

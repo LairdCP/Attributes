@@ -2,7 +2,7 @@
  * @file attr_validator.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -25,17 +25,6 @@
 /******************************************************************************/
 #define CHECK_ENTRY() __ASSERT(entry != NULL, "Invalid Entry (index)");
 
-/**
- * @brief Check if value is in the valid rage if min != max.
- *
- * @note Range is limited to 32-bits by attr_min_max
- */
-#define VALID_RANGE()                                                          \
-	((value >= entry->min.ux) && (value <= entry->max.ux)) ||              \
-		(entry->min.ux == entry->max.ux)
-
-#define VALID_BOOL() (value == true || value == false)
-
 /******************************************************************************/
 /* Global Data Definitions                                                    */
 /******************************************************************************/
@@ -45,33 +34,86 @@ extern atomic_t attr_modified[];
 extern atomic_t attr_unchanged[];
 
 /******************************************************************************/
+/* Local Function Definitions                                                 */
+/******************************************************************************/
+static void set_modified(const ate_t *const entry)
+{
+	atomic_set_bit(attr_modified, attr_table_index(entry));
+}
+
+/**
+ * @brief If option is enabled, allow broadcasting/notification/printing of
+ * attribute values that are unchanged during set operation.
+ */
+static void notify_on_unchanged(const ate_t *const entry)
+{
+	if (entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) {
+		atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	}
+}
+
+static int range_check_uint(const ate_t *const entry, uint32_t value)
+{
+	if (entry->min.ux == entry->max.ux) {
+		return 0;
+	} else if (value < entry->min.ux) {
+		return -ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+	} else if (value > entry->max.ux) {
+		return -ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+	} else {
+		return 0;
+	}
+}
+
+static int range_check_signed(const ate_t *const entry, int32_t value)
+{
+	if (entry->min.sx == entry->max.sx) {
+		return 0;
+	} else if (value < entry->min.sx) {
+		return -ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+	} else if (value > entry->max.sx) {
+		return -ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+	} else {
+		return 0;
+	}
+}
+
+static int range_check_bool(const ate_t *const entry, uint32_t value)
+{
+	if (value == true || value == false) {
+		return 0;
+	} else {
+		return -ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
+	}
+}
+
+/******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
 int av_string(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 {
 	CHECK_ENTRY();
 	__ASSERT((entry->size == entry->max.ux + 1), "Unexpected string size");
-	int r = -EPERM;
+	int r = 0;
 
-	/* -1 to account for NULL */
-	if (entry->size > vlen) {
+	if (vlen < entry->min.ux) {
+		r = -ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
+	} else if (vlen < entry->size) {
+		/* Must be smaller to account for NULL character */
 		size_t current_vlen = strlen(entry->pData);
-		if (do_write && (vlen >= entry->min.ux) &&
-		    ((current_vlen != vlen) ||
-		     (memcmp(entry->pData, pv, vlen) != 0))) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			memset(entry->pData, 0, entry->size);
-			strncpy(entry->pData, pv, vlen);
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && vlen >= entry->min.ux &&
-			   memcmp(entry->pData, pv, vlen) == 0) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
-		}
 
-		r = 0;
+		if (do_write) {
+			if ((current_vlen != vlen) ||
+			    (memcmp(entry->pData, pv, vlen) != 0)) {
+				set_modified(entry);
+				memset(entry->pData, 0, entry->size);
+				strncpy(entry->pData, pv, vlen);
+			} else {
+				notify_on_unchanged(entry);
+			}
+		}
+	} else {
+		r = -ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS;
 	}
 	return r;
 }
@@ -79,21 +121,20 @@ int av_string(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 int av_array(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 {
 	CHECK_ENTRY();
-	int r = -EPERM;
+	int r = 0;
 
 	/* For arrays, the entire value must be set. */
 	if (entry->size == vlen) {
-		if (do_write && (memcmp(entry->pData, pv, vlen) != 0)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			memcpy(entry->pData, pv, vlen);
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && memcmp(entry->pData, pv, vlen) == 0) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+		if (do_write) {
+			if (memcmp(entry->pData, pv, vlen) != 0) {
+				set_modified(entry);
+				memcpy(entry->pData, pv, vlen);
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
+	} else {
+		r = -ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
 	}
 	return r;
 }
@@ -104,16 +145,15 @@ int av_uint64(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	CHECK_ENTRY();
 
 	uint64_t value = *(uint64_t *)pv;
+	uint64_t *current = (uint64_t *)entry->pData;
 
-	if (do_write && value != *((uint64_t *)entry->pData)) {
-		atomic_set_bit(attr_modified, attr_table_index(entry));
-		*((uint64_t *)entry->pData) = value;
-	} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-		   do_write && value == *((uint64_t *)entry->pData)) {
-		/* Value is unchanged but flag is set to update upon setting
-		 * the same value
-		 */
-		atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	if (do_write) {
+		if (value != *current) {
+			set_modified(entry);
+			*current = value;
+		} else {
+			notify_on_unchanged(entry);
+		}
 	}
 	return 0;
 }
@@ -123,21 +163,19 @@ int av_uint32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = *(uint32_t *)pv;
+	uint32_t *current = (uint32_t *)entry->pData;
 
-	if (VALID_RANGE()) {
-		if (do_write && value != *((uint32_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((uint32_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((uint32_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -147,21 +185,19 @@ int av_uint16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(uint16_t *)pv);
+	uint16_t *current = (uint16_t *)entry->pData;
 
-	if (VALID_RANGE()) {
-		if (do_write && value != *((uint16_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((uint16_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((uint16_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = (uint16_t)value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -171,21 +207,19 @@ int av_uint8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(uint8_t *)pv);
+	uint8_t *current = (uint8_t *)entry->pData;
 
-	if (VALID_RANGE()) {
-		if (do_write && value != *((uint8_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((uint8_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((uint8_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = (uint8_t)value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -195,21 +229,19 @@ int av_bool(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(bool *)pv);
+	bool *current = (bool *)entry->pData;
 
-	if (VALID_BOOL()) {
-		if (do_write && value != *((bool *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((bool *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((bool *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_bool(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = (bool)value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -220,16 +252,15 @@ int av_int64(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	CHECK_ENTRY();
 
 	int64_t value = *(int64_t *)pv;
+	int64_t *current = (int64_t *)entry->pData;
 
-	if (do_write && value != *((int64_t *)entry->pData)) {
-		atomic_set_bit(attr_modified, attr_table_index(entry));
-		*((int64_t *)entry->pData) = value;
-	} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-		   do_write && value == *((int64_t *)entry->pData)) {
-		/* Value is unchanged but flag is set to update upon setting the
-		 * same value
-		 */
-		atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	if (do_write) {
+		if (value != *current) {
+			set_modified(entry);
+			*current = value;
+		} else {
+			notify_on_unchanged(entry);
+		}
 	}
 	return 0;
 }
@@ -239,22 +270,19 @@ int av_int32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = *(int32_t *)pv;
+	int32_t *current = (int32_t *)entry->pData;
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
-		if (do_write && value != *((int32_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((int32_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((int32_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -264,20 +292,18 @@ int av_int16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = (int32_t)(*(int16_t *)pv);
+	int16_t *current = (int16_t *)entry->pData;
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
-		if (do_write && value != *((int16_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((int16_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((int16_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = (int16_t)value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
 		r = 0;
 	}
@@ -289,20 +315,18 @@ int av_int8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = (int32_t)(*(int8_t *)pv);
+	int8_t *current = (int8_t *)entry->pData;
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
-		if (do_write && value != *((int8_t *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((int8_t *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((int8_t *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = (int8_t)value;
+			} else {
+				notify_on_unchanged(entry);
+			}
 		}
 		r = 0;
 	}
@@ -314,22 +338,27 @@ int av_float(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	float value = *((float *)pv);
+	float *current = (float *)entry->pData;
 
-	if (((value >= entry->min.fx) && (value <= entry->max.fx)) ||
-	    (entry->min.fx == entry->max.fx)) {
-		if (do_write && value != *((float *)entry->pData)) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((float *)entry->pData) = value;
-		} else if ((entry->flags & FLAGS_NOTIFY_IF_VALUE_UNCHANGED) &&
-			   do_write && value == *((float *)entry->pData)) {
-			/* Value is unchanged but flag is set to update upon
-			 * setting the same value
-			 */
-			atomic_set_bit(attr_unchanged, attr_table_index(entry));
+	int r = 0;
+	if (entry->min.fx != entry->max.fx) {
+		if (value < entry->min.fx) {
+			r = -ATTR_WRITE_ERROR_NUMERIC_TOO_LOW;
+		} else if (value > entry->max.fx) {
+			r = -ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH;
 		}
-		r = 0;
+	}
+
+	if (r == 0) {
+		if (do_write) {
+			if (value != *current) {
+				set_modified(entry);
+				*current = value;
+			} else {
+				notify_on_unchanged(entry);
+			}
+		}
 	}
 	return r;
 }
@@ -343,15 +372,14 @@ int av_cp32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = *(uint32_t *)pv;
 
-	if (VALID_RANGE()) {
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
+			set_modified(entry);
 			*((uint32_t *)entry->pData) = value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -361,15 +389,14 @@ int av_cp16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(uint16_t *)pv);
 
-	if (VALID_RANGE()) {
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((uint16_t *)entry->pData) = value;
+			set_modified(entry);
+			*((uint16_t *)entry->pData) = (uint16_t)value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -379,15 +406,14 @@ int av_cp8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(uint8_t *)pv);
 
-	if (VALID_RANGE()) {
+	int r = range_check_uint(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((uint8_t *)entry->pData) = value;
+			set_modified(entry);
+			*((uint8_t *)entry->pData) = (uint8_t)value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -397,16 +423,14 @@ int av_cpi32(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = *(int32_t *)pv;
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
+			set_modified(entry);
 			*((int32_t *)entry->pData) = value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -416,16 +440,14 @@ int av_cpi16(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = (int32_t)(*(int16_t *)pv);
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((int16_t *)entry->pData) = value;
+			set_modified(entry);
+			*((int16_t *)entry->pData) = (int16_t)value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -435,16 +457,14 @@ int av_cpi8(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	int32_t value = (int32_t)(*(int8_t *)pv);
 
-	if (((value >= entry->min.sx) && (value <= entry->max.sx)) ||
-	    (entry->min.sx == entry->max.sx)) {
+	int r = range_check_signed(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((int8_t *)entry->pData) = value;
+			set_modified(entry);
+			*((int8_t *)entry->pData) = (int8_t)value;
 		}
-		r = 0;
 	}
 	return r;
 }
@@ -454,15 +474,14 @@ int av_cpb(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	ARG_UNUSED(vlen);
 	CHECK_ENTRY();
 
-	int r = -EPERM;
 	uint32_t value = (uint32_t)(*(bool *)pv);
 
-	if (VALID_BOOL()) {
+	int r = range_check_bool(entry, value);
+	if (r == 0) {
 		if (do_write) {
-			atomic_set_bit(attr_modified, attr_table_index(entry));
-			*((bool *)entry->pData) = value;
+			set_modified(entry);
+			*((bool *)entry->pData) = (bool)value;
 		}
-		r = 0;
 	}
 	return r;
 }
