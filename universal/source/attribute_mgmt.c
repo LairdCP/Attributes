@@ -90,19 +90,19 @@
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
-static mgmt_handler_fn get_parameter;
-static mgmt_handler_fn set_parameter;
-static mgmt_handler_fn load_parameter_file;
-static mgmt_handler_fn dump_parameter_file;
-static mgmt_handler_fn factory_reset;
-static mgmt_handler_fn set_notify;
-static mgmt_handler_fn get_notify;
-static mgmt_handler_fn disable_notify;
-static mgmt_handler_fn check_lock_status;
-static mgmt_handler_fn set_lock_code;
-static mgmt_handler_fn lock;
-static mgmt_handler_fn unlock;
-static mgmt_handler_fn get_unlock_error_code;
+static int get_parameter(struct mgmt_ctxt *ctxt);
+static int set_parameter(struct mgmt_ctxt *ctxt);
+static int load_parameter_file(struct mgmt_ctxt *ctxt);
+static int dump_parameter_file(struct mgmt_ctxt *ctxt);
+static int factory_reset(struct mgmt_ctxt *ctxt);
+static int set_notify(struct mgmt_ctxt *ctxt);
+static int get_notify(struct mgmt_ctxt *ctxt);
+static int disable_notify(struct mgmt_ctxt *ctxt);
+static int check_lock_status(struct mgmt_ctxt *ctxt);
+static int set_lock_code(struct mgmt_ctxt *ctxt);
+static int lock(struct mgmt_ctxt *ctxt);
+static int unlock(struct mgmt_ctxt *ctxt);
+static int get_unlock_error_code(struct mgmt_ctxt *ctxt);
 
 static int attribute_mgmt_init(const struct device *device);
 
@@ -114,8 +114,6 @@ static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
 
 static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
 			 enum attr_type type, bool *modified);
-
-static int factory_reset(struct mgmt_ctxt *ctxt);
 
 #ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
