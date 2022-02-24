@@ -105,26 +105,26 @@
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 /* pystart - mgmt handler function defines */
-static mgmt_handler_fn get_parameter;
-static mgmt_handler_fn set_parameter;
-static mgmt_handler_fn rev_echo;
-static mgmt_handler_fn calibrate_thermistor;
-static mgmt_handler_fn led_lest;
-static mgmt_handler_fn calibrate_thermistor_version2;
-static mgmt_handler_fn set_rtc;
-static mgmt_handler_fn get_rtc;
-static mgmt_handler_fn load_parameter_file;
-static mgmt_handler_fn dump_parameter_file;
-static mgmt_handler_fn prepare_log;
-static mgmt_handler_fn ack_log;
-static mgmt_handler_fn factory_reset;
-static mgmt_handler_fn sha_256;
-static mgmt_handler_fn set_notify;
-static mgmt_handler_fn get_notify;
-static mgmt_handler_fn disable_notify;
-static mgmt_handler_fn generate_test_log;
-static mgmt_handler_fn uart_log_halt;
-static mgmt_handler_fn generate_memfault_file;
+static int get_parameter(struct mgmt_ctxt *ctxt);
+static int set_parameter(struct mgmt_ctxt *ctxt);
+static int rev_echo(struct mgmt_ctxt *ctxt);
+static int calibrate_thermistor(struct mgmt_ctxt *ctxt);
+static int led_lest(struct mgmt_ctxt *ctxt);
+static int calibrate_thermistor_version2(struct mgmt_ctxt *ctxt);
+static int set_rtc(struct mgmt_ctxt *ctxt);
+static int get_rtc(struct mgmt_ctxt *ctxt);
+static int load_parameter_file(struct mgmt_ctxt *ctxt);
+static int dump_parameter_file(struct mgmt_ctxt *ctxt);
+static int prepare_log(struct mgmt_ctxt *ctxt);
+static int ack_log(struct mgmt_ctxt *ctxt);
+static int factory_reset(struct mgmt_ctxt *ctxt);
+static int sha_256(struct mgmt_ctxt *ctxt);
+static int set_notify(struct mgmt_ctxt *ctxt);
+static int get_notify(struct mgmt_ctxt *ctxt);
+static int disable_notify(struct mgmt_ctxt *ctxt);
+static int generate_test_log(struct mgmt_ctxt *ctxt);
+static int uart_log_halt(struct mgmt_ctxt *ctxt);
+static int generate_memfault_file(struct mgmt_ctxt *ctxt);
 /* pyend */
 
 static int sentrius_mgmt_init(const struct device *device);
@@ -136,9 +136,6 @@ static void map_attr_to_cbor_attr(attr_id_t param_id,
 				  struct cbor_attr_t *cbor_attr);
 
 static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr);
-
-static int factory_reset(struct mgmt_ctxt *ctxt);
-static int sha_256(struct mgmt_ctxt *ctxt);
 
 #ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
