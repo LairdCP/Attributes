@@ -34,52 +34,52 @@ typedef struct rw_attribute {
 	char location[32 + 1];
 	uint32_t passkey;
 	bool lock;
-	int8_t txPower;
-	uint16_t networkId;
-	uint8_t configVersion;
-	uint8_t hardwareVersion;
-	uint32_t qrtcLastSet;
+	int8_t tx_power;
+	uint16_t network_id;
+	uint8_t config_version;
+	uint8_t hardware_version;
+	uint32_t qrtc_last_set;
 	bool commissioned;
-	char rootCaName[48 + 1];
-	char clientCertName[48 + 1];
-	char clientKeyName[48 + 1];
+	char root_ca_name[48 + 1];
+	char client_cert_name[48 + 1];
+	char client_key_name[48 + 1];
 	char endpoint[254 + 1];
 	char port[16 + 1];
-	char clientId[32 + 1];
-	char topicPrefix[32 + 1];
-	enum peer_verify peerVerify;
-	uint16_t batteryLowThreshold;
-	uint16_t batteryAlarmThreshold;
+	char client_id[32 + 1];
+	char topic_prefix[32 + 1];
+	enum peer_verify peer_verify;
+	uint16_t battery_low_threshold;
+	uint16_t battery_alarm_threshold;
 	uint16_t battery4;
 	uint16_t battery3;
 	uint16_t battery2;
 	uint16_t battery1;
 	uint16_t battery0;
-	uint8_t motionOdr;
-	uint8_t motionThresh;
-	uint8_t motionScale;
-	uint8_t motionDuration;
-	uint8_t sdLogMaxSize;
-	uint8_t ctAesKey[16];
-	uint32_t joinDelay;
-	uint16_t joinMin;
-	uint16_t joinMax;
-	uint32_t joinInterval;
-	bool delayCloudReconnect;
-	uint32_t modemDesiredLogLevel;
-	char loadPath[32 + 1];
-	char dumpPath[32 + 1];
-	bool nvImported;
+	uint8_t motion_odr;
+	uint8_t motion_thresh;
+	uint8_t motion_scale;
+	uint8_t motion_duration;
+	uint8_t sd_log_max_size;
+	uint8_t ct_aes_key[16];
+	uint32_t join_delay;
+	uint16_t join_min;
+	uint16_t join_max;
+	uint32_t join_interval;
+	bool delay_cloud_reconnect;
+	uint32_t modem_desired_log_level;
+	char load_path[32 + 1];
+	char dump_path[32 + 1];
+	bool nv_imported;
 	float floaty;
-	uint8_t lwm2mPsk[16];
-	char lwm2mClientId[32 + 1];
-	char lwm2mPeerUrl[128 + 1];
-	uint32_t gpsRate;
-	char polteUser[16 + 1];
-	char poltePassword[16 + 1];
-	uint32_t blePrepareTimeout;
-	int8_t temperatureOffset;
-	bool lwm2mEnableBootstrap;
+	uint8_t lwm2m_psk[16];
+	char lwm2m_client_id[32 + 1];
+	char lwm2m_peer_url[128 + 1];
+	uint32_t gps_rate;
+	char polte_user[16 + 1];
+	char polte_password[16 + 1];
+	uint32_t ble_prepare_timeout;
+	int8_t temperature_offset;
+	bool lwm2m_enable_bootstrap;
 	/* pyend */
 } rw_attribute_t;
 
@@ -88,224 +88,206 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.location = "",
 	.passkey = 123456,
 	.lock = false,
-	.txPower = 0,
-	.networkId = 0,
-	.configVersion = 0,
-	.hardwareVersion = 0,
-	.qrtcLastSet = 0,
+	.tx_power = 0,
+	.network_id = 0,
+	.config_version = 0,
+	.hardware_version = 0,
+	.qrtc_last_set = 0,
 	.commissioned = false,
-	.rootCaName = "/lfs/root_ca.pem",
-	.clientCertName = "/lfs/client_cert.pem",
-	.clientKeyName = "/lfs/client_key.pem",
+	.root_ca_name = "/lfs/root_ca.pem",
+	.client_cert_name = "/lfs/client_cert.pem",
+	.client_key_name = "/lfs/client_key.pem",
 	.endpoint = "a3273rvo818l4w-ats.iot.us-east-1.amazonaws.com",
 	.port = "8883",
-	.clientId = "",
-	.topicPrefix = "mg100-ct/dev/gw/",
-	.peerVerify = 0,
-	.batteryLowThreshold = 3400,
-	.batteryAlarmThreshold = 3000,
+	.client_id = "",
+	.topic_prefix = "mg100-ct/dev/gw/",
+	.peer_verify = 0,
+	.battery_low_threshold = 3400,
+	.battery_alarm_threshold = 3000,
 	.battery4 = 4200,
 	.battery3 = 3800,
 	.battery2 = 3400,
 	.battery1 = 3000,
 	.battery0 = 2750,
-	.motionOdr = 5,
-	.motionThresh = 10,
-	.motionScale = 2,
-	.motionDuration = 6,
-	.sdLogMaxSize = 0,
-	.ctAesKey = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-	.joinDelay = 0,
-	.joinMin = 1,
-	.joinMax = 100,
-	.joinInterval = 1,
-	.delayCloudReconnect = false,
-	.modemDesiredLogLevel = 1,
-	.loadPath = "/lfs/params.txt",
-	.dumpPath = "/lfs/dump.txt",
-	.nvImported = false,
+	.motion_odr = 5,
+	.motion_thresh = 10,
+	.motion_scale = 2,
+	.motion_duration = 6,
+	.sd_log_max_size = 0,
+	.ct_aes_key = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+	.join_delay = 0,
+	.join_min = 1,
+	.join_max = 100,
+	.join_interval = 1,
+	.delay_cloud_reconnect = false,
+	.modem_desired_log_level = 1,
+	.load_path = "/lfs/params.txt",
+	.dump_path = "/lfs/dump.txt",
+	.nv_imported = false,
 	.floaty = 0.13,
-	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
-	.lwm2mClientId = "Client_identity",
-	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
-	.gpsRate = 0,
-	.polteUser = "",
-	.poltePassword = "",
-	.blePrepareTimeout = 3600,
-	.temperatureOffset = 25,
-	.lwm2mEnableBootstrap = false
+	.lwm2m_psk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
+	.lwm2m_client_id = "Client_identity",
+	.lwm2m_peer_url = "uwterminalx.lairdconnect.com",
+	.gps_rate = 0,
+	.polte_user = "",
+	.polte_password = "",
+	.ble_prepare_timeout = 3600,
+	.temperature_offset = 25,
+	.lwm2m_enable_bootstrap = false
 	/* pyend */
 };
 
 typedef struct ro_attribute {
 	/* pystart - ro attributes */
-	char firmwareVersion[11 + 1];
-	char resetReason[12 + 1];
-	char bluetoothAddress[12 + 1];
-	uint32_t resetCount;
-	int64_t upTime;
-	uint16_t batteryVoltageMv;
-	char attributeVersion[11 + 1];
+	char firmware_version[11 + 1];
+	char reset_reason[12 + 1];
+	char bluetooth_address[12 + 1];
+	uint32_t reset_count;
+	int64_t up_time;
+	uint16_t battery_voltage_mv;
+	char attribute_version[11 + 1];
 	uint32_t qrtc;
 	char name[32 + 1];
 	char board[32 + 1];
-	char buildId[64 + 1];
-	char appType[32 + 1];
+	char build_id[64 + 1];
+	char app_type[32 + 1];
 	char mount[32 + 1];
-	enum cert_status certStatus;
-	enum gateway_state gatewayState;
-	uint8_t batteryCapacity;
-	int16_t batteryTemperature;
-	uint8_t batteryChargingState;
-	bool batteryAlarm;
-	bool motionAlarm;
-	float powerSupplyVoltage;
-	char gatewayId[15 + 1];
-	enum lte_network_state lteNetworkState;
-	enum lte_startup_state lteStartupState;
-	int16_t lteRsrp;
-	int16_t lteSinr;
-	enum lte_sleep_state lteSleepState;
-	enum lte_rat lteRat;
+	enum cert_status cert_status;
+	enum gateway_state gateway_state;
+	uint8_t battery_capacity;
+	int16_t battery_temperature;
+	uint8_t battery_charging_state;
+	bool battery_alarm;
+	bool motion_alarm;
+	float power_supply_voltage;
+	char gateway_id[15 + 1];
+	enum lte_network_state lte_network_state;
+	enum lte_startup_state lte_startup_state;
+	int16_t lte_rsrp;
+	int16_t lte_sinr;
+	enum lte_sleep_state lte_sleep_state;
+	enum lte_rat lte_rat;
 	char iccid[20 + 1];
-	char lteSerialNumber[14 + 1];
-	char lteVersion[29 + 1];
+	char lte_serial_number[14 + 1];
+	char lte_version[29 + 1];
 	char bands[20 + 1];
-	char activeBands[20 + 1];
-	enum central_state centralState;
-	char sensorBluetoothAddress[30 + 1];
-	enum modem_boot modemBoot;
+	char active_bands[20 + 1];
+	enum central_state central_state;
+	char sensor_bluetooth_address[30 + 1];
+	enum modem_boot modem_boot;
 	char apn[64 + 1];
-	char apnUsername[65 + 1];
-	char apnPassword[65 + 1];
-	uint8_t apnControlPoint;
-	int32_t apnStatus;
-	uint8_t lteOperatorIndex;
-	enum fota_control_point fotaControlPoint;
-	enum fota_status fotaStatus;
-	char fotaFileName[64 + 1];
-	uint32_t fotaSize;
-	uint32_t fotaCount;
-	enum generate_psk generatePsk;
-	enum lte_init_error lteInitError;
-	enum cloud_error cloudError;
-	bool commissioningBusy;
+	char apn_username[65 + 1];
+	char apn_password[65 + 1];
+	uint8_t apn_control_point;
+	int32_t apn_status;
+	uint8_t lte_operator_index;
+	enum fota_control_point fota_control_point;
+	enum fota_status fota_status;
+	char fota_file_name[64 + 1];
+	uint32_t fota_size;
+	uint32_t fota_count;
+	enum generate_psk generate_psk;
+	enum lte_init_error lte_init_error;
+	enum cloud_error cloud_error;
+	bool commissioning_busy;
 	char imsi[15 + 1];
-	enum modem_functionality modemFunctionality;
-	char gpsLatitude[32 + 1];
-	char gpsLongitude[32 + 1];
-	char gpsTime[32 + 1];
-	char gpsFixType[3 + 1];
-	char gpsHepe[16 + 1];
-	char gpsAltitude[16 + 1];
-	char gpsAltUnc[16 + 1];
-	char gpsHeading[16 + 1];
-	char gpsHorSpeed[16 + 1];
-	char gpsVerSpeed[16 + 1];
-	enum gps_status gpsStatus;
-	enum polte_control_point polteControlPoint;
-	enum polte_status polteStatus;
-	char polteLatitude[32 + 1];
-	char polteLongitude[32 + 1];
-	char polteConfidence[16 + 1];
-	uint32_t polteTimestamp;
+	enum modem_functionality modem_functionality;
+	char gps_latitude[32 + 1];
+	char gps_longitude[32 + 1];
+	char gps_time[32 + 1];
+	char gps_fix_type[3 + 1];
+	char gps_hepe[16 + 1];
+	char gps_altitude[16 + 1];
+	char gps_alt_unc[16 + 1];
+	char gps_heading[16 + 1];
+	char gps_hor_speed[16 + 1];
+	char gps_ver_speed[16 + 1];
+	enum gps_status gps_status;
+	enum polte_control_point polte_control_point;
+	enum polte_status polte_status;
+	char polte_latitude[32 + 1];
+	char polte_longitude[32 + 1];
+	char polte_confidence[16 + 1];
+	uint32_t polte_timestamp;
 	/* pyend */
 } ro_attribute_t;
 
 static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	/* pystart - ro defaults */
-	.firmwareVersion = "0.0.0",
-	.resetReason = "RESETPIN",
-	.bluetoothAddress = "0",
-	.resetCount = 0,
-	.upTime = 0,
-	.batteryVoltageMv = 0,
-	.attributeVersion = "0.4.42",
+	.firmware_version = "0.0.0",
+	.reset_reason = "RESETPIN",
+	.bluetooth_address = "0",
+	.reset_count = 0,
+	.up_time = 0,
+	.battery_voltage_mv = 0,
+	.attribute_version = "0.4.43",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
-	.buildId = "0",
-	.appType = "",
+	.build_id = "0",
+	.app_type = "",
 	.mount = "/lfs",
-	.certStatus = 0,
-	.gatewayState = 0,
-	.batteryCapacity = 0,
-	.batteryTemperature = -127,
-	.batteryChargingState = 0,
-	.batteryAlarm = false,
-	.motionAlarm = false,
-	.powerSupplyVoltage = 0,
-	.gatewayId = "",
-	.lteNetworkState = 0,
-	.lteStartupState = 0,
-	.lteRsrp = 0,
-	.lteSinr = 0,
-	.lteSleepState = 0,
-	.lteRat = 0,
+	.cert_status = 0,
+	.gateway_state = 0,
+	.battery_capacity = 0,
+	.battery_temperature = -127,
+	.battery_charging_state = 0,
+	.battery_alarm = false,
+	.motion_alarm = false,
+	.power_supply_voltage = 0,
+	.gateway_id = "",
+	.lte_network_state = 0,
+	.lte_startup_state = 0,
+	.lte_rsrp = 0,
+	.lte_sinr = 0,
+	.lte_sleep_state = 0,
+	.lte_rat = 0,
 	.iccid = "",
-	.lteSerialNumber = "",
-	.lteVersion = "",
+	.lte_serial_number = "",
+	.lte_version = "",
 	.bands = "",
-	.activeBands = "",
-	.centralState = 0,
-	.sensorBluetoothAddress = "",
-	.modemBoot = 0,
+	.active_bands = "",
+	.central_state = 0,
+	.sensor_bluetooth_address = "",
+	.modem_boot = 0,
 	.apn = "",
-	.apnUsername = "",
-	.apnPassword = "",
-	.apnControlPoint = 0,
-	.apnStatus = 0,
-	.lteOperatorIndex = 255,
-	.fotaControlPoint = 0,
-	.fotaStatus = 0,
-	.fotaFileName = "",
-	.fotaSize = 0,
-	.fotaCount = 0,
-	.generatePsk = 0,
-	.lteInitError = 0,
-	.cloudError = 0,
-	.commissioningBusy = false,
+	.apn_username = "",
+	.apn_password = "",
+	.apn_control_point = 0,
+	.apn_status = 0,
+	.lte_operator_index = 255,
+	.fota_control_point = 0,
+	.fota_status = 0,
+	.fota_file_name = "",
+	.fota_size = 0,
+	.fota_count = 0,
+	.generate_psk = 0,
+	.lte_init_error = 0,
+	.cloud_error = 0,
+	.commissioning_busy = false,
 	.imsi = "",
-	.modemFunctionality = 0,
-	.gpsLatitude = "",
-	.gpsLongitude = "",
-	.gpsTime = "",
-	.gpsFixType = "",
-	.gpsHepe = "",
-	.gpsAltitude = "",
-	.gpsAltUnc = "",
-	.gpsHeading = "",
-	.gpsHorSpeed = "",
-	.gpsVerSpeed = "",
-	.gpsStatus = -1,
-	.polteControlPoint = 0,
-	.polteStatus = 0,
-	.polteLatitude = "",
-	.polteLongitude = "",
-	.polteConfidence = "",
-	.polteTimestamp = 0
+	.modem_functionality = 0,
+	.gps_latitude = "",
+	.gps_longitude = "",
+	.gps_time = "",
+	.gps_fix_type = "",
+	.gps_hepe = "",
+	.gps_altitude = "",
+	.gps_alt_unc = "",
+	.gps_heading = "",
+	.gps_hor_speed = "",
+	.gps_ver_speed = "",
+	.gps_status = -1,
+	.polte_control_point = 0,
+	.polte_status = 0,
+	.polte_latitude = "",
+	.polte_longitude = "",
+	.polte_confidence = "",
+	.polte_timestamp = 0
 	/* pyend */
 };
 
 /* pystart - remap */
-#define attr_get_string_certStatus          attr_get_string_cert_status
-#define attr_get_string_gatewayState        attr_get_string_gateway_state
-#define attr_get_string_peerVerify          attr_get_string_peer_verify
-#define attr_get_string_lteNetworkState     attr_get_string_lte_network_state
-#define attr_get_string_lteStartupState     attr_get_string_lte_startup_state
-#define attr_get_string_lteSleepState       attr_get_string_lte_sleep_state
-#define attr_get_string_lteRat              attr_get_string_lte_rat
-#define attr_get_string_centralState        attr_get_string_central_state
-#define attr_get_string_modemBoot           attr_get_string_modem_boot
-#define attr_get_string_fotaControlPoint    attr_get_string_fota_control_point
-#define attr_get_string_fotaStatus          attr_get_string_fota_status
-#define attr_get_string_generatePsk         attr_get_string_generate_psk
-#define attr_get_string_lteInitError        attr_get_string_lte_init_error
-#define attr_get_string_cloudError          attr_get_string_cloud_error
-#define attr_get_string_modemFunctionality  attr_get_string_modem_functionality
-#define attr_get_string_gpsStatus           attr_get_string_gps_status
-#define attr_get_string_polteControlPoint   attr_get_string_polte_control_point
-#define attr_get_string_polteStatus         attr_get_string_polte_status
 /* pyend */
 
 /******************************************************************************/
@@ -344,122 +326,122 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[0  ] = { 1  , RW_ATTRS(location)                      , ATTR_TYPE_STRING        , y, y, y, y, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[1  ] = { 4  , RW_ATTRX(passkey)                       , ATTR_TYPE_U32           , y, y, y, y, y, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 999999     },
 	[2  ] = { 5  , RW_ATTRX(lock)                          , ATTR_TYPE_BOOL          , y, y, y, y, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[3  ] = { 11 , RO_ATTRS(firmwareVersion)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
-	[4  ] = { 12 , RO_ATTRS(resetReason)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
-	[5  ] = { 13 , RO_ATTRS(bluetoothAddress)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
-	[6  ] = { 14 , RO_ATTRX(resetCount)                    , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[7  ] = { 16 , RO_ATTRX(upTime)                        , ATTR_TYPE_S64           , n, n, y, n, n, n, av_int64            , attr_prepare_upTime                 , .min.ux = 0         , .max.ux = 0          },
-	[8  ] = { 59 , RW_ATTRX(txPower)                       , ATTR_TYPE_S8            , y, y, y, n, y, n, av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
-	[9  ] = { 60 , RW_ATTRX(networkId)                     , ATTR_TYPE_U16           , y, y, y, y, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
-	[10 ] = { 61 , RW_ATTRX(configVersion)                 , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[11 ] = { 63 , RW_ATTRX(hardwareVersion)               , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[12 ] = { 75 , RO_ATTRX(batteryVoltageMv)              , ATTR_TYPE_U16           , n, n, y, n, n, n, av_uint16           , attr_prepare_batteryVoltageMv       , .min.ux = 0         , .max.ux = 0          },
-	[13 ] = { 93 , RO_ATTRS(attributeVersion)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 11         },
+	[3  ] = { 11 , RO_ATTRS(firmware_version)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
+	[4  ] = { 12 , RO_ATTRS(reset_reason)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
+	[5  ] = { 13 , RO_ATTRS(bluetooth_address)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
+	[6  ] = { 14 , RO_ATTRX(reset_count)                   , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[7  ] = { 16 , RO_ATTRX(up_time)                       , ATTR_TYPE_S64           , n, n, y, n, n, n, av_int64            , attr_prepare_up_time                , .min.ux = 0         , .max.ux = 0          },
+	[8  ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , y, y, y, n, y, n, av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
+	[9  ] = { 60 , RW_ATTRX(network_id)                    , ATTR_TYPE_U16           , y, y, y, y, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
+	[10 ] = { 61 , RW_ATTRX(config_version)                , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[11 ] = { 63 , RW_ATTRX(hardware_version)              , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[12 ] = { 75 , RO_ATTRX(battery_voltage_mv)            , ATTR_TYPE_U16           , n, n, y, n, n, n, av_uint16           , attr_prepare_battery_voltage_mv     , .min.ux = 0         , .max.ux = 0          },
+	[13 ] = { 93 , RO_ATTRS(attribute_version)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 11         },
 	[14 ] = { 94 , RO_ATTRX(qrtc)                          , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , attr_prepare_qrtc                   , .min.ux = 0         , .max.ux = 0          },
-	[15 ] = { 95 , RW_ATTRX(qrtcLastSet)                   , ATTR_TYPE_U32           , y, n, y, n, n, n, av_uint32           , attr_prepare_qrtcLastSet            , .min.ux = 0         , .max.ux = 0          },
+	[15 ] = { 95 , RW_ATTRX(qrtc_last_set)                 , ATTR_TYPE_U32           , y, n, y, n, n, n, av_uint32           , attr_prepare_qrtc_last_set          , .min.ux = 0         , .max.ux = 0          },
 	[16 ] = { 140, RO_ATTRS(name)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[17 ] = { 142, RO_ATTRS(board)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
-	[18 ] = { 143, RO_ATTRS(buildId)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 64         },
-	[19 ] = { 144, RO_ATTRS(appType)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
+	[18 ] = { 143, RO_ATTRS(build_id)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 64         },
+	[19 ] = { 144, RO_ATTRS(app_type)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[20 ] = { 145, RO_ATTRS(mount)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[21 ] = { 146, RW_ATTRX(commissioned)                  , ATTR_TYPE_BOOL          , y, y, y, n, y, n, av_cpb              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[22 ] = { 147, RO_ATTRE(certStatus)                    , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[23 ] = { 148, RW_ATTRS(rootCaName)                    , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
-	[24 ] = { 149, RW_ATTRS(clientCertName)                , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
-	[25 ] = { 150, RW_ATTRS(clientKeyName)                 , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[22 ] = { 147, RO_ATTRE(cert_status)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[23 ] = { 148, RW_ATTRS(root_ca_name)                  , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[24 ] = { 149, RW_ATTRS(client_cert_name)              , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[25 ] = { 150, RW_ATTRS(client_key_name)               , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
 	[26 ] = { 151, RW_ATTRS(endpoint)                      , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 254        },
 	[27 ] = { 152, RW_ATTRS(port)                          , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 4         , .max.ux = 16         },
-	[28 ] = { 153, RW_ATTRS(clientId)                      , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[29 ] = { 154, RW_ATTRS(topicPrefix)                   , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[30 ] = { 155, RO_ATTRE(gatewayState)                  , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[31 ] = { 156, RW_ATTRE(peerVerify)                    , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[32 ] = { 157, RO_ATTRX(batteryCapacity)               , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 4          },
-	[33 ] = { 158, RO_ATTRX(batteryTemperature)            , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[34 ] = { 159, RO_ATTRX(batteryChargingState)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[35 ] = { 160, RW_ATTRX(batteryLowThreshold)           , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
-	[36 ] = { 161, RW_ATTRX(batteryAlarmThreshold)         , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
+	[28 ] = { 153, RW_ATTRS(client_id)                     , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[29 ] = { 154, RW_ATTRS(topic_prefix)                  , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[30 ] = { 155, RO_ATTRE(gateway_state)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[31 ] = { 156, RW_ATTRE(peer_verify)                   , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[32 ] = { 157, RO_ATTRX(battery_capacity)              , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 4          },
+	[33 ] = { 158, RO_ATTRX(battery_temperature)           , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[34 ] = { 159, RO_ATTRX(battery_charging_state)        , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[35 ] = { 160, RW_ATTRX(battery_low_threshold)         , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
+	[36 ] = { 161, RW_ATTRX(battery_alarm_threshold)       , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[37 ] = { 162, RW_ATTRX(battery4)                      , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[38 ] = { 163, RW_ATTRX(battery3)                      , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[39 ] = { 164, RW_ATTRX(battery2)                      , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[40 ] = { 165, RW_ATTRX(battery1)                      , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
 	[41 ] = { 166, RW_ATTRX(battery0)                      , ATTR_TYPE_U16           , y, y, y, n, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
-	[42 ] = { 167, RO_ATTRX(batteryAlarm)                  , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[43 ] = { 168, RW_ATTRX(motionOdr)                     , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[44 ] = { 169, RW_ATTRX(motionThresh)                  , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[45 ] = { 170, RW_ATTRX(motionScale)                   , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[46 ] = { 171, RW_ATTRX(motionDuration)                , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[47 ] = { 172, RO_ATTRX(motionAlarm)                   , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[48 ] = { 173, RW_ATTRX(sdLogMaxSize)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[49 ] = { 174, RW_ATTRX(ctAesKey)                      , ATTR_TYPE_BYTE_ARRAY    , y, y, n, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[50 ] = { 175, RO_ATTRX(powerSupplyVoltage)            , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 10.0       },
-	[51 ] = { 176, RO_ATTRS(gatewayId)                     , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 15         },
-	[52 ] = { 177, RO_ATTRE(lteNetworkState)               , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[53 ] = { 178, RO_ATTRE(lteStartupState)               , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[54 ] = { 179, RO_ATTRX(lteRsrp)                       , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[55 ] = { 180, RO_ATTRX(lteSinr)                       , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[56 ] = { 181, RO_ATTRE(lteSleepState)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[57 ] = { 182, RO_ATTRE(lteRat)                        , ATTR_TYPE_U8            , n, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 1          },
+	[42 ] = { 167, RO_ATTRX(battery_alarm)                 , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[43 ] = { 168, RW_ATTRX(motion_odr)                    , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[44 ] = { 169, RW_ATTRX(motion_thresh)                 , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[45 ] = { 170, RW_ATTRX(motion_scale)                  , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[46 ] = { 171, RW_ATTRX(motion_duration)               , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[47 ] = { 172, RO_ATTRX(motion_alarm)                  , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[48 ] = { 173, RW_ATTRX(sd_log_max_size)               , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[49 ] = { 174, RW_ATTRX(ct_aes_key)                    , ATTR_TYPE_BYTE_ARRAY    , y, y, n, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[50 ] = { 175, RO_ATTRX(power_supply_voltage)          , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 10.0       },
+	[51 ] = { 176, RO_ATTRS(gateway_id)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 15         },
+	[52 ] = { 177, RO_ATTRE(lte_network_state)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[53 ] = { 178, RO_ATTRE(lte_startup_state)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[54 ] = { 179, RO_ATTRX(lte_rsrp)                      , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[55 ] = { 180, RO_ATTRX(lte_sinr)                      , ATTR_TYPE_S16           , n, n, y, n, n, n, av_int16            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[56 ] = { 181, RO_ATTRE(lte_sleep_state)               , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[57 ] = { 182, RO_ATTRE(lte_rat)                       , ATTR_TYPE_U8            , n, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[58 ] = { 183, RO_ATTRS(iccid)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 20         },
-	[59 ] = { 184, RO_ATTRS(lteSerialNumber)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 14         },
-	[60 ] = { 185, RO_ATTRS(lteVersion)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 29         },
+	[59 ] = { 184, RO_ATTRS(lte_serial_number)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 14         },
+	[60 ] = { 185, RO_ATTRS(lte_version)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 29         },
 	[61 ] = { 186, RO_ATTRS(bands)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 20        , .max.ux = 20         },
-	[62 ] = { 187, RO_ATTRS(activeBands)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 20        , .max.ux = 20         },
-	[63 ] = { 188, RO_ATTRE(centralState)                  , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[64 ] = { 189, RO_ATTRS(sensorBluetoothAddress)        , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 30         },
-	[65 ] = { 190, RW_ATTRX(joinDelay)                     , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[66 ] = { 191, RW_ATTRX(joinMin)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[67 ] = { 192, RW_ATTRX(joinMax)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[68 ] = { 193, RW_ATTRX(joinInterval)                  , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[69 ] = { 194, RO_ATTRE(modemBoot)                     , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , attr_prepare_modemBoot              , .min.ux = 0         , .max.ux = 0          },
-	[70 ] = { 195, RW_ATTRX(delayCloudReconnect)           , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[62 ] = { 187, RO_ATTRS(active_bands)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 20        , .max.ux = 20         },
+	[63 ] = { 188, RO_ATTRE(central_state)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[64 ] = { 189, RO_ATTRS(sensor_bluetooth_address)      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 30         },
+	[65 ] = { 190, RW_ATTRX(join_delay)                    , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[66 ] = { 191, RW_ATTRX(join_min)                      , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[67 ] = { 192, RW_ATTRX(join_max)                      , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[68 ] = { 193, RW_ATTRX(join_interval)                 , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[69 ] = { 194, RO_ATTRE(modem_boot)                    , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , attr_prepare_modem_boot             , .min.ux = 0         , .max.ux = 0          },
+	[70 ] = { 195, RW_ATTRX(delay_cloud_reconnect)         , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[71 ] = { 196, RO_ATTRS(apn)                           , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
-	[72 ] = { 197, RO_ATTRS(apnUsername)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 65         },
-	[73 ] = { 198, RO_ATTRS(apnPassword)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 65         },
-	[74 ] = { 199, RO_ATTRX(apnControlPoint)               , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[75 ] = { 200, RO_ATTRX(apnStatus)                     , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[76 ] = { 201, RW_ATTRX(modemDesiredLogLevel)          , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 4          },
-	[77 ] = { 202, RO_ATTRX(lteOperatorIndex)              , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[78 ] = { 203, RO_ATTRE(fotaControlPoint)              , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[79 ] = { 204, RO_ATTRE(fotaStatus)                    , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[80 ] = { 205, RO_ATTRS(fotaFileName)                  , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
-	[81 ] = { 206, RO_ATTRX(fotaSize)                      , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[82 ] = { 207, RO_ATTRX(fotaCount)                     , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[83 ] = { 208, RW_ATTRS(loadPath)                      , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[84 ] = { 209, RW_ATTRS(dumpPath)                      , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[85 ] = { 210, RW_ATTRX(nvImported)                    , ATTR_TYPE_BOOL          , y, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[72 ] = { 197, RO_ATTRS(apn_username)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 65         },
+	[73 ] = { 198, RO_ATTRS(apn_password)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 65         },
+	[74 ] = { 199, RO_ATTRX(apn_control_point)             , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[75 ] = { 200, RO_ATTRX(apn_status)                    , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[76 ] = { 201, RW_ATTRX(modem_desired_log_level)       , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 4          },
+	[77 ] = { 202, RO_ATTRX(lte_operator_index)            , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[78 ] = { 203, RO_ATTRE(fota_control_point)            , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[79 ] = { 204, RO_ATTRE(fota_status)                   , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[80 ] = { 205, RO_ATTRS(fota_file_name)                , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
+	[81 ] = { 206, RO_ATTRX(fota_size)                     , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[82 ] = { 207, RO_ATTRX(fota_count)                    , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[83 ] = { 208, RW_ATTRS(load_path)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[84 ] = { 209, RW_ATTRS(dump_path)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[85 ] = { 210, RW_ATTRX(nv_imported)                   , ATTR_TYPE_BOOL          , y, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[86 ] = { 211, RW_ATTRX(floaty)                        , ATTR_TYPE_FLOAT         , y, y, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
-	[87 ] = { 212, RO_ATTRE(generatePsk)                   , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 1          },
-	[88 ] = { 213, RW_ATTRX(lwm2mPsk)                      , ATTR_TYPE_BYTE_ARRAY    , y, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[89 ] = { 214, RW_ATTRS(lwm2mClientId)                 , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
-	[90 ] = { 215, RW_ATTRS(lwm2mPeerUrl)                  , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 128        },
-	[91 ] = { 216, RO_ATTRE(lteInitError)                  , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[92 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[93 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[87 ] = { 212, RO_ATTRE(generate_psk)                  , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 1          },
+	[88 ] = { 213, RW_ATTRX(lwm2m_psk)                     , ATTR_TYPE_BYTE_ARRAY    , y, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[89 ] = { 214, RW_ATTRS(lwm2m_client_id)               , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
+	[90 ] = { 215, RW_ATTRS(lwm2m_peer_url)                , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 128        },
+	[91 ] = { 216, RO_ATTRE(lte_init_error)                , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[92 ] = { 217, RO_ATTRE(cloud_error)                   , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[93 ] = { 218, RO_ATTRX(commissioning_busy)            , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[94 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
-	[95 ] = { 220, RO_ATTRE(modemFunctionality)            , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , attr_prepare_modemFunctionality     , .min.ux = 0         , .max.ux = 0          },
-	[96 ] = { 242, RW_ATTRX(gpsRate)                       , ATTR_TYPE_U32           , y, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[97 ] = { 243, RO_ATTRS(gpsLatitude)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[98 ] = { 244, RO_ATTRS(gpsLongitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[99 ] = { 245, RO_ATTRS(gpsTime)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[100] = { 246, RO_ATTRS(gpsFixType)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 3          },
-	[101] = { 247, RO_ATTRS(gpsHepe)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[102] = { 248, RO_ATTRS(gpsAltitude)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[103] = { 249, RO_ATTRS(gpsAltUnc)                     , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[104] = { 250, RO_ATTRS(gpsHeading)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[105] = { 251, RO_ATTRS(gpsHorSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[106] = { 252, RO_ATTRS(gpsVerSpeed)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[107] = { 253, RO_ATTRE(gpsStatus)                     , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[108] = { 254, RO_ATTRE(polteControlPoint)             , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[109] = { 255, RO_ATTRE(polteStatus)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[110] = { 256, RW_ATTRS(polteUser)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[111] = { 257, RW_ATTRS(poltePassword)                 , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[112] = { 258, RO_ATTRS(polteLatitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[113] = { 259, RO_ATTRS(polteLongitude)                , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[114] = { 260, RO_ATTRS(polteConfidence)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
-	[115] = { 261, RO_ATTRX(polteTimestamp)                , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[116] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
-	[117] = { 263, RW_ATTRX(temperatureOffset)             , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[118] = { 264, RW_ATTRX(lwm2mEnableBootstrap)          , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[95 ] = { 220, RO_ATTRE(modem_functionality)           , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , attr_prepare_modem_functionality    , .min.ux = 0         , .max.ux = 0          },
+	[96 ] = { 242, RW_ATTRX(gps_rate)                      , ATTR_TYPE_U32           , y, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[97 ] = { 243, RO_ATTRS(gps_latitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[98 ] = { 244, RO_ATTRS(gps_longitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[99 ] = { 245, RO_ATTRS(gps_time)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[100] = { 246, RO_ATTRS(gps_fix_type)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 3          },
+	[101] = { 247, RO_ATTRS(gps_hepe)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[102] = { 248, RO_ATTRS(gps_altitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[103] = { 249, RO_ATTRS(gps_alt_unc)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[104] = { 250, RO_ATTRS(gps_heading)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[105] = { 251, RO_ATTRS(gps_hor_speed)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[106] = { 252, RO_ATTRS(gps_ver_speed)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[107] = { 253, RO_ATTRE(gps_status)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[108] = { 254, RO_ATTRE(polte_control_point)           , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[109] = { 255, RO_ATTRE(polte_status)                  , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[110] = { 256, RW_ATTRS(polte_user)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[111] = { 257, RW_ATTRS(polte_password)                , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[112] = { 258, RO_ATTRS(polte_latitude)                , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[113] = { 259, RO_ATTRS(polte_longitude)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[114] = { 260, RO_ATTRS(polte_confidence)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
+	[115] = { 261, RO_ATTRX(polte_timestamp)               , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[116] = { 262, RW_ATTRX(ble_prepare_timeout)           , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
+	[117] = { 263, RW_ATTRX(temperature_offset)            , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[118] = { 264, RW_ATTRX(lwm2m_enable_bootstrap)        , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -629,12 +611,12 @@ attr_index_t attr_table_index(const struct attr_table_entry *const entry)
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 /* pystart - prepare for read - weak implementations */
-__weak int attr_prepare_upTime(void)
+__weak int attr_prepare_up_time(void)
 {
 	return 0;
 }
 
-__weak int attr_prepare_batteryVoltageMv(void)
+__weak int attr_prepare_battery_voltage_mv(void)
 {
 	return 0;
 }
@@ -644,17 +626,17 @@ __weak int attr_prepare_qrtc(void)
 	return 0;
 }
 
-__weak int attr_prepare_qrtcLastSet(void)
+__weak int attr_prepare_qrtc_last_set(void)
 {
 	return 0;
 }
 
-__weak int attr_prepare_modemBoot(void)
+__weak int attr_prepare_modem_boot(void)
 {
 	return 0;
 }
 
-__weak int attr_prepare_modemFunctionality(void)
+__weak int attr_prepare_modem_functionality(void)
 {
 	return 0;
 }

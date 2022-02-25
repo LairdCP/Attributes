@@ -369,7 +369,7 @@ static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv)
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	char *fstr = NULL;
-	char *fname = attr_get_quasi_static(ATTR_ID_dumpPath);
+	char *fname = attr_get_quasi_static(ATTR_ID_dump_path);
 	int r = -EPERM;
 	int type;
 
@@ -502,7 +502,7 @@ static int ats_qrtc_cmd(const struct shell *shell, size_t argc, char **argv)
 	if ((argc == 2) && (argv[1] != NULL)) {
 		qrtc = MAX((int)strtol(argv[1], NULL, 0), 0);
 		result = lcz_qrtc_set_epoch(qrtc);
-		r = attr_set_uint32(ATTR_ID_qrtcLastSet, qrtc);
+		r = attr_set_uint32(ATTR_ID_qrtc_last_set, qrtc);
 		if (qrtc != result || r < 0) {
 			shell_error(shell, "Unable to set qrtc");
 		}

@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.42"
+    "version": "0.4.43"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -17,7 +17,7 @@
         },
         "x-device-parameters": [
           {
-            "name": "sensorName",
+            "name": "sensor_name",
             "summary": "Sensor Name",
             "required": true,
             "x-id": 0,
@@ -63,7 +63,7 @@
             }
           },
           {
-            "name": "advertisingInterval",
+            "name": "advertising_interval",
             "summary": "Advertising Interval in milliseconds",
             "required": true,
             "x-id": 2,
@@ -86,7 +86,7 @@
             }
           },
           {
-            "name": "advertisingDuration",
+            "name": "advertising_duration",
             "summary": "Advertising duration of an event in milliseconds. 0=No events advertised",
             "required": true,
             "x-id": 3,
@@ -155,7 +155,7 @@
             }
           },
           {
-            "name": "batterySenseInterval",
+            "name": "battery_sense_interval",
             "summary": "Battery Sense interval in seconds",
             "required": true,
             "x-id": 6,
@@ -177,7 +177,7 @@
             }
           },
           {
-            "name": "temperatureSenseInterval",
+            "name": "temperature_sense_interval",
             "summary": "Temperature Sense interval in seconds",
             "required": true,
             "x-id": 7,
@@ -199,7 +199,7 @@
             }
           },
           {
-            "name": "aggregationCount",
+            "name": "aggregation_count",
             "summary": "Aggregation value used on all the sensor data",
             "required": true,
             "x-id": 8,
@@ -221,7 +221,7 @@
             }
           },
           {
-            "name": "digitalOutput1State",
+            "name": "digital_output1_state",
             "summary": "false = off, true - on",
             "required": true,
             "x-id": 9,
@@ -241,7 +241,7 @@
             }
           },
           {
-            "name": "digitalOutput2State",
+            "name": "digital_output2_state",
             "summary": "false = off, true - on",
             "required": true,
             "x-id": 10,
@@ -261,7 +261,7 @@
             }
           },
           {
-            "name": "firmwareVersion",
+            "name": "firmware_version",
             "summary": "Firmware Version.\nFormat = Major.Minor.Build",
             "required": true,
             "x-id": 11,
@@ -282,7 +282,7 @@
             }
           },
           {
-            "name": "resetReason",
+            "name": "reset_reason",
             "summary": "For Development",
             "required": true,
             "x-id": 12,
@@ -302,7 +302,7 @@
             }
           },
           {
-            "name": "bluetoothAddress",
+            "name": "bluetooth_address",
             "summary": "Bluetooth MAC",
             "required": true,
             "x-id": 13,
@@ -323,7 +323,7 @@
             }
           },
           {
-            "name": "resetCount",
+            "name": "reset_count",
             "summary": "reset Count",
             "required": true,
             "x-id": 14,
@@ -342,7 +342,7 @@
             }
           },
           {
-            "name": "bootloaderVersion",
+            "name": "bootloader_version",
             "summary": "Bootloader Version\nFormat = Major.Minor",
             "required": true,
             "x-id": 15,
@@ -361,7 +361,7 @@
             }
           },
           {
-            "name": "upTime",
+            "name": "up_time",
             "summary": "Time in milliseconds since the last reboot",
             "required": true,
             "x-id": 16,
@@ -381,7 +381,7 @@
             }
           },
           {
-            "name": "highTemp1Thresh1",
+            "name": "high_temp1_thresh1",
             "summary": "High Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 17,
@@ -403,7 +403,7 @@
             }
           },
           {
-            "name": "highTemp1Thresh2",
+            "name": "high_temp1_thresh2",
             "summary": "High Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 18,
@@ -425,7 +425,7 @@
             }
           },
           {
-            "name": "lowTemp1Thresh1",
+            "name": "low_temp1_thresh1",
             "summary": "Low Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 19,
@@ -447,7 +447,7 @@
             }
           },
           {
-            "name": "lowTemp1Thresh2",
+            "name": "low_temp1_thresh2",
             "summary": "Low Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 20,
@@ -469,7 +469,7 @@
             }
           },
           {
-            "name": "temp1DeltaThresh",
+            "name": "temp1_delta_thresh",
             "summary": "Delta Temperature Alarm Threshold in degrees C",
             "description": "Disabled when negative",
             "required": true,
@@ -492,7 +492,7 @@
             }
           },
           {
-            "name": "highTemp2Thresh1",
+            "name": "high_temp2_thresh1",
             "summary": "High Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 22,
@@ -514,7 +514,7 @@
             }
           },
           {
-            "name": "highTemp2Thresh2",
+            "name": "high_temp2_thresh2",
             "summary": "High Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 23,
@@ -536,7 +536,7 @@
             }
           },
           {
-            "name": "lowTemp2Thresh1",
+            "name": "low_temp2_thresh1",
             "summary": "Low Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 24,
@@ -558,7 +558,7 @@
             }
           },
           {
-            "name": "lowTemp2Thresh2",
+            "name": "low_temp2_thresh2",
             "summary": "Low Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 25,
@@ -580,7 +580,7 @@
             }
           },
           {
-            "name": "temp2DeltaThresh",
+            "name": "temp2_delta_thresh",
             "summary": "Delta Temperature Alarm Threshold",
             "required": true,
             "x-id": 26,
@@ -602,7 +602,7 @@
             }
           },
           {
-            "name": "highTemp3Thresh1",
+            "name": "high_temp3_thresh1",
             "summary": "High Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 27,
@@ -624,7 +624,7 @@
             }
           },
           {
-            "name": "highTemp3Thresh2",
+            "name": "high_temp3_thresh2",
             "summary": "High Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 28,
@@ -646,7 +646,7 @@
             }
           },
           {
-            "name": "lowTemp3Thresh1",
+            "name": "low_temp3_thresh1",
             "summary": "Low Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 29,
@@ -668,7 +668,7 @@
             }
           },
           {
-            "name": "lowTemp3Thresh2",
+            "name": "low_temp3_thresh2",
             "summary": "Low Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 30,
@@ -690,7 +690,7 @@
             }
           },
           {
-            "name": "temp3DeltaThresh",
+            "name": "temp3_delta_thresh",
             "summary": "Delta Temperature Alarm Threshold",
             "required": true,
             "x-id": 31,
@@ -712,7 +712,7 @@
             }
           },
           {
-            "name": "highTemp4Thresh1",
+            "name": "high_temp4_thresh1",
             "summary": "High Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 32,
@@ -734,7 +734,7 @@
             }
           },
           {
-            "name": "highTemp4Thresh2",
+            "name": "high_temp4_thresh2",
             "summary": "High Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 33,
@@ -756,7 +756,7 @@
             }
           },
           {
-            "name": "lowTemp4Thresh1",
+            "name": "low_temp4_thresh1",
             "summary": "Low Temperature Alarm Threshold 1 in degrees C",
             "required": true,
             "x-id": 34,
@@ -778,7 +778,7 @@
             }
           },
           {
-            "name": "lowTemp4Thresh2",
+            "name": "low_temp4_thresh2",
             "summary": "Low Temperature Alarm Threshold 2 in degrees C",
             "required": true,
             "x-id": 35,
@@ -800,7 +800,7 @@
             }
           },
           {
-            "name": "temp4DeltaThresh",
+            "name": "temp4_delta_thresh",
             "summary": "Delta Temperature Alarm Threshold",
             "required": true,
             "x-id": 36,
@@ -822,7 +822,7 @@
             }
           },
           {
-            "name": "highAnalog1Thresh1",
+            "name": "high_analog1_thresh1",
             "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 37,
@@ -843,7 +843,7 @@
             }
           },
           {
-            "name": "highAnalog1Thresh2",
+            "name": "high_analog1_thresh2",
             "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 38,
@@ -864,7 +864,7 @@
             }
           },
           {
-            "name": "lowAnalog1Thresh1",
+            "name": "low_analog1_thresh1",
             "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 39,
@@ -885,7 +885,7 @@
             }
           },
           {
-            "name": "lowAnalog1Thresh2",
+            "name": "low_analog1_thresh2",
             "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 40,
@@ -906,7 +906,7 @@
             }
           },
           {
-            "name": "analog1DeltaThresh",
+            "name": "analog1_delta_thresh",
             "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
             "required": true,
             "x-id": 41,
@@ -927,7 +927,7 @@
             }
           },
           {
-            "name": "highAnalog2Thresh1",
+            "name": "high_analog2_thresh1",
             "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 42,
@@ -948,7 +948,7 @@
             }
           },
           {
-            "name": "highAnalog2Thresh2",
+            "name": "high_analog2_thresh2",
             "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 43,
@@ -969,7 +969,7 @@
             }
           },
           {
-            "name": "lowAnalog2Thresh1",
+            "name": "low_analog2_thresh1",
             "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 44,
@@ -990,7 +990,7 @@
             }
           },
           {
-            "name": "lowAnalog2Thresh2",
+            "name": "low_analog2_thresh2",
             "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 45,
@@ -1011,7 +1011,7 @@
             }
           },
           {
-            "name": "analog2DeltaThresh",
+            "name": "analog2_delta_thresh",
             "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
             "required": true,
             "x-id": 46,
@@ -1032,7 +1032,7 @@
             }
           },
           {
-            "name": "highAnalog3Thresh1",
+            "name": "high_analog3_thresh1",
             "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 47,
@@ -1053,7 +1053,7 @@
             }
           },
           {
-            "name": "highAnalog3Thresh2",
+            "name": "high_analog3_thresh2",
             "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 48,
@@ -1074,7 +1074,7 @@
             }
           },
           {
-            "name": "lowAnalog3Thresh1",
+            "name": "low_analog3_thresh1",
             "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 49,
@@ -1095,7 +1095,7 @@
             }
           },
           {
-            "name": "lowAnalog3Thresh2",
+            "name": "low_analog3_thresh2",
             "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 50,
@@ -1116,7 +1116,7 @@
             }
           },
           {
-            "name": "analog3DeltaThresh",
+            "name": "analog3_delta_thresh",
             "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
             "required": true,
             "x-id": 51,
@@ -1137,7 +1137,7 @@
             }
           },
           {
-            "name": "highAnalog4Thresh1",
+            "name": "high_analog4_thresh1",
             "summary": "High Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 52,
@@ -1158,7 +1158,7 @@
             }
           },
           {
-            "name": "highAnalog4Thresh2",
+            "name": "high_analog4_thresh2",
             "summary": "High Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 53,
@@ -1179,7 +1179,7 @@
             }
           },
           {
-            "name": "lowAnalog4Thresh1",
+            "name": "low_analog4_thresh1",
             "summary": "Low Analog Alarm Threshold 1. Units will either be in mV or mA",
             "required": true,
             "x-id": 54,
@@ -1200,7 +1200,7 @@
             }
           },
           {
-            "name": "lowAnalog4Thresh2",
+            "name": "low_analog4_thresh2",
             "summary": "Low Analog Alarm Threshold 2. Units will either be in mV or mA",
             "required": true,
             "x-id": 55,
@@ -1221,7 +1221,7 @@
             }
           },
           {
-            "name": "analog4DeltaThresh",
+            "name": "analog4_delta_thresh",
             "summary": "Delta Analog Alarm Threshold. Units will either be in mV or mA",
             "required": true,
             "x-id": 56,
@@ -1242,7 +1242,7 @@
             }
           },
           {
-            "name": "activeMode",
+            "name": "active_mode",
             "summary": "0 = inactive (shelf mode)\n1 = active (sample enabled)",
             "required": true,
             "x-id": 57,
@@ -1262,7 +1262,7 @@
             }
           },
           {
-            "name": "useCodedPhy",
+            "name": "use_coded_phy",
             "summary": "Coded Phy Value",
             "required": true,
             "x-id": 58,
@@ -1282,7 +1282,7 @@
             }
           },
           {
-            "name": "txPower",
+            "name": "tx_power",
             "summary": "Bluetooth Tx Power (dBm)",
             "required": false,
             "x-id": 59,
@@ -1306,7 +1306,7 @@
             }
           },
           {
-            "name": "networkId",
+            "name": "network_id",
             "summary": "Network Id used in advertisement.",
             "required": true,
             "x-id": 60,
@@ -1330,7 +1330,7 @@
             }
           },
           {
-            "name": "configVersion",
+            "name": "config_version",
             "summary": "Config Version",
             "description": "This is used for synchronization between clients (Bluegrass/Phone application).",
             "required": true,
@@ -1354,7 +1354,7 @@
             }
           },
           {
-            "name": "configType",
+            "name": "config_type",
             "summary": "Predetermined configurations (modes of operation)",
             "description": "Writing this will cause other attributes to be set with the correct value.",
             "required": true,
@@ -1386,7 +1386,7 @@
             }
           },
           {
-            "name": "hardwareVersion",
+            "name": "hardware_version",
             "summary": "Hardware version set during production",
             "required": true,
             "x-id": 63,
@@ -1445,7 +1445,7 @@
             }
           },
           {
-            "name": "oldCoefficientA",
+            "name": "old_coefficient_a",
             "summary": "This is not used",
             "required": true,
             "x-id": 66,
@@ -1467,7 +1467,7 @@
             }
           },
           {
-            "name": "oldCoefficientB",
+            "name": "old_coefficient_b",
             "summary": "This is not used",
             "required": true,
             "x-id": 67,
@@ -1489,7 +1489,7 @@
             }
           },
           {
-            "name": "oldCoefficientC",
+            "name": "old_coefficient_c",
             "summary": "This is not used",
             "required": true,
             "x-id": 68,
@@ -1511,7 +1511,7 @@
             }
           },
           {
-            "name": "thermistorConfig",
+            "name": "thermistor_config",
             "summary": "Bitmask of Thermistor Inputs.  Bit 0 is thermistor 1.  1 is enabled, 0 is disabled",
             "required": true,
             "x-id": 69,
@@ -1531,7 +1531,7 @@
             }
           },
           {
-            "name": "temperatureResult1",
+            "name": "temperature_result1",
             "summary": "Temperature in C",
             "required": true,
             "x-id": 70,
@@ -1551,7 +1551,7 @@
             }
           },
           {
-            "name": "temperatureResult2",
+            "name": "temperature_result2",
             "summary": "Temperature in C",
             "required": true,
             "x-id": 71,
@@ -1570,7 +1570,7 @@
             }
           },
           {
-            "name": "temperatureResult3",
+            "name": "temperature_result3",
             "summary": "Temperature in C",
             "required": true,
             "x-id": 72,
@@ -1589,7 +1589,7 @@
             }
           },
           {
-            "name": "temperatureResult4",
+            "name": "temperature_result4",
             "summary": "Temperature in C",
             "required": true,
             "x-id": 73,
@@ -1608,7 +1608,7 @@
             }
           },
           {
-            "name": "temperatureAlarms",
+            "name": "temperature_alarms",
             "summary": "Bitmask for all 4 channels and each alarm.\n dddddcccccbbbbbaaaaa",
             "description": "",
             "required": true,
@@ -1650,7 +1650,7 @@
             }
           },
           {
-            "name": "batteryVoltageMv",
+            "name": "battery_voltage_mv",
             "summary": "Battery Voltage in millivolts",
             "description": "Not a float to match previous system",
             "required": true,
@@ -1670,7 +1670,7 @@
             }
           },
           {
-            "name": "digitalInput",
+            "name": "digital_input",
             "summary": "Bit 0 is digital input 1, Bit 1 is digital input 2",
             "required": true,
             "x-id": 76,
@@ -1689,7 +1689,7 @@
             }
           },
           {
-            "name": "digitalAlarms",
+            "name": "digital_alarms",
             "summary": "Bitmask of alarms for Digital Inputs 1 and 2; Alarm is set when 1",
             "description": "Bit 0 = Input 1, Bit 1 = Input 2",
             "required": true,
@@ -1710,7 +1710,7 @@
             }
           },
           {
-            "name": "digitalInput1Config",
+            "name": "digital_input1_config",
             "summary": "Bit 7 : Enable/Disable; Bits 1:0 Alarm Enumeration:\n 0 = None\n 1 = falling edge\n 2 = rising edge\n 3 = both",
             "required": true,
             "x-id": 78,
@@ -1731,7 +1731,7 @@
             }
           },
           {
-            "name": "digitalInput2Config",
+            "name": "digital_input2_config",
             "summary": "Bit 7 : Enable/Disable; Bits 1:0 Alarm Enumeration:\n 0 = None\n 1 = falling edge\n 2 = rising edge\n 3 = both",
             "required": true,
             "x-id": 79,
@@ -1752,7 +1752,7 @@
             }
           },
           {
-            "name": "analogInput1",
+            "name": "analog_input1",
             "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
             "required": true,
             "x-id": 80,
@@ -1770,7 +1770,7 @@
             }
           },
           {
-            "name": "analogInput2",
+            "name": "analog_input2",
             "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
             "required": true,
             "x-id": 81,
@@ -1788,7 +1788,7 @@
             }
           },
           {
-            "name": "analogInput3",
+            "name": "analog_input3",
             "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
             "required": true,
             "x-id": 82,
@@ -1806,7 +1806,7 @@
             }
           },
           {
-            "name": "analogInput4",
+            "name": "analog_input4",
             "summary": "Unit depends on Analog Input Configuration Type. Units will either be in mV or mA",
             "required": true,
             "x-id": 83,
@@ -1824,7 +1824,7 @@
             }
           },
           {
-            "name": "analogAlarms",
+            "name": "analog_alarms",
             "summary": "Bitmask for all 4 channels and each alarm.\n dddddcccccbbbbbaaaaa",
             "description": "",
             "required": true,
@@ -1867,7 +1867,7 @@
             }
           },
           {
-            "name": "analogInput1Type",
+            "name": "analog_input1_type",
             "summary": "Analog Input Channel 1 configuration",
             "description": "If changing a pressure sensor port, then any active pressure sensor ports must be first set to 0.",
             "required": true,
@@ -1899,7 +1899,7 @@
             }
           },
           {
-            "name": "analogInput2Type",
+            "name": "analog_input2_type",
             "summary": "Analog Input Channel 2 configuration",
             "required": true,
             "x-id": 86,
@@ -1921,7 +1921,7 @@
             }
           },
           {
-            "name": "analogInput3Type",
+            "name": "analog_input3_type",
             "summary": "Analog Input Channel 3 configuration",
             "required": true,
             "x-id": 87,
@@ -1943,7 +1943,7 @@
             }
           },
           {
-            "name": "analogInput4Type",
+            "name": "analog_input4_type",
             "summary": "Analog Input Channel 4 configuration",
             "required": true,
             "x-id": 88,
@@ -1984,7 +1984,7 @@
             }
           },
           {
-            "name": "magnetState",
+            "name": "magnet_state",
             "summary": "Proximity of magnet to sensor (Door Open/Closed)",
             "required": true,
             "x-id": 90,
@@ -2005,7 +2005,7 @@
             }
           },
           {
-            "name": "paramPath",
+            "name": "param_path",
             "summary": "Folder on file system used for Parse/Dump commands",
             "required": true,
             "x-id": 91,
@@ -2023,7 +2023,7 @@
             }
           },
           {
-            "name": "batteryAge",
+            "name": "battery_age",
             "summary": "Time in seconds that the battery has been in use",
             "required": true,
             "x-id": 92,
@@ -2040,7 +2040,7 @@
             }
           },
           {
-            "name": "attributeVersion",
+            "name": "attribute_version",
             "summary": "The API attribute version that the firmware supports",
             "required": true,
             "x-id": 93,
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.42",
+              "x-default": "0.4.43",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2081,7 +2081,7 @@
             }
           },
           {
-            "name": "qrtcLastSet",
+            "name": "qrtc_last_set",
             "summary": "Last time the RTC was set",
             "required": false,
             "x-id": 95,
@@ -2102,7 +2102,7 @@
             }
           },
           {
-            "name": "shOffset",
+            "name": "sh_offset",
             "summary": "Steinhart-Hart Temperature Equation offset",
             "required": true,
             "x-id": 96,
@@ -2123,7 +2123,7 @@
             }
           },
           {
-            "name": "analogSenseInterval",
+            "name": "analog_sense_interval",
             "summary": "analog Sense interval in seconds",
             "required": true,
             "x-id": 97,
@@ -2144,7 +2144,7 @@
             }
           },
           {
-            "name": "tamperSwitchStatus",
+            "name": "tamper_switch_status",
             "summary": "Returns the current state of the tamper switch",
             "description": "True = Tamper switch active (not pressed) \nFalse = Tamper switch inactive (pressed).",
             "required": true,
@@ -2167,7 +2167,7 @@
             }
           },
           {
-            "name": "connectionTimeoutSec",
+            "name": "connection_timeout_sec",
             "summary": "How long the device connected to the app in seconds \nSetting to 0 will disable",
             "required": true,
             "x-id": 99,
@@ -2188,7 +2188,7 @@
             }
           },
           {
-            "name": "settingsPassCode",
+            "name": "settings_pass_code",
             "summary": "Six digit numeric pass code to unlock device settings.",
             "required": true,
             "x-id": 100,
@@ -2210,7 +2210,7 @@
             }
           },
           {
-            "name": "therm1CoefficientA",
+            "name": "therm1_coefficient_a",
             "summary": "Steinhart-Hart Temperature Equation coefficient A",
             "required": true,
             "x-id": 101,
@@ -2231,7 +2231,7 @@
             }
           },
           {
-            "name": "therm2CoefficientA",
+            "name": "therm2_coefficient_a",
             "summary": "Steinhart-Hart Temperature Equation coefficient A",
             "required": true,
             "x-id": 102,
@@ -2252,7 +2252,7 @@
             }
           },
           {
-            "name": "therm3CoefficientA",
+            "name": "therm3_coefficient_a",
             "summary": "Steinhart-Hart Temperature Equation  coefficient A",
             "required": true,
             "x-id": 103,
@@ -2273,7 +2273,7 @@
             }
           },
           {
-            "name": "therm4CoefficientA",
+            "name": "therm4_coefficient_a",
             "summary": "Steinhart-Hart Temperature Equation coefficient A",
             "required": true,
             "x-id": 104,
@@ -2294,7 +2294,7 @@
             }
           },
           {
-            "name": "therm1CoefficientB",
+            "name": "therm1_coefficient_b",
             "summary": "Steinhart-Hart Temperature Equation coefficient B",
             "required": true,
             "x-id": 105,
@@ -2315,7 +2315,7 @@
             }
           },
           {
-            "name": "therm2CoefficientB",
+            "name": "therm2_coefficient_b",
             "summary": "Steinhart-Hart Temperature Equation  coefficient B",
             "required": true,
             "x-id": 106,
@@ -2336,7 +2336,7 @@
             }
           },
           {
-            "name": "therm3CoefficientB",
+            "name": "therm3_coefficient_b",
             "summary": "Steinhart-Hart Temperature Equation coefficient B",
             "required": true,
             "x-id": 107,
@@ -2357,7 +2357,7 @@
             }
           },
           {
-            "name": "therm4CoefficientB",
+            "name": "therm4_coefficient_b",
             "summary": "Steinhart-Hart Temperature Equation coefficient B",
             "required": true,
             "x-id": 108,
@@ -2378,7 +2378,7 @@
             }
           },
           {
-            "name": "therm1CoefficientC",
+            "name": "therm1_coefficient_c",
             "summary": "Steinhart-Hart Temperature Equation  coefficient C",
             "required": true,
             "x-id": 109,
@@ -2399,7 +2399,7 @@
             }
           },
           {
-            "name": "therm2CoefficientC",
+            "name": "therm2_coefficient_c",
             "summary": "Steinhart-Hart Temperature Equation coefficient C",
             "required": true,
             "x-id": 110,
@@ -2420,7 +2420,7 @@
             }
           },
           {
-            "name": "therm3CoefficientC",
+            "name": "therm3_coefficient_c",
             "summary": "Steinhart-Hart Temperature Equation coefficient C",
             "required": true,
             "x-id": 111,
@@ -2441,7 +2441,7 @@
             }
           },
           {
-            "name": "therm4CoefficientC",
+            "name": "therm4_coefficient_c",
             "summary": "Steinhart-Hart Temperature Equation  coefficient C",
             "required": true,
             "x-id": 112,
@@ -2462,7 +2462,7 @@
             }
           },
           {
-            "name": "dataLoggingEnable",
+            "name": "data_logging_enable",
             "summary": "0 = disable, 1 = enable ",
             "required": true,
             "x-id": 113,
@@ -2481,7 +2481,7 @@
             }
           },
           {
-            "name": "factoryResetEnable",
+            "name": "factory_reset_enable",
             "summary": "false = disable, true = enable ",
             "required": true,
             "x-id": 114,
@@ -2500,7 +2500,7 @@
             }
           },
           {
-            "name": "logFileStatus",
+            "name": "log_file_status",
             "summary": "Status of log operation",
             "required": true,
             "x-id": 115,
@@ -2525,7 +2525,7 @@
             }
           },
           {
-            "name": "pressureAlarm",
+            "name": "pressure_alarm",
             "summary": "Pressure Alarm in PSI",
             "required": true,
             "x-id": 116,
@@ -2544,7 +2544,7 @@
             }
           },
           {
-            "name": "pressurePinSelected",
+            "name": "pressure_pin_selected",
             "summary": "Pressure pin(s) chosen bitmask",
             "required": true,
             "x-id": 117,
@@ -2564,7 +2564,7 @@
             }
           },
           {
-            "name": "ultrasonicAlarm",
+            "name": "ultrasonic_alarm",
             "summary": "Pressure Alarm in millimeters",
             "required": true,
             "x-id": 118,
@@ -2621,7 +2621,7 @@
             }
           },
           {
-            "name": "buildId",
+            "name": "build_id",
             "summary": "Hash of firmware image",
             "required": true,
             "x-id": 143,
@@ -2641,7 +2641,7 @@
             }
           },
           {
-            "name": "appType",
+            "name": "app_type",
             "summary": "Type of software application that is running",
             "description": "",
             "required": true,
@@ -2703,7 +2703,7 @@
             }
           },
           {
-            "name": "certStatus",
+            "name": "cert_status",
             "summary": "Status of certificate loader: negative errno",
             "required": true,
             "x-id": 147,
@@ -2725,7 +2725,7 @@
             }
           },
           {
-            "name": "rootCaName",
+            "name": "root_ca_name",
             "summary": "Root Certificate absolute file name",
             "required": true,
             "x-id": 148,
@@ -2746,7 +2746,7 @@
             }
           },
           {
-            "name": "clientCertName",
+            "name": "client_cert_name",
             "summary": "Client (Device) Certificate absolute file name",
             "required": true,
             "x-id": 149,
@@ -2767,7 +2767,7 @@
             }
           },
           {
-            "name": "clientKeyName",
+            "name": "client_key_name",
             "summary": "Client (Device) Key absolute file name",
             "required": true,
             "x-id": 150,
@@ -2831,7 +2831,7 @@
             }
           },
           {
-            "name": "clientId",
+            "name": "client_id",
             "summary": "(AWS) Client Id",
             "required": true,
             "x-id": 153,
@@ -2852,7 +2852,7 @@
             }
           },
           {
-            "name": "topicPrefix",
+            "name": "topic_prefix",
             "summary": "Topic Prefix (for Contact Tracing publishing)",
             "required": true,
             "x-id": 154,
@@ -2873,7 +2873,7 @@
             }
           },
           {
-            "name": "gatewayState",
+            "name": "gateway_state",
             "summary": "Gateway State",
             "required": true,
             "x-id": 155,
@@ -2911,7 +2911,7 @@
             }
           },
           {
-            "name": "peerVerify",
+            "name": "peer_verify",
             "summary": "TLS configuration for secure MQTT transport - Indicates the preference for peer verification",
             "note": "Value takes effect on next connection attempt",
             "required": true,
@@ -2937,7 +2937,7 @@
             }
           },
           {
-            "name": "batteryCapacity",
+            "name": "battery_capacity",
             "summary": "Battery Capacity",
             "required": false,
             "x-id": 157,
@@ -2954,7 +2954,7 @@
             }
           },
           {
-            "name": "batteryTemperature",
+            "name": "battery_temperature",
             "summary": "Temperature of board (from LIS3DH) used in battery calculations",
             "required": false,
             "x-id": 158,
@@ -2970,7 +2970,7 @@
             }
           },
           {
-            "name": "batteryChargingState",
+            "name": "battery_charging_state",
             "summary": "Enumeration of charging state: Bit 0 = External Power State, Bit 1 = The battery is charging, Bit 2 = The battery is not charging, Bit 3 The battery is discharging.",
             "required": false,
             "x-id": 159,
@@ -2986,7 +2986,7 @@
             }
           },
           {
-            "name": "batteryLowThreshold",
+            "name": "battery_low_threshold",
             "summary": "Battery Low Threshold in millivolts",
             "required": false,
             "x-id": 160,
@@ -3006,7 +3006,7 @@
             }
           },
           {
-            "name": "batteryAlarmThreshold",
+            "name": "battery_alarm_threshold",
             "summary": "Battery Alarm Threshold in millivolts",
             "required": false,
             "x-id": 161,
@@ -3126,7 +3126,7 @@
             }
           },
           {
-            "name": "batteryAlarm",
+            "name": "battery_alarm",
             "summary": "Value indicating the low battery alarm state.",
             "required": false,
             "x-id": 167,
@@ -3142,7 +3142,7 @@
             }
           },
           {
-            "name": "motionOdr",
+            "name": "motion_odr",
             "summary": "Accelerometer Output Data Rate",
             "required": true,
             "x-id": 168,
@@ -3164,7 +3164,7 @@
             }
           },
           {
-            "name": "motionThresh",
+            "name": "motion_thresh",
             "summary": "Accelerometer Threshold",
             "required": true,
             "x-id": 169,
@@ -3186,7 +3186,7 @@
             }
           },
           {
-            "name": "motionScale",
+            "name": "motion_scale",
             "summary": "Accelerometer Scale",
             "required": true,
             "x-id": 170,
@@ -3208,7 +3208,7 @@
             }
           },
           {
-            "name": "motionDuration",
+            "name": "motion_duration",
             "summary": "Accelerometer Motion Duration",
             "required": true,
             "x-id": 171,
@@ -3230,7 +3230,7 @@
             }
           },
           {
-            "name": "motionAlarm",
+            "name": "motion_alarm",
             "summary": "1 - Motion, 0 - No Motion",
             "required": true,
             "x-id": 172,
@@ -3248,7 +3248,7 @@
             }
           },
           {
-            "name": "sdLogMaxSize",
+            "name": "sd_log_max_size",
             "summary": "",
             "required": true,
             "x-id": 173,
@@ -3267,7 +3267,7 @@
             }
           },
           {
-            "name": "ctAesKey",
+            "name": "ct_aes_key",
             "summary": "AES key used for Contact Tracing",
             "required": true,
             "x-id": 174,
@@ -3286,7 +3286,7 @@
             }
           },
           {
-            "name": "powerSupplyVoltage",
+            "name": "power_supply_voltage",
             "summary": "Measured power supply in volts.  Not valid for MG100",
             "required": false,
             "x-id": 175,
@@ -3303,7 +3303,7 @@
             }
           },
           {
-            "name": "gatewayId",
+            "name": "gateway_id",
             "summary": "ASCII string representing the IMEI (if modem present), otherwise Bluetooth MAC address",
             "required": true,
             "x-id": 176,
@@ -3321,7 +3321,7 @@
             }
           },
           {
-            "name": "lteNetworkState",
+            "name": "lte_network_state",
             "summary": "LTE network state enumeration",
             "required": true,
             "x-id": 177,
@@ -3347,7 +3347,7 @@
             }
           },
           {
-            "name": "lteStartupState",
+            "name": "lte_startup_state",
             "summary": "Modem startup state",
             "required": true,
             "x-id": 178,
@@ -3372,7 +3372,7 @@
             }
           },
           {
-            "name": "lteRsrp",
+            "name": "lte_rsrp",
             "summary": "Reference Signals Receive Power (RSRP) in dBm",
             "required": true,
             "x-id": 179,
@@ -3388,7 +3388,7 @@
             }
           },
           {
-            "name": "lteSinr",
+            "name": "lte_sinr",
             "summary": "Signal to Interference plus Noise Ratio (SINR) in dBm",
             "required": true,
             "x-id": 180,
@@ -3404,7 +3404,7 @@
             }
           },
           {
-            "name": "lteSleepState",
+            "name": "lte_sleep_state",
             "summary": "Sleep state of driver",
             "required": true,
             "x-id": 181,
@@ -3427,7 +3427,7 @@
             }
           },
           {
-            "name": "lteRat",
+            "name": "lte_rat",
             "summary": "Radio Access Technology",
             "required": true,
             "x-id": 182,
@@ -3467,7 +3467,7 @@
             }
           },
           {
-            "name": "lteSerialNumber",
+            "name": "lte_serial_number",
             "summary": "",
             "required": true,
             "x-id": 184,
@@ -3484,7 +3484,7 @@
             }
           },
           {
-            "name": "lteVersion",
+            "name": "lte_version",
             "summary": "Firmware version of the LTE modem",
             "required": true,
             "x-id": 185,
@@ -3519,7 +3519,7 @@
             }
           },
           {
-            "name": "activeBands",
+            "name": "active_bands",
             "summary": "",
             "required": true,
             "x-id": 187,
@@ -3537,7 +3537,7 @@
             }
           },
           {
-            "name": "centralState",
+            "name": "central_state",
             "summary": "Enumeration of central device's sensor state for communication with BL654 Sensor, BT510-CT, and BT710-CT",
             "required": true,
             "x-id": 188,
@@ -3566,7 +3566,7 @@
             }
           },
           {
-            "name": "sensorBluetoothAddress",
+            "name": "sensor_bluetooth_address",
             "summary": "Unprocessed output from address formatter",
             "required": true,
             "x-id": 189,
@@ -3584,7 +3584,7 @@
             }
           },
           {
-            "name": "joinDelay",
+            "name": "join_delay",
             "summary": "Value in seconds. Write: Control point - Write 0 to generate new delay with value between (min, max) and a multiple of interval. Read: Randomized time in seconds to delay before joining",
             "description": "If modem boot is selected during compile time, then modem is held in reset until delay expires. If modem boots into airplane mode, then exit from airplane mode and network init is delayed.",
             "required": true,
@@ -3606,7 +3606,7 @@
             }
           },
           {
-            "name": "joinMin",
+            "name": "join_min",
             "summary": "Minimum delay is joinMin * joinInterval",
             "required": true,
             "x-id": 191,
@@ -3625,7 +3625,7 @@
             }
           },
           {
-            "name": "joinMax",
+            "name": "join_max",
             "summary": "Maximum delay is joinMax * joinInterval",
             "required": true,
             "x-id": 192,
@@ -3644,7 +3644,7 @@
             }
           },
           {
-            "name": "joinInterval",
+            "name": "join_interval",
             "summary": "Interval in seconds.  Determines separation between devices",
             "required": true,
             "x-id": 193,
@@ -3663,7 +3663,7 @@
             }
           },
           {
-            "name": "modemBoot",
+            "name": "modem_boot",
             "summary": "This value mirrors compile time constants (Kconfig).  If boot is normal, then cloud join is delayed.",
             "description": "If cloud join delay isn't desired (or there isn't a modem), then set join delay and interval to 1 so that cloud delay is minimized.",
             "required": true,
@@ -3686,7 +3686,7 @@
             }
           },
           {
-            "name": "delayCloudReconnect",
+            "name": "delay_cloud_reconnect",
             "summary": "If true, then cloud reconnects will be delayed by joinDelay",
             "description": "If cloud delay is enabled, this should remain disabled.",
             "required": true,
@@ -3724,7 +3724,7 @@
             }
           },
           {
-            "name": "apnUsername",
+            "name": "apn_username",
             "summary": "The LTE network username",
             "required": true,
             "x-id": 197,
@@ -3741,7 +3741,7 @@
             }
           },
           {
-            "name": "apnPassword",
+            "name": "apn_password",
             "summary": "The LTE network password",
             "required": true,
             "x-id": 198,
@@ -3758,7 +3758,7 @@
             }
           },
           {
-            "name": "apnControlPoint",
+            "name": "apn_control_point",
             "summary": "Writing any value triggers update of APN in modem",
             "required": true,
             "x-id": 199,
@@ -3776,7 +3776,7 @@
             }
           },
           {
-            "name": "apnStatus",
+            "name": "apn_status",
             "summary": "Status of setting APN: 0 - success, negative errno",
             "description": "Result from mdm_hl7800_update_apn",
             "required": true,
@@ -3793,7 +3793,7 @@
             }
           },
           {
-            "name": "modemDesiredLogLevel",
+            "name": "modem_desired_log_level",
             "summary": "All levels below set value will be logged.  Value cannot be set higher than CONFIG_MODEM_LOG_LEVEL",
             "required": true,
             "x-id": 201,
@@ -3821,7 +3821,7 @@
             }
           },
           {
-            "name": "lteOperatorIndex",
+            "name": "lte_operator_index",
             "summary": "Operator Index",
             "required": true,
             "x-id": 202,
@@ -3837,7 +3837,7 @@
             }
           },
           {
-            "name": "fotaControlPoint",
+            "name": "fota_control_point",
             "summary": "Firmware update over-the-air Control Point",
             "notes": "The blePrepareTimeout value applies to modem or app updates.  If a change is desired, the timeout must be set before issuing prepare command.",
             "required": true,
@@ -3863,7 +3863,7 @@
             }
           },
           {
-            "name": "fotaStatus",
+            "name": "fota_status",
             "summary": "Status of FOTA operation",
             "required": true,
             "x-id": 204,
@@ -3885,7 +3885,7 @@
             }
           },
           {
-            "name": "fotaFileName",
+            "name": "fota_file_name",
             "summary": "Absolute file name used for FOTA operation",
             "required": true,
             "x-id": 205,
@@ -3904,7 +3904,7 @@
             }
           },
           {
-            "name": "fotaSize",
+            "name": "fota_size",
             "summary": "Size in bytes of FOTA image",
             "required": true,
             "x-id": 206,
@@ -3921,7 +3921,7 @@
             }
           },
           {
-            "name": "fotaCount",
+            "name": "fota_count",
             "summary": "Bytes processed in FOTA image.  Final value may be larger than size due to alignment.",
             "required": true,
             "x-id": 207,
@@ -3938,7 +3938,7 @@
             }
           },
           {
-            "name": "loadPath",
+            "name": "load_path",
             "summary": "(Default) Absolute file name for load parameters command",
             "required": true,
             "x-id": 208,
@@ -3959,7 +3959,7 @@
             }
           },
           {
-            "name": "dumpPath",
+            "name": "dump_path",
             "summary": "(Default) Absolute file name for dump command",
             "required": true,
             "x-id": 209,
@@ -3980,7 +3980,7 @@
             }
           },
           {
-            "name": "nvImported",
+            "name": "nv_imported",
             "summary": "NV was imported into parameters",
             "required": false,
             "x-id": 210,
@@ -4017,7 +4017,7 @@
             }
           },
           {
-            "name": "generatePsk",
+            "name": "generate_psk",
             "summary": "Write (Control Point) to generate new PSK",
             "description": "Device must be reset for new key to be loaded",
             "required": true,
@@ -4042,7 +4042,7 @@
             }
           },
           {
-            "name": "lwm2mPsk",
+            "name": "lwm2m_psk",
             "summary": "LWM2M Private Shared Key",
             "required": true,
             "x-id": 213,
@@ -4061,7 +4061,7 @@
             }
           },
           {
-            "name": "lwm2mClientId",
+            "name": "lwm2m_client_id",
             "summary": "Client",
             "required": true,
             "x-id": 214,
@@ -4082,7 +4082,7 @@
             }
           },
           {
-            "name": "lwm2mPeerUrl",
+            "name": "lwm2m_peer_url",
             "summary": "URL for LWM2M Demo",
             "required": true,
             "x-id": 215,
@@ -4103,7 +4103,7 @@
             }
           },
           {
-            "name": "lteInitError",
+            "name": "lte_init_error",
             "summary": "Initialization status of LTE module",
             "required": true,
             "x-id": 216,
@@ -4127,7 +4127,7 @@
             }
           },
           {
-            "name": "cloudError",
+            "name": "cloud_error",
             "summary": "Initialization status of demo (endpoint, id, credentials)",
             "required": true,
             "x-id": 217,
@@ -4155,7 +4155,7 @@
             }
           },
           {
-            "name": "commissioningBusy",
+            "name": "commissioning_busy",
             "summary": "Remains true when commissioning is in progress and until cloud connect is attempted.",
             "description": "If certs fail to load, this flag will be set to false. See commissioned, certStatus and cloudError.",
             "required": true,
@@ -4192,7 +4192,7 @@
             }
           },
           {
-            "name": "modemFunctionality",
+            "name": "modem_functionality",
             "summary": "Modem mode",
             "description": "",
             "required": true,
@@ -4216,7 +4216,7 @@
             }
           },
           {
-            "name": "ethernetInitError",
+            "name": "ethernet_init_error",
             "summary": "Initialization status of Ethernet module",
             "required": true,
             "x-id": 221,
@@ -4238,7 +4238,7 @@
             }
           },
           {
-            "name": "ethernetMAC",
+            "name": "ethernet_mac",
             "summary": "MAC address of Ethernet module",
             "required": true,
             "x-id": 222,
@@ -4255,7 +4255,7 @@
             }
           },
           {
-            "name": "ethernetType",
+            "name": "ethernet_type",
             "summary": "Type of Ethernet network mode",
             "required": true,
             "x-id": 223,
@@ -4279,7 +4279,7 @@
             }
           },
           {
-            "name": "ethernetMode",
+            "name": "ethernet_mode",
             "summary": "Operating mode of Ethernet network",
             "required": true,
             "x-id": 224,
@@ -4303,7 +4303,7 @@
             }
           },
           {
-            "name": "ethernetCableDetected",
+            "name": "ethernet_cable_detected",
             "summary": "If there is a cable attached to the Ethernet module",
             "required": true,
             "x-id": 225,
@@ -4319,7 +4319,7 @@
             }
           },
           {
-            "name": "ethernetSpeed",
+            "name": "ethernet_speed",
             "summary": "Bitmask value specifying the connectivity speed the Ethernet module is operating in/supports",
             "required": true,
             "x-id": 226,
@@ -4341,7 +4341,7 @@
             }
           },
           {
-            "name": "ethernetDuplex",
+            "name": "ethernet_duplex",
             "summary": "Bitmask value specifying if the Ethernet module is operating/supports full or half duplex",
             "required": true,
             "x-id": 227,
@@ -4362,7 +4362,7 @@
             }
           },
           {
-            "name": "ethernetIPAddress",
+            "name": "ethernet_ip_address",
             "summary": "Read to get the current active IP address of the Ethernet module",
             "required": true,
             "x-id": 228,
@@ -4380,7 +4380,7 @@
             }
           },
           {
-            "name": "ethernetNetmaskLength",
+            "name": "ethernet_netmask_length",
             "summary": "Read to get the current active netmask length of the Ethernet module",
             "required": true,
             "x-id": 229,
@@ -4398,7 +4398,7 @@
             }
           },
           {
-            "name": "ethernetGateway",
+            "name": "ethernet_gateway",
             "summary": "Read to get the current active gateway IP address of the Ethernet module",
             "required": true,
             "x-id": 230,
@@ -4416,7 +4416,7 @@
             }
           },
           {
-            "name": "ethernetDNS",
+            "name": "ethernet_dns",
             "summary": "Read to get the current active DNS server IP address of the Ethernet module",
             "required": true,
             "x-id": 231,
@@ -4434,7 +4434,7 @@
             }
           },
           {
-            "name": "ethernetStaticIPAddress",
+            "name": "ethernet_static_ip_address",
             "summary": "The IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
             "x-id": 232,
@@ -4454,7 +4454,7 @@
             }
           },
           {
-            "name": "ethernetStaticNetmaskLength",
+            "name": "ethernet_static_netmask_length",
             "summary": "The netmask length of the Ethernet module which is used when configured in static operating mode",
             "required": true,
             "x-id": 233,
@@ -4474,7 +4474,7 @@
             }
           },
           {
-            "name": "ethernetStaticGateway",
+            "name": "ethernet_static_gateway",
             "summary": "The gateway IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
             "x-id": 234,
@@ -4494,7 +4494,7 @@
             }
           },
           {
-            "name": "ethernetStaticDNS",
+            "name": "ethernet_static_dns",
             "summary": "The DNS server IP address of the Ethernet module which is used when configured in static operating mode",
             "required": true,
             "x-id": 235,
@@ -4514,7 +4514,7 @@
             }
           },
           {
-            "name": "ethernetDHCPLeaseTime",
+            "name": "ethernet_dhcp_lease_time",
             "summary": "The DHCP lease time of the ethernet module (if DHCP is active)",
             "required": true,
             "x-id": 236,
@@ -4532,7 +4532,7 @@
             }
           },
           {
-            "name": "ethernetDHCPRenewTime",
+            "name": "ethernet_dhcp_renew_time",
             "summary": "The DHCP renew time of the ethernet module (if DHCP is active)",
             "required": true,
             "x-id": 237,
@@ -4550,7 +4550,7 @@
             }
           },
           {
-            "name": "ethernetDHCPState",
+            "name": "ethernet_dhcp_state",
             "summary": "The current DHCP state of the ethernet module (if DHCP is active)",
             "required": true,
             "x-id": 238,
@@ -4577,7 +4577,7 @@
             }
           },
           {
-            "name": "ethernetDHCPAttempts",
+            "name": "ethernet_dhcp_attempts",
             "summary": "The number of attempts which were taken to obtain a DHCP lease on the ethernet module (if DHCP is active)",
             "required": true,
             "x-id": 239,
@@ -4595,7 +4595,7 @@
             }
           },
           {
-            "name": "sntpServer",
+            "name": "sntp_server",
             "summary": "Server IP/Hostname of SNTP server to query",
             "required": true,
             "x-id": 241,
@@ -4615,7 +4615,7 @@
             }
           },
           {
-            "name": "gpsRate",
+            "name": "gps_rate",
             "summary": "Start or Stop GPS.  When non-zero the value is the number of seconds between location requests.  Modem will be put into Airplane mode when non-zero.",
             "required": true,
             "x-id": 242,
@@ -4634,7 +4634,7 @@
             }
           },
           {
-            "name": "gpsLatitude",
+            "name": "gps_latitude",
             "summary": "",
             "required": true,
             "x-id": 243,
@@ -4651,7 +4651,7 @@
             }
           },
           {
-            "name": "gpsLongitude",
+            "name": "gps_longitude",
             "summary": "",
             "required": true,
             "x-id": 244,
@@ -4668,7 +4668,7 @@
             }
           },
           {
-            "name": "gpsTime",
+            "name": "gps_time",
             "summary": "GPS time and date of the fix in \"yyyy mm dd hh:mm:ss\" format",
             "required": true,
             "x-id": 245,
@@ -4685,7 +4685,7 @@
             }
           },
           {
-            "name": "gpsFixType",
+            "name": "gps_fix_type",
             "summary": "",
             "required": true,
             "x-id": 246,
@@ -4702,7 +4702,7 @@
             }
           },
           {
-            "name": "gpsHepe",
+            "name": "gps_hepe",
             "summary": "Horizontal Estimated Position Error",
             "required": true,
             "x-id": 247,
@@ -4719,7 +4719,7 @@
             }
           },
           {
-            "name": "gpsAltitude",
+            "name": "gps_altitude",
             "summary": "Altitude in meters",
             "required": true,
             "x-id": 248,
@@ -4736,7 +4736,7 @@
             }
           },
           {
-            "name": "gpsAltUnc",
+            "name": "gps_alt_unc",
             "summary": "Altitude Uncertainty in meters",
             "required": true,
             "x-id": 249,
@@ -4753,7 +4753,7 @@
             }
           },
           {
-            "name": "gpsHeading",
+            "name": "gps_heading",
             "summary": "Direction the UE is headed",
             "required": true,
             "x-id": 250,
@@ -4770,7 +4770,7 @@
             }
           },
           {
-            "name": "gpsHorSpeed",
+            "name": "gps_hor_speed",
             "summary": "Horizontal speed in m/s",
             "required": true,
             "x-id": 251,
@@ -4787,7 +4787,7 @@
             }
           },
           {
-            "name": "gpsVerSpeed",
+            "name": "gps_ver_speed",
             "summary": "Vertical speed in m/s",
             "required": true,
             "x-id": 252,
@@ -4804,7 +4804,7 @@
             }
           },
           {
-            "name": "gpsStatus",
+            "name": "gps_status",
             "summary": "Current status of GPS Position",
             "required": true,
             "x-id": 253,
@@ -4828,7 +4828,7 @@
             }
           },
           {
-            "name": "polteControlPoint",
+            "name": "polte_control_point",
             "summary": "Used to issue PoLTE commands",
             "notes": "The register and locate commands can take 20-120 seconds to complete",
             "required": true,
@@ -4853,7 +4853,7 @@
             }
           },
           {
-            "name": "polteStatus",
+            "name": "polte_status",
             "summary": "PoLTE status: 0 on success, positive PoLTE error code, else negative errno",
             "required": true,
             "x-id": 255,
@@ -4885,7 +4885,7 @@
             }
           },
           {
-            "name": "polteUser",
+            "name": "polte_user",
             "summary": "User name for PoLTE (Modem doesn't store this in NV)",
             "required": true,
             "x-id": 256,
@@ -4904,7 +4904,7 @@
             }
           },
           {
-            "name": "poltePassword",
+            "name": "polte_password",
             "summary": "Password for PoLTE (Modem doesn't store this in NV)",
             "required": true,
             "x-id": 257,
@@ -4923,7 +4923,7 @@
             }
           },
           {
-            "name": "polteLatitude",
+            "name": "polte_latitude",
             "summary": "Format in decimal degrees. Positive values represent North, negative values represent South.",
             "required": false,
             "x-id": 258,
@@ -4940,7 +4940,7 @@
             }
           },
           {
-            "name": "polteLongitude",
+            "name": "polte_longitude",
             "summary": "Format in decimal degrees. Positive values represent East, negative values represent West",
             "required": false,
             "x-id": 259,
@@ -4957,7 +4957,7 @@
             }
           },
           {
-            "name": "polteConfidence",
+            "name": "polte_confidence",
             "summary": "Certainty of fix in meters",
             "required": false,
             "x-id": 260,
@@ -4974,7 +4974,7 @@
             }
           },
           {
-            "name": "polteTimestamp",
+            "name": "polte_timestamp",
             "summary": "Timestamp of the position in seconds from January 1, 1970",
             "required": false,
             "x-id": 261,
@@ -4990,7 +4990,7 @@
             }
           },
           {
-            "name": "blePrepareTimeout",
+            "name": "ble_prepare_timeout",
             "summary": "Timeout in seconds for successful FOTA update before re-enabling scanning.",
             "required": true,
             "x-id": 262,
@@ -5011,7 +5011,7 @@
             }
           },
           {
-            "name": "temperatureOffset",
+            "name": "temperature_offset",
             "summary": "Offset applied to value read from LIS3DH",
             "notes": "Can be used in conjunction with single point calibration",
             "required": false,
@@ -5030,7 +5030,7 @@
             }
           },
           {
-            "name": "lwm2mEnableBootstrap",
+            "name": "lwm2m_enable_bootstrap",
             "summary": "If true, bootstrap procedure will be enabled during initialization",
             "required": true,
             "x-id": 264,

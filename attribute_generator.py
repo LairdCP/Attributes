@@ -3,7 +3,7 @@
 #
 # @brief Generate C code from JSON API document.
 #
-# Copyright (c) 2018-2021 Laird Connectivity
+# Copyright (c) 2018-2022 Laird Connectivity
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -26,7 +26,6 @@ AP_WIDTH = 36
 DEFINE_WIDTH = 20
 GS_CASE_WIDTH = 18
 TYPE_WIDTH = 24
-REMAP_WIDTH = 36
 MIN_MAX_WIDTH = 20
 
 BASE_FILE_PATH = "./custom/%PROJ%"
@@ -94,7 +93,7 @@ def GenEnums(lst, enums, names, errno):
                     f"INCLUDE_ERRNO = INT32_MIN,\n"
             for key, value in i.items():
                 s += "\t" + snake.upper() + "_" \
-                    + key + " = " + str(value) + ",\n"
+                    + key + " = " + str(value).lower() + ",\n"
             s += "};\n\n"
             lst.append(s)
 
@@ -561,8 +560,6 @@ class attributes:
                         lst.insert(next_line, self.CreatePrepare(False))
                     elif "get string" in line:
                         lst.insert(next_line, self.CreateGetStringFunctions())
-                    elif "remap" in line:
-                        lst.insert(next_line, self.CreateGetStringRemap())
 
             fout.writelines(lst)
 
@@ -576,7 +573,7 @@ class attributes:
 
     def CreateIndices(self) -> str:
         """Create attribute indices for header file"""
-        special = ["lock", "loadPath"]
+        special = ["lock", "load_path"]
         indices = []
         for i in range(self.projectAttributeCount):
             name = self.name[i]
@@ -700,20 +697,6 @@ class attributes:
 
         return ''.join(lst)
 
-    def CreateGetStringRemap(self) -> str:
-        """
-        Map the camelCase function names into snake_case.
-        """
-        lst = []
-        for enum, camel in zip(self.enum, self.name):
-            if len(enum) != 0:
-                snake = inflection.underscore(camel)
-                s = "#define " + f"attr_get_string_{camel} ".ljust(REMAP_WIDTH)
-                s += f"attr_get_string_{snake}\n"
-                lst.append(s)
-
-        return ''.join(lst)
-
     def CreateGetStringFunctions(self) -> str:
         """Generate functions that return a string of each enum"""
         lst = []
@@ -724,7 +707,7 @@ class attributes:
                 s += "{\n"
                 s += "\tswitch (value) {\n"
                 for key, value in enum.items():
-                    s += '\t\t' + f'case {str(value)}:'.ljust(GS_CASE_WIDTH) + \
+                    s += '\t\t' + f'case {str(value).lower()}:'.ljust(GS_CASE_WIDTH) + \
                         'return "' + inflection.titleize(key) + '";\n'
                 s += '\t\t' + 'default:'.ljust(GS_CASE_WIDTH)
 
@@ -742,6 +725,7 @@ class attributes:
                 s = s.replace("2 D", "2D")
                 s = s.replace("3 D", "3D")
                 s = s.replace("Nb1", "NB1")
+                s = s.replace("1 M", "1M")
                 lst.append(s)
 
         return ''.join(lst)

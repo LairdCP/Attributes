@@ -1401,7 +1401,8 @@ static int attr_init(const struct device *device)
 
 	attr_table_initialize();
 
-	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_loadPath].pData) == 0) {
+	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) ==
+	    0) {
 		LOG_WRN("SMP load path should be different from attribute source");
 	}
 
