@@ -40,8 +40,10 @@ def ToYesNo(b) -> str:
     else:
         return "n"
 
+
 def ToInt(b) -> str:
     return math.trunc(b)
+
 
 def GetNumberField(d: dict, item: str):
     """ Handles items not being present (lazy get) """
@@ -153,6 +155,35 @@ class attributes:
                 print("Unable to write api version")
 
             print(new_version)
+
+        with open(fname, 'w') as f:
+            json.dump(data, f, indent=JSON_INDENT)
+
+    def remove_decimal_point_from_integers(self, fname: str) -> None:
+        """
+        The PC test tool previously required all min/max values to be floats.
+        This is no longer the case and decimal points can be removed.
+        """
+        with open(fname, 'r') as f:
+            data = jsonref.load(f)
+            self.parameterList = data['components']['contentDescriptors']['deviceParams']['x-device-parameters']
+
+            for p in self.parameterList:
+                a = p['schema']
+                if 'float' not in a['x-ctype']:
+                    try:
+                        x = a['maximum']
+                        a['maximum'] = int(x)
+                    except:
+                        pass
+                    try:
+                        x = a['minimum']
+                        a['minimum'] = int(x)
+                    except:
+                        pass
+
+        # hack to restore methods before save
+        data['methods'] = '{"$ref": "file:./sentrius_methods.json"}'
 
         with open(fname, 'w') as f:
             json.dump(data, f, indent=JSON_INDENT)

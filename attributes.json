@@ -73,8 +73,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 20.0,
-              "maximum": 10000.0,
+              "minimum": 20,
+              "maximum": 10000,
               "x-ctype": "uint16_t",
               "x-default": "1000",
               "x-example": "1000",
@@ -96,7 +96,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "15000",
               "x-example": "15000",
@@ -121,7 +121,7 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 999999.0,
+              "maximum": 999999,
               "x-ctype": "uint32_t",
               "x-default": "123456",
               "x-example": "987654",
@@ -165,7 +165,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 86400.0,
+              "maximum": 86400,
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "60",
@@ -187,7 +187,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 86400.0,
+              "maximum": 86400,
               "x-ctype": "uint32_t",
               "x-default": "60",
               "x-example": "10",
@@ -209,8 +209,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 1.0,
-              "maximum": 32.0,
+              "minimum": 1,
+              "maximum": 32,
               "x-ctype": "uint8_t",
               "x-default": "1",
               "x-example": "5",
@@ -1294,8 +1294,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": -40.0,
-              "maximum": 8.0,
+              "minimum": -40,
+              "maximum": 8,
               "x-ctype": "int8_t",
               "x-default": "0",
               "x-example": "8",
@@ -1318,7 +1318,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "0",
               "x-example": "100",
@@ -1343,7 +1343,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "10",
@@ -1365,7 +1365,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "2",
@@ -1398,7 +1398,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "3",
@@ -1520,7 +1520,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 15.0,
+              "maximum": 15,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
@@ -1618,7 +1618,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 1048575.0,
+              "maximum": 1048575,
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "0",
@@ -1679,7 +1679,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 3.0,
+              "maximum": 3,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
@@ -1699,7 +1699,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 3.0,
+              "maximum": 3,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "1",
@@ -1719,7 +1719,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 131.0,
+              "maximum": 131,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "128",
@@ -1740,7 +1740,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 131.0,
+              "maximum": 131,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "128",
@@ -1834,7 +1834,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 1048575.0,
+              "maximum": 1048575,
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "0",
@@ -1908,7 +1908,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 4.0,
+              "maximum": 4,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
@@ -1930,7 +1930,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 4.0,
+              "maximum": 4,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
@@ -1952,7 +1952,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 4.0,
+              "maximum": 4,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "0",
@@ -2132,7 +2132,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 86400.0,
+              "maximum": 86400,
               "x-ctype": "uint32_t",
               "x-default": "60",
               "x-example": "10",
@@ -2176,7 +2176,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "60",
               "x-example": "30",
@@ -2946,7 +2946,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 4.0,
+              "maximum": 4,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "2",
@@ -2995,7 +2995,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "3400",
               "x-example": "3400",
@@ -3015,7 +3015,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "3000",
               "x-example": "3000",
@@ -3035,7 +3035,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "4200",
               "x-example": "4200",
@@ -3055,7 +3055,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "3800",
               "x-example": "3800",
@@ -3075,7 +3075,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "3400",
               "x-example": "3400",
@@ -3095,7 +3095,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "3000",
               "x-example": "3000",
@@ -3115,7 +3115,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 65535.0,
+              "maximum": 65535,
               "x-ctype": "uint16_t",
               "x-default": "2750",
               "x-example": "2750",
@@ -3153,7 +3153,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "5",
               "x-example": "0",
@@ -3175,7 +3175,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "10",
               "x-example": "10",
@@ -3197,7 +3197,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "2",
               "x-example": "2",
@@ -3219,7 +3219,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 255.0,
+              "maximum": 255,
               "x-ctype": "uint8_t",
               "x-default": "6",
               "x-example": "6",
@@ -3802,7 +3802,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 4.0,
+              "maximum": 4,
               "x-ctype": "uint32_t",
               "x-default": "1",
               "x-example": "4",
@@ -4028,7 +4028,7 @@
             ],
             "schema": {
               "type": "integer",
-              "maximum": 1.0,
+              "maximum": 1,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "1",
@@ -4264,8 +4264,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 1.0,
-              "maximum": 2.0,
+              "minimum": 1,
+              "maximum": 2,
               "x-ctype": "uint8_t",
               "x-default": "1",
               "x-example": "1",
@@ -4288,8 +4288,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 1.0,
-              "maximum": 2.0,
+              "minimum": 1,
+              "maximum": 2,
               "x-ctype": "uint8_t",
               "x-default": "2",
               "x-example": "1",
@@ -4389,8 +4389,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 32.0,
+              "minimum": 0,
+              "maximum": 32,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "24",
@@ -4463,8 +4463,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 32.0,
+              "minimum": 0,
+              "maximum": 32,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "24",
@@ -4523,8 +4523,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 4294967294.0,
+              "minimum": 0,
+              "maximum": 4294967294,
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "86400",
@@ -4541,8 +4541,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 4294967294.0,
+              "minimum": 0,
+              "maximum": 4294967294,
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "43200",
@@ -4559,8 +4559,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 6.0,
+              "minimum": 0,
+              "maximum": 6,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "6",
@@ -4586,8 +4586,8 @@
             ],
             "schema": {
               "type": "integer",
-              "minimum": 0.0,
-              "maximum": 100.0,
+              "minimum": 0,
+              "maximum": 100,
               "x-ctype": "uint8_t",
               "x-default": "0",
               "x-example": "1",
