@@ -101,9 +101,10 @@ int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
 			       size_t vlen, bool *modified);
 
 /**
- * @brief Copy an attribute.  This is the only get function that should be
- * used from the SMP interface because it checks the readable flag.
+ * @brief Copy an attribute. This can be used used from the SMP interface as it
+ * checks the readable flag.
  *
+ * @note Calls the prepare function on prepared read attributes
  * @note Sign extends up to int64 size when type is signed.
  *
  * @param id an attribute id.
@@ -113,6 +114,20 @@ int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
  * @retval negative error code, size of value on return
  */
 int attr_get(attr_id_t id, void *pv, size_t vlen);
+
+/**
+ * @brief Retrieve pointer of data item. This can be used used from the SMP
+ * interface as it checks the readable flag.
+ *
+ * @note Calls the prepare function on prepared read attributes
+ *
+ * @param id an attribute id.
+ * @param vlen will be updated with the size of the attribute or negative
+ * error code.
+ *
+ * @retval pointer to value
+ */
+void *attr_get_pointer(attr_id_t id, int *vlen);
 
 /**
  * @brief Get default value for an attribute.
@@ -542,6 +557,15 @@ int attr_update_config_version(void);
  * attribute modification made which has yet to be saved.
  */
 void attr_save_status_notification(bool dirty);
+
+/**
+ * @brief Get attribute indices
+ *
+ * @param Number of entries in table
+ * @param Lowest ID (first table entry)
+ * @param Highest ID (last table entry)
+ */
+void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id);
 
 #ifdef __cplusplus
 }

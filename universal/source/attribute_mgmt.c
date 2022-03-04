@@ -109,6 +109,7 @@ static int lock(struct mgmt_ctxt *ctxt);
 static int unlock(struct mgmt_ctxt *ctxt);
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt);
 static int get_api_version(struct mgmt_ctxt *ctxt);
+static int get_indices(struct mgmt_ctxt *ctxt);
 
 static int attribute_mgmt_init(const struct device *device);
 
@@ -185,6 +186,11 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_GET_API_VERSION] = {
 		.mh_write = NULL,
 		.mh_read = get_api_version,
+		.use_custom_cbor_encoder = true,
+	},
+	[ATTRIBUTE_MGMT_ID_GET_INDICES] = {
+		.mh_write = NULL,
+		.mh_read = get_indices,
 		.use_custom_cbor_encoder = true,
 	}
 };
@@ -1145,6 +1151,30 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 
 	if (!cbor_encode_get_api_version_result(buffer, sizeof(buffer),
 						&api_version_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
+}
+
+static int get_indices(struct mgmt_ctxt *ctxt)
+{
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	uint16_t table_size;
+	uint16_t min_id;
+	uint16_t max_id;
+	struct get_indices_result indices_data = { 0 };
+
+	attr_get_indices(&table_size, &min_id, &max_id);
+	indices_data._get_indices_result_table_size = table_size;
+	indices_data._get_indices_result_min_id = min_id;
+	indices_data._get_indices_result_max_id = max_id;
+
+	if (!cbor_encode_get_indices_result(buffer, sizeof(buffer),
+					    &indices_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 

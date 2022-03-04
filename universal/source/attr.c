@@ -287,6 +287,29 @@ int attr_get(attr_id_t id, void *pv, size_t vlen)
 	return r;
 }
 
+void *attr_get_pointer(attr_id_t id, int *vlen)
+{
+	ATTR_ENTRY_DECL(id);
+	int r = -EPERM;
+
+	if (entry != NULL) {
+		if (entry->flags & FLAGS_READABLE) {
+			r = allow_get(entry);
+			if (r == 0) {
+				r = prepare_for_read(entry);
+				if (r >= 0) {
+					*vlen = entry->size;
+					return entry->pData;
+				}
+			}
+		}
+	}
+
+	*vlen = r;
+
+	return NULL;
+}
+
 int attr_get_default(attr_id_t id, void *pv, size_t vlen)
 {
 	ATTR_ENTRY_DECL(id);
@@ -2264,6 +2287,13 @@ int attr_update_config_version(void)
 	return -EIO;
 }
 #endif
+
+void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
+{
+	*table_size = ATTR_TABLE_SIZE;
+	*min_id = ATTR_TABLE[0].id;
+	*max_id = ATTR_TABLE_MAX_ID;
+}
 
 /******************************************************************************/
 /* SYS INIT                                                                   */
