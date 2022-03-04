@@ -44,6 +44,9 @@
 #endif
 
 #include "attribute_mgmt.h"
+#include "lock_decode.h"
+#include "lock_encode.h"
+#include "mgmt/mcumgr/buf.h"
 
 /******************************************************************************/
 /* Local Constant, Macro and Type Definitions                                 */
@@ -87,6 +90,8 @@
 #define ATTR_FRAMEWORK_BROADCAST(msg)
 #endif
 
+#define ATTR_DEVICE_MGMT_BUFFER_SIZE 128
+
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -103,6 +108,7 @@ static int set_lock_code(struct mgmt_ctxt *ctxt);
 static int lock(struct mgmt_ctxt *ctxt);
 static int unlock(struct mgmt_ctxt *ctxt);
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt);
+static int get_api_version(struct mgmt_ctxt *ctxt);
 
 static int attribute_mgmt_init(const struct device *device);
 
@@ -175,6 +181,11 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_GET_UNLOCK_ERROR_CODE] = {
 		.mh_write = NULL,
 		.mh_read = get_unlock_error_code,
+	},
+	[ATTRIBUTE_MGMT_ID_GET_API_VERSION] = {
+		.mh_write = NULL,
+		.mh_read = get_api_version,
+		.use_custom_cbor_encoder = true,
 	}
 };
 
@@ -1116,4 +1127,28 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
+}
+
+static int get_api_version(struct mgmt_ctxt *ctxt)
+{
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	uint8_t *api_version = (uint8_t *)attr_get_quasi_static(
+						ATTR_ID_attribute_version);
+
+	struct get_api_version_result api_version_data = {
+		._get_api_version_result_api_version = {
+			.value = api_version,
+			.len = strlen(api_version)
+		},
+	};
+
+	if (!cbor_encode_get_api_version_result(buffer, sizeof(buffer),
+						&api_version_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 }

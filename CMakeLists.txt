@@ -3,9 +3,12 @@
 if (CONFIG_ATTR)
 
 zephyr_include_directories(universal/include)
+zephyr_include_directories(universal/include/generated)
 zephyr_sources(
     universal/source/attr.c
     universal/source/attr_validator.c
+    universal/source/generated/lock_decode.c
+    universal/source/generated/lock_encode.c
 )
 
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL
