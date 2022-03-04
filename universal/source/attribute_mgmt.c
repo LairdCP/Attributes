@@ -110,6 +110,7 @@ static int unlock(struct mgmt_ctxt *ctxt);
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt);
 static int get_api_version(struct mgmt_ctxt *ctxt);
 static int get_indices(struct mgmt_ctxt *ctxt);
+static int get_entry_details(struct mgmt_ctxt *ctxt);
 
 static int attribute_mgmt_init(const struct device *device);
 
@@ -191,6 +192,11 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_GET_INDICES] = {
 		.mh_write = NULL,
 		.mh_read = get_indices,
+		.use_custom_cbor_encoder = true,
+	},
+	[ATTRIBUTE_MGMT_ID_GET_ENTRY_DETAILS] = {
+		.mh_write = NULL,
+		.mh_read = get_entry_details,
 		.use_custom_cbor_encoder = true,
 	}
 };
@@ -1139,14 +1145,13 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 {
 	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
-	uint8_t *api_version = (uint8_t *)attr_get_quasi_static(
-						ATTR_ID_attribute_version);
+	uint8_t *api_version =
+		(uint8_t *)attr_get_quasi_static(ATTR_ID_attribute_version);
 
 	struct get_api_version_result api_version_data = {
-		._get_api_version_result_api_version = {
-			.value = api_version,
-			.len = strlen(api_version)
-		},
+		._get_api_version_result_api_version = { .value = api_version,
+							 .len = strlen(
+								 api_version) },
 	};
 
 	if (!cbor_encode_get_api_version_result(buffer, sizeof(buffer),
@@ -1175,6 +1180,215 @@ static int get_indices(struct mgmt_ctxt *ctxt)
 
 	if (!cbor_encode_get_indices_result(buffer, sizeof(buffer),
 					    &indices_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
+}
+
+static int get_entry_details(struct mgmt_ctxt *ctxt)
+{
+	int r;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	static uint16_t last_index;
+	uint32_t rsp_len = 0;
+	attr_id_t id;
+	const char *name = NULL;
+	size_t size;
+	enum attr_type type;
+	enum attr_flags flags;
+	bool prepared;
+	const struct attr_min_max *min = NULL;
+	const struct attr_min_max *max = NULL;
+	struct get_entry_details user_params = { 0 };
+	struct get_entry_details_result entry_data = { 0 };
+
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
+
+	if (!cbor_decode_get_entry_details(cnr->nb->data,
+					   ctxt->it.parser->d->message_size,
+					   &user_params, NULL)) {
+		return MGMT_ERR_EINVAL;
+	}
+
+	/* Check method */
+	if (user_params._get_entry_details_method_choice ==
+	    _get_entry_details_method_index) {
+		/* Get entry at index - check index is present */
+		if (user_params._get_entry_details_index_present == false) {
+			return MGMT_ERR_EINVAL;
+		} else if (user_params._get_entry_details_index
+				   ._get_entry_details_index >
+			   ATTR_TABLE_MAX_ID) {
+			/* Entry exceeds number of attributes */
+			entry_data._get_entry_details_result_res = -ERANGE;
+		} else {
+			last_index = user_params._get_entry_details_index
+					     ._get_entry_details_index;
+		}
+	} else if (user_params._get_entry_details_method_choice ==
+		   _get_entry_details_method_first) {
+		/* Get first entry at index 0 */
+		last_index = 0;
+	} else if (user_params._get_entry_details_method_choice ==
+		   _get_entry_details_method_last) {
+		/* Get last entry, using max ID */
+		last_index = ATTR_TABLE_MAX_ID;
+	} else if (user_params._get_entry_details_method_choice ==
+		   _get_entry_details_method_next) {
+		/* Get next entry by incrementing previous index */
+		if (last_index >= ATTR_TABLE_MAX_ID) {
+			/* There are no more attributes */
+			entry_data._get_entry_details_result_res = -ERANGE;
+		} else {
+			++last_index;
+		}
+	} else if (user_params._get_entry_details_method_choice ==
+		   _get_entry_details_method_previous) {
+		/* Get previous entry by decrementing previous index */
+		if (last_index == 0) {
+			/* Going back further would loop around */
+			entry_data._get_entry_details_result_res = -ERANGE;
+		} else {
+			--last_index;
+		}
+	} else {
+		/* Invalid method supplied */
+		return MGMT_ERR_EINVAL;
+	}
+
+	entry_data._get_entry_details_result_index = last_index;
+
+	if (entry_data._get_entry_details_result_res == 0) {
+		r = attr_get_entry_details(last_index, &id, name, &size, &type,
+					   &flags, &prepared, min, max);
+		if (r != 0) {
+			entry_data._get_entry_details_result_res = r;
+		} else {
+			entry_data._get_entry_details_result_id
+				._get_entry_details_result_id = id;
+			entry_data._get_entry_details_result_id_present = true;
+
+			if (name != NULL) {
+				entry_data._get_entry_details_result_name
+					._get_entry_details_result_name.value =
+					name;
+				entry_data._get_entry_details_result_name
+					._get_entry_details_result_name.len =
+					strlen(name);
+				entry_data
+					._get_entry_details_result_name_present =
+					true;
+			}
+
+			entry_data._get_entry_details_result_size
+				._get_entry_details_result_size = size;
+			entry_data._get_entry_details_result_size_present =
+				true;
+			entry_data._get_entry_details_result_type
+				._get_entry_details_result_type = type;
+			entry_data._get_entry_details_result_type_present =
+				true;
+			entry_data._get_entry_details_result_flags
+				._get_entry_details_result_flags = flags;
+			entry_data._get_entry_details_result_flags_present =
+				true;
+			entry_data._get_entry_details_result_prepared
+				._get_entry_details_result_prepared = prepared;
+			entry_data._get_entry_details_result_prepared_present =
+				true;
+
+			if (min != NULL) {
+				if (type == ATTR_TYPE_BOOL) {
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_bool =
+						min->ux;
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_choice =
+						_get_entry_details_result_min_bool;
+				} else if (type == ATTR_TYPE_U8 ||
+					   type == ATTR_TYPE_U16 ||
+					   type == ATTR_TYPE_U32 ||
+					   type == ATTR_TYPE_U64) {
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min__uint64 =
+						min->ux;
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_choice =
+						_get_entry_details_result_min__uint64;
+				} else if (type == ATTR_TYPE_S8 ||
+					   type == ATTR_TYPE_S16 ||
+					   type == ATTR_TYPE_S32 ||
+					   type == ATTR_TYPE_S64) {
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min__int64 =
+						min->sx;
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_choice =
+						_get_entry_details_result_min__int64;
+				} else if (type == ATTR_TYPE_FLOAT) {
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_float =
+						min->fx;
+					entry_data._get_entry_details_result_min
+						._get_entry_details_result_min_choice =
+						_get_entry_details_result_min_float;
+				}
+
+				entry_data
+					._get_entry_details_result_min_present =
+					true;
+			}
+
+			if (max != NULL) {
+				if (type == ATTR_TYPE_BOOL) {
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_bool =
+						max->ux;
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_choice =
+						_get_entry_details_result_max_bool;
+				} else if (type == ATTR_TYPE_U8 ||
+					   type == ATTR_TYPE_U16 ||
+					   type == ATTR_TYPE_U32 ||
+					   type == ATTR_TYPE_U64) {
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max__uint64 =
+						max->ux;
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_choice =
+						_get_entry_details_result_max__uint64;
+				} else if (type == ATTR_TYPE_S8 ||
+					   type == ATTR_TYPE_S16 ||
+					   type == ATTR_TYPE_S32 ||
+					   type == ATTR_TYPE_S64) {
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max__int64 =
+						max->sx;
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_choice =
+						_get_entry_details_result_max__int64;
+				} else if (type == ATTR_TYPE_FLOAT) {
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_float =
+						max->fx;
+					entry_data._get_entry_details_result_max
+						._get_entry_details_result_max_choice =
+						_get_entry_details_result_max_float;
+				}
+
+				entry_data
+					._get_entry_details_result_max_present =
+					true;
+			}
+		}
+	}
+
+	if (!cbor_encode_get_entry_details_result(buffer, sizeof(buffer),
+						  &entry_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 

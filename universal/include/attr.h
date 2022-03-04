@@ -567,6 +567,29 @@ void attr_save_status_notification(bool dirty);
  */
 void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id);
 
+/**
+ * @brief Get attribute details.
+ *
+ * @param Index in attribute table to get details of
+ * @param Will be set to ID of attribute if successful
+ * @param Will be set to pointer to name of attribute if successful and field
+ * exists
+ * @param Will be set to size of attribute if successful
+ * @param Will be set to type of attribute if successful
+ * @param Will be set to flags of attribute if successful
+ * @param Will be set to true if attribute if successful and has a prepared
+ * handler
+ * @param Will be set to pointer to min of attribute if successful and field
+ * exists
+ * @param Will be set to pointer to max of attribute if successful and field
+ * exists
+ */
+int attr_get_entry_details(uint16_t index, attr_id_t *id, const char * name,
+			   size_t *size, enum attr_type *type,
+			   enum attr_flags *flags, bool *prepared,
+			   const struct attr_min_max *min,
+			   const struct attr_min_max *max);
+
 #ifdef __cplusplus
 }
 #endif

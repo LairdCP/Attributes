@@ -2,7 +2,7 @@
  * @file attr.c
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2021-2022 Laird Connectivity
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2294,6 +2294,29 @@ void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
 	*min_id = ATTR_TABLE[0].id;
 	*max_id = ATTR_TABLE_MAX_ID;
 }
+
+int attr_get_entry_details(uint16_t index, attr_id_t *id, const char * name,
+			   size_t *size, enum attr_type *type,
+			   enum attr_flags *flags, bool *prepared,
+			   const struct attr_min_max *min,
+			   const struct attr_min_max *max)
+{
+	if (index >= ATTR_TABLE_SIZE) {
+		return -EINVAL;
+	}
+
+	*id = ATTR_TABLE[index].id;
+	name = ATTR_TABLE[index].name;
+	*size = ATTR_TABLE[index].size;
+	*type = ATTR_TABLE[index].type;
+	*flags = ATTR_TABLE[index].flags;
+	*prepared = ATTR_TABLE[index].prepare != NULL;
+	min = &ATTR_TABLE[index].min;
+	max = &ATTR_TABLE[index].max;
+
+	return 0;
+}
+
 
 /******************************************************************************/
 /* SYS INIT                                                                   */
