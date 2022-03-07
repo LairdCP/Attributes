@@ -167,22 +167,27 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_CHECK_LOCK_STATUS] = {
 		.mh_write = NULL,
 		.mh_read = check_lock_status,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_LOCK_CODE] = {
 		.mh_write = set_lock_code,
 		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_LOCK] = {
 		.mh_write = lock,
 		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_UNLOCK] = {
 		.mh_write = unlock,
 		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_UNLOCK_ERROR_CODE] = {
 		.mh_write = NULL,
 		.mh_read = get_unlock_error_code,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_API_VERSION] = {
 		.mh_write = NULL,
@@ -891,6 +896,9 @@ static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
 static int check_lock_status(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct check_lock_status_result check_lock_status_data;
 	bool lock_enabled;
 	bool lock_active = false;
 	uint8_t lock_status;
@@ -914,23 +922,19 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 		}
 	}
 
-	/* Cbor encode result */
-	CborError err = 0;
+	check_lock_status_data._check_lock_status_result_r = r;
+	check_lock_status_data._check_lock_status_result_r1 = lock_enabled;
+	check_lock_status_data._check_lock_status_result_r2 = lock_active;
 
-	/* Add result */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	if (!cbor_encode_check_lock_status_result(buffer, sizeof(buffer),
+						  &check_lock_status_data,
+						  &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
 
-	/* Add if lock is enabled */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r1");
-	err |= cbor_encode_boolean(&ctxt->encoder, lock_enabled);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
 
-	/* Add if lock is engaged */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r2");
-	err |= cbor_encode_boolean(&ctxt->encoder, lock_active);
-
-	/* Exit with result */
-	return MGMT_STATUS_CHECK(err);
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
@@ -939,20 +943,19 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 static int set_lock_code(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	long long unsigned int lock_code_tmp = ULLONG_MAX;
-	uint32_t lock_code;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct set_lock_code user_params;
+	struct set_lock_code_result set_lock_code_data;
 	int r = 0;
 
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &lock_code_tmp,
-		  .nodefault = true },
-		END_OF_CBOR_ATTR_ARRAY
-	};
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
-		return -EINVAL;
+	if (!cbor_decode_set_lock_code(cnr->nb->data,
+				       ctxt->it.parser->d->message_size,
+				       &user_params, NULL)) {
+		return MGMT_ERR_EINVAL;
 	}
 
 	if (attr_is_locked() == true) {
@@ -960,8 +963,8 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 	}
 
 	if (r == 0) {
-		lock_code = (uint32_t)lock_code_tmp;
-		r = attr_set_uint32(ATTR_ID_settings_passcode, lock_code);
+		r = attr_set_uint32(ATTR_ID_settings_passcode,
+				    user_params._set_lock_code_p1);
 	}
 
 	if (r == 0) {
@@ -980,15 +983,16 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
-	/* Cbor encode result */
-	CborError err = 0;
+	set_lock_code_data._set_lock_code_result_r = r;
 
-	/* Add result */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	if (!cbor_encode_set_lock_code_result(buffer, sizeof(buffer),
+					      &set_lock_code_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
 
-	/* Exit with result */
-	return MGMT_STATUS_CHECK(err);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
@@ -997,6 +1001,9 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 static int lock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct lock_result lock_data;
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
@@ -1014,15 +1021,16 @@ static int lock(struct mgmt_ctxt *ctxt)
 		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
-	/* Cbor encode result */
-	CborError err = 0;
+	lock_data._lock_result_r = r;
 
-	/* Add result */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	if (!cbor_encode_lock_result(buffer, sizeof(buffer), &lock_data,
+				     &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
 
-	/* Exit with result */
-	return MGMT_STATUS_CHECK(err);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
@@ -1031,37 +1039,29 @@ static int lock(struct mgmt_ctxt *ctxt)
 static int unlock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
-	long long unsigned int lock_code_tmp = ULLONG_MAX;
-	uint32_t lock_code;
+	struct unlock user_params;
+	struct unlock_result unlock_data;
 	uint32_t real_lock_code;
-	bool permanent_unlock = false;
 	int r = 0;
 
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &lock_code_tmp,
-		  .nodefault = true },
-		{ .attribute = "p2",
-		  .type = CborAttrBooleanType,
-		  .addr.boolean = &permanent_unlock,
-		  .nodefault = true },
-		END_OF_CBOR_ATTR_ARRAY
-	};
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
-		return -EINVAL;
+	if (!cbor_decode_unlock(cnr->nb->data, ctxt->it.parser->d->message_size,
+				&user_params, NULL)) {
+		return MGMT_ERR_EINVAL;
 	}
 
 	if (attr_is_locked() == true) {
 		real_lock_code =
 			attr_get_uint32(ATTR_ID_settings_passcode, 123456);
-		lock_code = (uint32_t)lock_code_tmp;
 
 		/* Check if the passcode entered matches */
-		if (real_lock_code == lock_code) {
+		if (real_lock_code == user_params._unlock_p1) {
 			/* Unlock the settings */
 			attr_set_uint32(ATTR_ID_lock_status,
 					LOCK_STATUS_SETUP_DISENGAGED);
@@ -1081,7 +1081,8 @@ static int unlock(struct mgmt_ctxt *ctxt)
 				passcode_status);
 	}
 
-	if (permanent_unlock == true && attr_is_locked() == false && r == 0) {
+	if (user_params._unlock_p2 == true && attr_is_locked() == false &&
+	    r == 0) {
 		/* User has requested to remove the lock entirely */
 		attr_set_uint32(ATTR_ID_lock, false);
 		attr_set_uint32(ATTR_ID_lock_status, LOCK_STATUS_NOT_SETUP);
@@ -1091,15 +1092,16 @@ static int unlock(struct mgmt_ctxt *ctxt)
 		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
 	}
 
-	/* Cbor encode result */
-	CborError err = 0;
+	unlock_data._unlock_result_r = r;
 
-	/* Add result */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	if (!cbor_encode_unlock_result(buffer, sizeof(buffer), &unlock_data,
+				       &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
 
-	/* Exit with result */
-	return MGMT_STATUS_CHECK(err);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
@@ -1108,6 +1110,9 @@ static int unlock(struct mgmt_ctxt *ctxt)
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct get_unlock_error_code_result unlock_error_code_data;
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
@@ -1123,19 +1128,19 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 		r = 0;
 	}
 
-	/* Cbor encode result */
-	CborError err = 0;
+	unlock_error_code_data._get_unlock_error_code_result_r = r;
+	unlock_error_code_data._get_unlock_error_code_result_r1 =
+		passcode_status;
 
-	/* Add result */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	if (!cbor_encode_get_unlock_error_code_result(buffer, sizeof(buffer),
+						      &unlock_error_code_data,
+						      &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
 
-	/* Add status */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r1");
-	err |= cbor_encode_int(&ctxt->encoder, passcode_status);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
 
-	/* Exit with result */
-	return MGMT_STATUS_CHECK(err);
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
