@@ -1,0 +1,143 @@
+int64  = int .size 8
+uint64 = uint .size 8
+
+check_lock_status_result = {
+    "r" => int,                                                          ; Result code
+    "r1" => bool,                                                        ; Lock setup
+    "r2" => bool                                                         ; Lock currently enabled
+}
+
+set_lock_code = {
+    "p1" => 0..999999                                                    ; Lock code
+}
+
+set_lock_code_result = {
+    "r" => int                                                           ; Result code
+}
+
+lock_result = {
+    "r" => int                                                           ; Result code
+}
+
+unlock = {
+    "p1" => 0..999999,                                                   ; Unlock code
+    "p2" => bool                                                         ; Remove/disable lock
+}
+
+unlock_result = {
+    "r" => int                                                           ; Result code
+}
+
+get_unlock_error_code = {
+}
+
+get_unlock_error_code_result = {
+    "r" => int,                                                          ; Result code
+    "r1" => int                                                          ; Lock status
+}
+
+set_parameter = {
+    "p1" => uint,                                                        ; Attribute ID
+    "p2" => bool/uint64/int64/tstr/float/bstr                            ; Value
+}
+
+set_parameter_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+get_parameter = {
+    "p1" => uint                                                         ; Attribute ID
+}
+
+get_parameter_result = {
+    "r" => int,                                                          ; Result code
+    "id" => uint,                                                        ; Attribute ID
+    ? "r1" => bool/uint64/int64/tstr/float/bstr                          ; Attribute value
+}
+
+get_api_version = {
+}
+
+get_api_version_result = {
+    "api_version" => tstr                                                ; API version string
+}
+
+get_indices = {
+}
+
+get_indices_result = {
+    "table_size" => uint .size 2,                                        ; Number of attributes
+    "min_id" => uint .size 2,                                            ; Minimum attribute ID
+    "max_id" => uint .size 2                                             ; Maximum attribute ID
+}
+
+get_entry_details = {
+    "method" => (index: 0)/(first: 1)/(last: 2)/(next: 3)/(previous: 4), ; Transversal method
+    ? "index" => uint                                                    ; Attribute index
+}
+
+get_entry_details_result = {
+    "index" => uint .size 2,                                             ; Attribute index
+    "res" => int,                                                        ; Result code
+    ? "id" => uint,                                                      ; Attribute ID
+    ? "name" => tstr,                                                    ; Attribute name
+    ? "size" => uint,                                                    ; Attribute size (bytes)
+    ? "type" => uint,                                                    ; Attribute type
+    ? "flags" => uint,                                                   ; Attribute flags
+    ? "prepared" => bool,                                                ; Attribute prepared read
+    ? "min" => bool/uint64/int64/float,                                  ; Attribute minimum value
+    ? "max" => bool/uint64/int64/float                                   ; Attribute maximum value
+}
+
+load_parameter_file = {
+    ? "p1" => tstr                                                       ; File name
+}
+
+load_parameter_file_result = {
+    "r" => int,                                                          ; Result code
+    ? "f" => tstr                                                        ; File name
+}
+
+dump_parameter_file = {
+    "p1" => uint,                                                        ; Attribute type
+    ? "p2" => tstr                                                       ; File name
+}
+
+dump_parameter_file_result = {
+    "r" => int,                                                          ; Result code
+    ? "n" => tstr                                                        ; File name
+}
+
+factory_reset = {
+}
+
+factory_reset_result = {
+    "r" => int                                                           ; Result code
+}
+
+set_notify = {
+    "p1" => uint,                                                        ; Attribute ID
+    "p2" => bool                                                         ; Notifications
+}
+
+set_notify_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+get_notify = {
+    "p1" => uint                                                         ; Attribute ID
+}
+
+get_notify_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+disable_notify = {
+}
+
+disable_notify_result = {
+    "r" => int                                                           ; Result code
+}
