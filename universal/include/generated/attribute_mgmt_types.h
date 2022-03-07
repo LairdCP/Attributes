@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef LOCK_TYPES_H__
-#define LOCK_TYPES_H__
+#ifndef ATTRIBUTE_MGMT_TYPES_H__
+#define ATTRIBUTE_MGMT_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -89,6 +89,72 @@ struct get_entry_details {
 	uint_fast32_t _get_entry_details_index_present;
 };
 
+struct load_parameter_file_p1 {
+	struct zcbor_string _load_parameter_file_p1;
+};
+
+struct load_parameter_file {
+	struct load_parameter_file_p1 _load_parameter_file_p1;
+	uint_fast32_t _load_parameter_file_p1_present;
+};
+
+struct load_parameter_file_result_f {
+	struct zcbor_string _load_parameter_file_result_f;
+};
+
+struct load_parameter_file_result {
+	int32_t _load_parameter_file_result_r;
+	struct load_parameter_file_result_f _load_parameter_file_result_f;
+	uint_fast32_t _load_parameter_file_result_f_present;
+};
+
+struct dump_parameter_file_p2 {
+	struct zcbor_string _dump_parameter_file_p2;
+};
+
+struct dump_parameter_file {
+	uint32_t _dump_parameter_file_p1;
+	struct dump_parameter_file_p2 _dump_parameter_file_p2;
+	uint_fast32_t _dump_parameter_file_p2_present;
+};
+
+struct dump_parameter_file_result_n {
+	struct zcbor_string _dump_parameter_file_result_n;
+};
+
+struct dump_parameter_file_result {
+	int32_t _dump_parameter_file_result_r;
+	struct dump_parameter_file_result_n _dump_parameter_file_result_n;
+	uint_fast32_t _dump_parameter_file_result_n_present;
+};
+
+struct set_notify {
+	uint32_t _set_notify_p1;
+	bool _set_notify_p2;
+};
+
+struct set_notify_result {
+	uint32_t _set_notify_result_id;
+	int32_t _set_notify_result_r;
+};
+
+struct get_notify {
+	uint32_t _get_notify_p1;
+};
+
+struct get_notify_result {
+	uint32_t _get_notify_result_id;
+	int32_t _get_notify_result_r;
+};
+
+struct disable_notify_result {
+	int32_t _disable_notify_result_r;
+};
+
+struct factory_reset_result {
+	int32_t _factory_reset_result_r;
+};
+
 struct set_parameter {
 	uint32_t _set_parameter_p1;
 	union {
@@ -106,7 +172,6 @@ struct set_parameter {
 		_set_parameter_p2_tstr,
 		_set_parameter_p2_float,
 		_set_parameter_p2_bstr,
-		_set_parameter_p2_nil,
 	} _set_parameter_p2_choice;
 };
 
@@ -126,7 +191,6 @@ struct get_parameter_result_r1_ {
 		_get_parameter_result_r1_tstr,
 		_get_parameter_result_r1_float,
 		_get_parameter_result_r1_bstr,
-		_get_parameter_result_r1_nil,
 	} _get_parameter_result_r1_choice;
 };
 
@@ -213,4 +277,4 @@ struct get_entry_details_result {
 };
 
 
-#endif /* LOCK_TYPES_H__ */
+#endif /* ATTRIBUTE_MGMT_TYPES_H__ */

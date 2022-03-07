@@ -44,8 +44,8 @@
 #endif
 
 #include "attribute_mgmt.h"
-#include "lock_decode.h"
-#include "lock_encode.h"
+#include "attribute_mgmt_decode.h"
+#include "attribute_mgmt_encode.h"
 #include "mgmt/mcumgr/buf.h"
 
 /******************************************************************************/
@@ -53,9 +53,7 @@
 /******************************************************************************/
 #define MGMT_OP_NOTIFY 4
 
-#define FLOAT_MAX 3.4028235E38
 #define INVALID_PARAM_ID (ATTR_TABLE_SIZE + 1)
-#define NOT_A_BOOL -1
 
 #define MAX_PBUF_SIZE MAX(ATTR_MAX_STR_SIZE, ATTR_MAX_BIN_SIZE)
 
@@ -73,13 +71,6 @@
  *    19 0400         # unsigned(1024) - size
  */
 #define CBOR_NOTIFICATION_OVERHEAD 32
-
-#define END_OF_CBOR_ATTR_ARRAY                                                 \
-	{                                                                      \
-		.attribute = NULL                                              \
-	}
-
-#define MGMT_STATUS_CHECK(x) ((x != 0) ? MGMT_ERR_ENOMEM : 0)
 
 #define LOCK_INVALID_WAIT_TIME_MS 1500
 
@@ -114,14 +105,8 @@ static int get_entry_details(struct mgmt_ctxt *ctxt);
 
 static int attribute_mgmt_init(const struct device *device);
 
-static int cbor_encode_attribute(CborEncoder *encoder,
-				 long long unsigned int param_id);
-
-static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
-					    struct cbor_attr_t *cbor_attr);
-
-static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
-			 enum attr_type type, bool *modified);
+static void cbor_encode_attribute(uint16_t param_id,
+				  struct get_parameter_result *response);
 
 #ifdef CONFIG_MCUMGR_SMP_BT
 static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason);
@@ -134,35 +119,43 @@ static void smp_ble_connected(struct bt_conn *conn, uint8_t err);
 static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_GET_PARAMETER] = {
 		.mh_write = NULL,
-		.mh_read = get_parameter
+		.mh_read = get_parameter,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_PARAMETER] = {
 		.mh_write = set_parameter,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_LOAD_PARAMETER_FILE] = {
 		.mh_write = load_parameter_file,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_DUMP_PARAMETER_FILE] = {
 		.mh_write = dump_parameter_file,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_FACTORY_RESET] = {
 		.mh_write = factory_reset,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_NOTIFY] = {
 		.mh_write = set_notify,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_NOTIFY] = {
 		.mh_write = NULL,
-		.mh_read = get_notify
+		.mh_read = get_notify,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_DISABLE_NOTIFY] = {
 		.mh_write = disable_notify,
-		.mh_read = NULL
+		.mh_read = NULL,
+		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_CHECK_LOCK_STATUS] = {
 		.mh_write = NULL,
@@ -212,23 +205,6 @@ static struct mgmt_group attribute_mgmt_group = {
 	.mg_group_id = CONFIG_MGMT_GROUP_ID_ATTRIBUTE,
 };
 
-/* Only one parameter is written or read at a time. */
-static union {
-	uint64_t uint64;
-	uint32_t uint32;
-	uint16_t uint16;
-	uint8_t uint8;
-	int64_t int64;
-	int32_t int32;
-	int16_t int16;
-	int8_t int8;
-	bool boolean;
-	char buf[MAX_PBUF_SIZE];
-	float fval;
-} param;
-
-static size_t buf_size;
-
 #ifdef CONFIG_MCUMGR_SMP_BT
 struct smp_notification {
 	struct bt_dfu_smp_header header;
@@ -253,35 +229,31 @@ SYS_INIT(attribute_mgmt_init, APPLICATION, 99);
 
 #ifdef CONFIG_MCUMGR_SMP_BT
 /* Callback from attribute module */
-int attr_notify(attr_id_t Index)
+int attr_notify(attr_id_t index)
 {
 	int err = 0;
-	CborEncoder cbor;
-	CborEncoder cbor_map;
-	struct cbor_buf_writer writer;
-	size_t payload_len;
+	size_t rsp_len = 0;
 	size_t total_len;
 	uint16_t mtu;
+	struct get_parameter_result response;
 
 	if (smp_ble.conn_handle == NULL) {
 		return -ENOTCONN;
 	}
 
-	cbor_buf_writer_init(&writer, smp_ble.cmd.buffer,
-			     sizeof(smp_ble.cmd.buffer));
-	cbor_encoder_init(&cbor, &writer.enc, 0);
+	response._get_parameter_result_id = index;
+
+	cbor_encode_attribute(index, &response);
 
 	do {
-		err |= cbor_encoder_create_map(&cbor, &cbor_map,
-					       CborIndefiniteLength);
-		err |= cbor_encode_attribute(&cbor, Index);
-		err |= cbor_encoder_close_container(&cbor, &cbor_map);
-		if (err < 0) {
+		if (!cbor_encode_get_parameter_result(
+			    smp_ble.cmd.buffer, sizeof(smp_ble.cmd.buffer),
+			    &response, &rsp_len)) {
+			err = -EMSGSIZE;
 			break;
 		}
 
-		payload_len = (size_t)(writer.ptr - smp_ble.cmd.buffer);
-		total_len = sizeof(smp_ble.cmd.header) + payload_len;
+		total_len = sizeof(smp_ble.cmd.header) + rsp_len;
 		mtu = bt_gatt_get_mtu(smp_ble.conn_handle);
 		if (total_len > BT_MAX_PAYLOAD(mtu)) {
 			err = -EMSGSIZE;
@@ -290,10 +262,8 @@ int attr_notify(attr_id_t Index)
 
 		smp_ble.cmd.header.op = MGMT_OP_NOTIFY;
 		smp_ble.cmd.header.flags = 0;
-		smp_ble.cmd.header.len_h8 =
-			(uint8_t)((payload_len >> 8) & 0xFF);
-		smp_ble.cmd.header.len_l8 =
-			(uint8_t)((payload_len >> 0) & 0xFF);
+		smp_ble.cmd.header.len_h8 = (uint8_t)((rsp_len >> 8) & 0xFF);
+		smp_ble.cmd.header.len_l8 = (uint8_t)((rsp_len >> 0) & 0xFF);
 		smp_ble.cmd.header.group_h8 = 0;
 		smp_ble.cmd.header.group_l8 = CONFIG_MGMT_GROUP_ID_ATTRIBUTE;
 		smp_ble.cmd.header.seq = 0;
@@ -356,182 +326,408 @@ static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason)
 
 static int get_parameter(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
-	long long unsigned int param_id = INVALID_PARAM_ID;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct get_parameter user_params;
+	struct get_parameter_result response;
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	struct cbor_attr_t params_attr[] = {
-		{
-			.attribute = "p1",
-			.type = CborAttrUnsignedIntegerType,
-			.addr.uinteger = &param_id,
-			.nodefault = true,
-		},
-		END_OF_CBOR_ATTR_ARRAY
-	};
+	user_params._get_parameter_p1 = INVALID_PARAM_ID;
 
-	/* Get the parameter ID */
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_get_parameter(cnr->nb->data,
+				       ctxt->it.parser->d->message_size,
+				       &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	if (param_id == INVALID_PARAM_ID) {
+	if (user_params._get_parameter_p1 == INVALID_PARAM_ID) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	/* Encode the response */
-	err |= cbor_encode_attribute(&ctxt->encoder, param_id);
+	response._get_parameter_result_id = user_params._get_parameter_p1;
 
-	return MGMT_STATUS_CHECK(err);
+	cbor_encode_attribute(user_params._get_parameter_p1, &response);
+
+	if (!cbor_encode_get_parameter_result(buffer, sizeof(buffer), &response,
+					      &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 }
 
 /*
  * Map the attribute type to the CBOR type, get the value, and then encode it.
  */
-static int cbor_encode_attribute(CborEncoder *encoder,
-				 long long unsigned int param_id)
+static void cbor_encode_attribute(uint16_t param_id,
+				  struct get_parameter_result *response)
 {
-	CborError err = 0;
-	int size = -EINVAL;
 	attr_id_t id = (attr_id_t)param_id;
 	enum attr_type type = attr_get_type(id);
 
-	err |= cbor_encode_text_stringz(encoder, "id");
-	err |= cbor_encode_uint(encoder, param_id);
-	err |= cbor_encode_text_stringz(encoder, "r1");
-
-	switch (type) {
-	case ATTR_TYPE_S8:
-	case ATTR_TYPE_S16:
-	case ATTR_TYPE_S32:
-	case ATTR_TYPE_S64:
-		size = attr_get(id, &param.int64, sizeof(param.int64));
-		err |= cbor_encode_int(encoder, param.int64);
-		break;
-
-	case ATTR_TYPE_U8:
-	case ATTR_TYPE_U16:
-	case ATTR_TYPE_U32:
-	case ATTR_TYPE_U64:
-		size = attr_get(id, &param.uint64, sizeof(param.uint64));
-		err |= cbor_encode_uint(encoder, param.uint64);
-		break;
-
-	case ATTR_TYPE_STRING:
-		size = attr_get(id, param.buf, MAX_PBUF_SIZE);
-		err |= cbor_encode_text_stringz(encoder, param.buf);
-		break;
-
-	case ATTR_TYPE_FLOAT:
-		size = attr_get(id, &param.fval, sizeof(param.fval));
-		err |= cbor_encode_floating_point(encoder, CborFloatType,
-						  &param.fval);
-		break;
-
-	case ATTR_TYPE_BOOL:
-		size = attr_get(id, &param.boolean, sizeof(param.boolean));
-		err |= cbor_encode_boolean(encoder, param.boolean);
-		break;
-
-	case ATTR_TYPE_BYTE_ARRAY:
-		size = attr_get(id, param.buf, MAX_PBUF_SIZE);
-		err |= cbor_encode_byte_string(encoder, param.buf,
-					       MAX(0, size));
-		break;
-
-	default:
-		/* Add dummy r1 parameter */
-		param.uint64 = 0;
-		err |= cbor_encode_uint(encoder, param.uint64);
-		size = -EINVAL;
-		break;
+	if (type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
+	    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1__int64;
+		response->_get_parameter_result_r = attr_get(
+			id,
+			&response->_get_parameter_result_r1
+				 ._get_parameter_result_r1__int64,
+			sizeof(response->_get_parameter_result_r1
+				       ._get_parameter_result_r1__int64));
+		response->_get_parameter_result_r1_present = true;
+	} else if (type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
+		   type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1__uint64;
+		response->_get_parameter_result_r = attr_get(
+			id,
+			&response->_get_parameter_result_r1
+				 ._get_parameter_result_r1__uint64,
+			sizeof(response->_get_parameter_result_r1
+				       ._get_parameter_result_r1__uint64));
+		response->_get_parameter_result_r1_present = true;
+	} else if (type == ATTR_TYPE_STRING) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1_tstr;
+		response->_get_parameter_result_r1._get_parameter_result_r1_tstr
+			.value = attr_get_pointer(
+			id, &response->_get_parameter_result_r);
+		if (response->_get_parameter_result_r1
+			    ._get_parameter_result_r1_tstr.value == NULL) {
+			response->_get_parameter_result_r1
+				._get_parameter_result_r1_tstr.len = 0;
+		} else {
+			response->_get_parameter_result_r1
+				._get_parameter_result_r1_tstr.len = strlen(
+				response->_get_parameter_result_r1
+					._get_parameter_result_r1_tstr.value);
+		}
+		response->_get_parameter_result_r1_present = true;
+	} else if (type == ATTR_TYPE_FLOAT) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1_float;
+		response->_get_parameter_result_r = attr_get(
+			id,
+			&response->_get_parameter_result_r1
+				 ._get_parameter_result_r1_float,
+			sizeof(response->_get_parameter_result_r1
+				       ._get_parameter_result_r1_float));
+		response->_get_parameter_result_r1_present = true;
+	} else if (type == ATTR_TYPE_BOOL) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1_bool;
+		response->_get_parameter_result_r = attr_get(
+			id,
+			&response->_get_parameter_result_r1
+				 ._get_parameter_result_r1_bool,
+			sizeof(response->_get_parameter_result_r1
+				       ._get_parameter_result_r1_bool));
+		response->_get_parameter_result_r1_present = true;
+	} else if (type == ATTR_TYPE_BYTE_ARRAY) {
+		response->_get_parameter_result_r1
+			._get_parameter_result_r1_choice =
+			_get_parameter_result_r1_bstr;
+		response->_get_parameter_result_r1._get_parameter_result_r1_bstr
+			.value = attr_get_pointer(
+			id, &response->_get_parameter_result_r);
+		response->_get_parameter_result_r1._get_parameter_result_r1_bstr
+			.len = response->_get_parameter_result_r;
+		response->_get_parameter_result_r1_present = true;
+	} else {
+		response->_get_parameter_result_r = -EINVAL;
+		response->_get_parameter_result_r1_present = false;
 	}
-
-	err |= cbor_encode_text_stringz(encoder, "r");
-	err |= cbor_encode_int(encoder, size);
-
-	return err;
 }
 
 static int set_parameter(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
-	long long unsigned int param_id = INVALID_PARAM_ID;
-	struct CborValue saved_context = ctxt->it;
-	int set_result = -1;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct set_parameter user_params;
+	struct set_parameter_result response;
 	enum attr_type type;
 #ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
 	bool modified = false;
 #endif
+	int r = 0;
 
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &param_id,
-		  .nodefault = true },
-		END_OF_CBOR_ATTR_ARRAY
-	};
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	struct cbor_attr_t expected[] = {
-		{ .attribute = "p2", .nodefault = true }, END_OF_CBOR_ATTR_ARRAY
-	};
+	user_params._set_parameter_p1 = INVALID_PARAM_ID;
 
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_set_parameter(cnr->nb->data,
+				       ctxt->it.parser->d->message_size,
+				       &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	if (param_id == INVALID_PARAM_ID) {
+	if (user_params._set_parameter_p1 == INVALID_PARAM_ID) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	type = map_attr_to_cbor_attr((attr_id_t)param_id, expected);
+	type = attr_get_type(user_params._set_parameter_p1);
 
-	/* If the type of object isn't found in the CBOR, then the client could
-	 * be trying to write the wrong type of value.
-	 */
-	if (cbor_read_object(&saved_context, expected) != 0) {
-		return MGMT_ERR_EINVAL;
-	}
-
-	set_result = set_attribute((attr_id_t)param_id, expected, type,
+	if (type == ATTR_TYPE_BOOL) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2_bool) {
+			r = attr_set((attr_id_t)user_params._set_parameter_p1,
+				     type, &user_params._set_parameter_p2_bool,
+				     sizeof(bool),
 #ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-				   &modified
+				     modified
 #else
-				   NULL
+				     NULL
 #endif
-	);
+			);
+		} else {
+			r = -ENOMSG;
+		}
+	} else if ((type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
+		    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64)) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2__int64) {
+			/* Check bounds */
+			int64_t min = LLONG_MIN;
+			int64_t max = LLONG_MAX;
+			if (type == ATTR_TYPE_S8) {
+				min = SCHAR_MIN;
+				max = SCHAR_MAX;
+			} else if (type == ATTR_TYPE_S16) {
+				min = SHRT_MIN;
+				max = SHRT_MAX;
+			} else if (type == ATTR_TYPE_S32) {
+				min = LONG_MIN;
+				max = LONG_MAX;
+			}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
-	err |= cbor_encode_uint(&ctxt->encoder, param_id);
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, set_result);
+			if (user_params._set_parameter_p2__int64 < min ||
+			    user_params._set_parameter_p2__int64 > max) {
+				/* Outside bounds of type, reject */
+				r = -EINVAL;
+			} else if (type == ATTR_TYPE_S8) {
+				int8_t tmp_val =
+					(int8_t)user_params
+						._set_parameter_p2__int64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(int8_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_S16) {
+				int16_t tmp_val =
+					(int16_t)user_params
+						._set_parameter_p2__int64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(int16_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_S32) {
+				int32_t tmp_val =
+					(int32_t)user_params
+						._set_parameter_p2__int64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(int32_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_S64) {
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type,
+					&user_params._set_parameter_p2__int64,
+					sizeof(int64_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			}
+		} else {
+			r = -ENOMSG;
+		}
+	} else if ((type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
+		    type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64)) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2__uint64) {
+			/* Check bounds */
+			uint64_t max = ULLONG_MAX;
+			if (type == ATTR_TYPE_U8) {
+				max = UCHAR_MAX;
+			} else if (type == ATTR_TYPE_U16) {
+				max = USHRT_MAX;
+			} else if (type == ATTR_TYPE_U32) {
+				max = ULONG_MAX;
+			}
+
+			if (user_params._set_parameter_p2__uint64 > max) {
+				/* Outside bounds of type, reject */
+				r = -EINVAL;
+			} else if (type == ATTR_TYPE_U8) {
+				uint8_t tmp_val =
+					(uint8_t)user_params
+						._set_parameter_p2__uint64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(uint8_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_U16) {
+				uint16_t tmp_val =
+					(uint16_t)user_params
+						._set_parameter_p2__uint64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(uint16_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_U32) {
+				uint32_t tmp_val =
+					(uint32_t)user_params
+						._set_parameter_p2__uint64;
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type, &tmp_val, sizeof(uint32_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			} else if (type == ATTR_TYPE_U64) {
+				r = attr_set(
+					(attr_id_t)user_params._set_parameter_p1,
+					type,
+					&user_params._set_parameter_p2__uint64,
+					sizeof(uint64_t),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+					modified
+#else
+					NULL
+#endif
+				);
+			}
+		} else {
+			r = -ENOMSG;
+		}
+	} else if (type == ATTR_TYPE_STRING) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2_tstr) {
+			r = attr_set(
+				(attr_id_t)user_params._set_parameter_p1, type,
+				(void *)user_params._set_parameter_p2_tstr.value,
+				user_params._set_parameter_p2_tstr.len,
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+				modified
+#else
+				NULL
+#endif
+			);
+		} else {
+			r = -ENOMSG;
+		}
+	} else if (type == ATTR_TYPE_FLOAT) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2_float) {
+			float tmp_val =
+				(float)user_params._set_parameter_p2_float;
+			r = attr_set((attr_id_t)user_params._set_parameter_p1,
+				     type, &tmp_val, sizeof(float),
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+				     modified
+#else
+				     NULL
+#endif
+			);
+		} else {
+			r = -ENOMSG;
+		}
+	} else if (type == ATTR_TYPE_BYTE_ARRAY) {
+		if (user_params._set_parameter_p2_choice ==
+		    _set_parameter_p2_bstr) {
+			r = attr_set(
+				(attr_id_t)user_params._set_parameter_p1, type,
+				(void *)user_params._set_parameter_p2_bstr.value,
+				user_params._set_parameter_p2_bstr.len,
+#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+				modified
+#else
+				NULL
+#endif
+			);
+		} else {
+			r = -ENOMSG;
+		}
+	} else {
+		/* Invalid ID or type */
+		r = -EINVAL;
+	}
 
 #ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-	if (set_result == 0 && err == 0 && modified == true) {
+	if (r == 0 && modified == true) {
 		(void)attr_update_config_version();
 	}
 #endif
 
-	return MGMT_STATUS_CHECK(err);
+	response._set_parameter_result_id = user_params._set_parameter_p1;
+	response._set_parameter_result_r = r;
+
+	if (!cbor_encode_set_parameter_result(buffer, sizeof(buffer), &response,
+					      &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 }
 
 static int load_parameter_file(struct mgmt_ctxt *ctxt)
 {
-	int r = 0;
-	CborError err = 0;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct load_parameter_file user_params;
+	struct load_parameter_file_result load_parameter_file_data = { 0 };
 	bool modified;
+	int r = 0;
 
-	/* The input file is an optional parameter. */
-	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_load_path),
-		sizeof(param.buf));
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	struct cbor_attr_t params_attr[] = { { .attribute = "p1",
-					       .type = CborAttrTextStringType,
-					       .addr.string = param.buf,
-					       .len = sizeof(param.buf),
-					       .nodefault = false },
-					     END_OF_CBOR_ATTR_ARRAY };
-
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_load_parameter_file(cnr->nb->data,
+					     ctxt->it.parser->d->message_size,
+					     &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -541,94 +737,140 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	}
 #endif
 
-	r = attr_load(param.buf,
+	if (r == 0) {
+		/* The input file is an optional parameter. */
+		r = attr_load(
+			(user_params._load_parameter_file_p1_present == true ?
+				       user_params._load_parameter_file_p1
+					 ._load_parameter_file_p1.value :
+				       attr_get_quasi_static(ATTR_ID_load_path)),
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
-		      CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
+			CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
 #else
-		      NULL,
+			NULL,
 #endif
-		      &modified);
+			&modified);
+	}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	load_parameter_file_data._load_parameter_file_result_r = r;
 
+	if (r == 0) {
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
-	/* Encode the feedback file path. */
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "f");
-	err |= cbor_encode_text_string(
-		&ctxt->encoder, CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
-		strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE));
+		/* Encode the feedback file path. */
+		load_parameter_file_data._load_parameter_file_result_f
+			._load_parameter_file_result_f.value =
+			CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE;
+		load_parameter_file_data._load_parameter_file_result_f
+			._load_parameter_file_result_f.len =
+			strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE);
+		load_parameter_file_data._load_parameter_file_result_f_present =
+			true;
 
 #ifdef CONFIG_ATTR_CONFIGURATION_VERSION
-	/* If no error update the device configuration version */
-	if (r == 0 && err == 0 && modified == true) {
-		attr_update_config_version();
+		/* If modified, update the device configuration version */
+		if (modified == true) {
+			attr_update_config_version();
+		}
+#endif
+#endif
 	}
-#endif
-#endif
 
-	return MGMT_STATUS_CHECK(err);
+	if (!cbor_encode_load_parameter_file_result(buffer, sizeof(buffer),
+						    &load_parameter_file_data,
+						    &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 }
 
 static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct dump_parameter_file user_params;
+	struct dump_parameter_file_result dump_parameter_file_data = { 0 };
 	int r = -EPERM;
-	long long unsigned int type = ULLONG_MAX;
 	char *fstr = NULL;
+	char *file_name;
 
-	/* The output file is an optional parameter. */
-	strncpy(param.buf, attr_get_quasi_static(ATTR_ID_dump_path),
-		sizeof(param.buf));
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &type,
-		  .nodefault = true },
-#ifdef CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME
-		{ .attribute = "p2",
-		  .type = CborAttrTextStringType,
-		  .addr.string = param.buf,
-		  .len = sizeof(param.buf),
-		  .nodefault = false },
-#endif
-		END_OF_CBOR_ATTR_ARRAY
-	};
-
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_dump_parameter_file(cnr->nb->data,
+					     ctxt->it.parser->d->message_size,
+					     &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	/* This will malloc a string as large as maximum parameter file size. */
-	if (type < UINT8_MAX) {
-		/* Clear file before proceeding */
-		fsu_delete_abs(param.buf);
+#ifdef CONFIG_ATTR_SETTINGS_LOCK
+	if (attr_is_locked() == true) {
+		r = -EACCES;
+	}
+#endif
 
-		/* Dump parameters to file */
-		r = attr_prepare_then_dump(&fstr, type);
+	if (r == 0) {
+#ifdef CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME
+		/* The output file is an optional parameter */
+		if (user_params._dump_parameter_file_p2_present == true) {
+			file_name = user_params._dump_parameter_file_p2
+					    ._dump_parameter_file_p2.value;
+		} else {
+			file_name = attr_get_quasi_static(ATTR_ID_dump_path);
+		}
+#else
+		file_name = attr_get_quasi_static(ATTR_ID_dump_path);
+#endif
+
+		/* This will malloc a string as large as maximum parameter file size. */
+		if (user_params._dump_parameter_file_p1 < UINT8_MAX) {
+			/* Clear file before proceeding */
+			fsu_delete_abs(file_name);
+
+			/* Dump parameters to file */
+			r = attr_prepare_then_dump(
+				&fstr, user_params._dump_parameter_file_p1);
+			if (r >= 0) {
+				r = fsu_write_abs(file_name, fstr,
+						  strlen(fstr));
+				k_free(fstr);
+			}
+		}
+
 		if (r >= 0) {
-			r = fsu_write_abs(param.buf, fstr, strlen(fstr));
-			k_free(fstr);
+			dump_parameter_file_data._dump_parameter_file_result_n
+				._dump_parameter_file_result_n.value =
+				file_name;
+			dump_parameter_file_data._dump_parameter_file_result_n
+				._dump_parameter_file_result_n.len =
+				strlen(file_name);
+			dump_parameter_file_data
+				._dump_parameter_file_result_n_present = true;
 		}
 	}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
-	if (r >= 0) {
-		err |= cbor_encode_text_stringz(&ctxt->encoder, "n");
-		err |= cbor_encode_text_string(&ctxt->encoder, param.buf,
-					       strlen(param.buf));
+	dump_parameter_file_data._dump_parameter_file_result_r = r;
+
+	if (!cbor_encode_dump_parameter_file_result(buffer, sizeof(buffer),
+						    &dump_parameter_file_data,
+						    &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
 	}
 
-	return MGMT_STATUS_CHECK(err);
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 }
 
 static int factory_reset(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTRIBUTE_MGMT_FACTORY_RESET
-	CborError err = 0;
-	int r;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	int r = 0;
+	struct factory_reset_result factory_reset_data = { 0 };
 #ifdef ATTR_ID_factory_reset_enable
 	uint8_t factory_reset_enabled = 0;
 #endif
@@ -649,17 +891,26 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 		}
 #endif
 
-		r = attribute_mgmt_factory_reset();
-
 		if (r == 0) {
-			ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_FACTORY_RESET);
+			r = attr_factory_reset();
+
+			if (r == 0) {
+				ATTR_FRAMEWORK_BROADCAST(
+					FMC_ATTR_FACTORY_RESET);
+			}
 		}
 	}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, r);
+	factory_reset_data._factory_reset_result_r = r;
 
-	return MGMT_STATUS_CHECK(err);
+	if (!cbor_encode_factory_reset_result(buffer, sizeof(buffer),
+					      &factory_reset_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
+	}
+
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
+
+	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;
 #endif
@@ -667,230 +918,81 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 
 static int set_notify(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
-	long long unsigned int param_id = INVALID_PARAM_ID;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct set_notify user_params;
+	struct set_notify_result set_notify_data = { 0 };
 
-	/* Use an integer to check if the boolean type was found. */
-	union {
-		long long int integer;
-		bool boolean;
-	} value;
-	value.integer = NOT_A_BOOL;
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	struct cbor_attr_t params_attr[] = {
-		{
-			.attribute = "p1",
-			.type = CborAttrUnsignedIntegerType,
-			.addr.uinteger = &param_id,
-			.nodefault = true,
-		},
-		{
-			.attribute = "p2",
-			.type = CborAttrBooleanType,
-			.addr.boolean = &value.boolean,
-			.nodefault = true,
-		},
-		END_OF_CBOR_ATTR_ARRAY
-	};
-
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_set_notify(cnr->nb->data,
+				    ctxt->it.parser->d->message_size,
+				    &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	if (param_id == INVALID_PARAM_ID || value.integer == NOT_A_BOOL) {
-		return MGMT_ERR_EINVAL;
+	set_notify_data._set_notify_result_id = user_params._set_notify_p1;
+	set_notify_data._set_notify_result_r =
+		attr_set_notify((attr_id_t)user_params._set_notify_p1,
+				user_params._set_notify_p2);
+
+	if (!cbor_encode_set_notify_result(buffer, sizeof(buffer),
+					   &set_notify_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
 	}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
-	err |= cbor_encode_uint(&ctxt->encoder, param_id);
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder,
-			       attr_set_notify((attr_id_t)param_id,
-					       value.boolean));
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
 
-	return MGMT_STATUS_CHECK(err);
+	return MGMT_ERR_EOK;
 }
 
 static int get_notify(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
-	long long unsigned int param_id = INVALID_PARAM_ID;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct get_notify user_params;
+	struct get_notify_result get_notify_data = { 0 };
 
-	struct cbor_attr_t params_attr[] = {
-		{ .attribute = "p1",
-		  .type = CborAttrUnsignedIntegerType,
-		  .addr.uinteger = &param_id,
-		  .nodefault = true },
-		END_OF_CBOR_ATTR_ARRAY
-	};
+	struct cbor_nb_reader *cnr =
+		(struct cbor_nb_reader *)ctxt->it.parser->d;
 
-	if (cbor_read_object(&ctxt->it, params_attr) != 0) {
+	if (!cbor_decode_get_notify(cnr->nb->data,
+				    ctxt->it.parser->d->message_size,
+				    &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
-	if (param_id == INVALID_PARAM_ID) {
-		return MGMT_ERR_EINVAL;
+	get_notify_data._get_notify_result_id = user_params._get_notify_p1;
+	get_notify_data._get_notify_result_r =
+		attr_get_notify((attr_id_t)user_params._get_notify_p1);
+
+	if (!cbor_encode_get_notify_result(buffer, sizeof(buffer),
+					   &get_notify_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
 	}
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "id");
-	err |= cbor_encode_uint(&ctxt->encoder, param_id);
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_boolean(&ctxt->encoder,
-				   attr_get_notify((attr_id_t)param_id));
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
 
-	return MGMT_STATUS_CHECK(err);
+	return MGMT_ERR_EOK;
 }
 
 static int disable_notify(struct mgmt_ctxt *ctxt)
 {
-	CborError err = 0;
+	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
+	uint32_t rsp_len = 0;
+	struct disable_notify_result disable_notify_data = { 0 };
 
-	err |= cbor_encode_text_stringz(&ctxt->encoder, "r");
-	err |= cbor_encode_int(&ctxt->encoder, attr_disable_notify());
+	disable_notify_data._disable_notify_result_r = attr_disable_notify();
 
-	return MGMT_STATUS_CHECK(err);
-}
-
-/* Get the CBOR type from the attribute type.
- * Map the CBOR attribute data structure to the type that is expected.
- * (Then read the CBOR again looking for the expected type.)
- */
-static enum attr_type map_attr_to_cbor_attr(attr_id_t param_id,
-					    struct cbor_attr_t *cbor_attr)
-{
-	enum attr_type type = attr_get_type(param_id);
-
-	switch (type) {
-	case ATTR_TYPE_BOOL:
-		param.boolean = false;
-		cbor_attr->type = CborAttrBooleanType;
-		cbor_attr->addr.boolean = &param.boolean;
-		break;
-
-	case ATTR_TYPE_S8:
-	case ATTR_TYPE_S16:
-	case ATTR_TYPE_S32:
-	case ATTR_TYPE_S64:
-		param.int64 = LLONG_MAX;
-		cbor_attr->type = CborAttrIntegerType;
-		cbor_attr->addr.integer = &param.int64;
-		break;
-
-	case ATTR_TYPE_U8:
-	case ATTR_TYPE_U16:
-	case ATTR_TYPE_U32:
-	case ATTR_TYPE_U64:
-		param.uint64 = ULLONG_MAX;
-		cbor_attr->type = CborAttrUnsignedIntegerType;
-		cbor_attr->addr.integer = &param.uint64;
-		break;
-
-	case ATTR_TYPE_STRING:
-		memset(param.buf, 0, MAX_PBUF_SIZE);
-		cbor_attr->type = CborAttrTextStringType;
-		cbor_attr->addr.string = param.buf;
-		cbor_attr->len = sizeof(param.buf);
-		break;
-
-	case ATTR_TYPE_FLOAT:
-		param.fval = FLOAT_MAX;
-		cbor_attr->type = CborAttrFloatType;
-		cbor_attr->addr.fval = &param.fval;
-		break;
-
-	case ATTR_TYPE_BYTE_ARRAY:
-		memset(param.buf, 0, MAX_PBUF_SIZE);
-		cbor_attr->type = CborAttrByteStringType;
-		cbor_attr->addr.bytestring.data = param.buf;
-		cbor_attr->addr.bytestring.len = &buf_size;
-		cbor_attr->len = sizeof(param.buf);
-		break;
-
-	default:
-		cbor_attr->type = CborAttrNullType;
-		cbor_attr->attribute = NULL;
-		break;
-	};
-
-	return type;
-}
-
-static int set_attribute(attr_id_t id, struct cbor_attr_t *cbor_attr,
-			 enum attr_type type, bool *modified)
-{
-	int status = -EINVAL;
-
-	if (modified != NULL) {
-		modified = false;
+	if (!cbor_encode_disable_notify_result(
+		    buffer, sizeof(buffer), &disable_notify_data, &rsp_len)) {
+		return MGMT_ERR_EMSGSIZE;
 	}
 
-	if (type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
-	    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64) {
-		if (type == ATTR_TYPE_S8) {
-			int8_t tmp_val = (int8_t)*cbor_attr->addr.integer;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_S16) {
-			int16_t tmp_val = (int16_t)*cbor_attr->addr.integer;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_S32) {
-			int32_t tmp_val = (int32_t)*cbor_attr->addr.integer;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_S64) {
-			status = attr_set(id, type, cbor_attr->addr.integer,
-					  sizeof(int64_t), modified);
-		}
-	} else if (type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
-		   type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64) {
-		if (type == ATTR_TYPE_U8) {
-			uint8_t tmp_val = (uint8_t)*cbor_attr->addr.uinteger;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_U16) {
-			uint16_t tmp_val = (uint16_t)*cbor_attr->addr.uinteger;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_U32) {
-			uint32_t tmp_val = (uint32_t)*cbor_attr->addr.uinteger;
-			status = attr_set(id, type, &tmp_val, sizeof(tmp_val),
-					  modified);
-		} else if (type == ATTR_TYPE_U64) {
-			status = attr_set(id, type, cbor_attr->addr.uinteger,
-					  sizeof(uint64_t), modified);
-		}
-	} else {
-		switch (cbor_attr->type) {
-		case CborAttrTextStringType:
-			status = attr_set(id, type, cbor_attr->addr.string,
-					  strlen(cbor_attr->addr.string),
-					  modified);
-			break;
+	ctxt->encoder.writer->write(ctxt->encoder.writer, buffer, rsp_len);
 
-		case CborAttrFloatType:
-			status = attr_set(id, type, cbor_attr->addr.fval,
-					  sizeof(float), modified);
-			break;
-
-		case CborAttrBooleanType:
-			status = attr_set(id, type, cbor_attr->addr.boolean,
-					  sizeof(bool), modified);
-			break;
-
-		case CborAttrByteStringType:
-			status = attr_set(id, type,
-					  cbor_attr->addr.bytestring.data,
-					  *(cbor_attr->addr.bytestring.len),
-					  modified);
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	return status;
+	return MGMT_ERR_EOK;
 }
 
 static int check_lock_status(struct mgmt_ctxt *ctxt)
