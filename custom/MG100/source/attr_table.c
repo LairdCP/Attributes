@@ -38,7 +38,6 @@ typedef struct rw_attribute {
 	uint16_t network_id;
 	uint8_t config_version;
 	uint8_t hardware_version;
-	uint32_t qrtc_last_set;
 	bool commissioned;
 	char root_ca_name[48 + 1];
 	char client_cert_name[48 + 1];
@@ -80,6 +79,15 @@ typedef struct rw_attribute {
 	uint32_t ble_prepare_timeout;
 	int8_t temperature_offset;
 	bool lwm2m_enable_bootstrap;
+	char mqtt_client_user_name[48 + 1];
+	char mqtt_client_password[64 + 1];
+	bool cloud_enable;
+	char self_commission_url[32 + 1];
+	char self_commission_host[128 + 1];
+	char self_commission_port[4 + 1];
+	char self_commission_token[256 + 1];
+	char self_commission_id[32 + 1];
+	char self_commission_error[64 + 1];
 	/* pyend */
 } rw_attribute_t;
 
@@ -92,7 +100,6 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.network_id = 0,
 	.config_version = 0,
 	.hardware_version = 0,
-	.qrtc_last_set = 0,
 	.commissioned = false,
 	.root_ca_name = "/lfs/root_ca.pem",
 	.client_cert_name = "/lfs/client_cert.pem",
@@ -133,7 +140,16 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.polte_password = "",
 	.ble_prepare_timeout = 3600,
 	.temperature_offset = 25,
-	.lwm2m_enable_bootstrap = false
+	.lwm2m_enable_bootstrap = false,
+	.mqtt_client_user_name = "",
+	.mqtt_client_password = "",
+	.cloud_enable = true,
+	.self_commission_url = "/api/register-device",
+	.self_commission_host = "622a42d69ac44edc3def2017.onlosant.com",
+	.self_commission_port = "443",
+	.self_commission_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJodHRwczovLzYxYWZiNDkzNWNhMDBiN2Q2NDI2YTc4My5-bG9zYW50LWVuZHBvaW50LWRvbWFpbn4vYXBpL3JlZ2lzdGVyLWRldmljZSIsImlhdCI6MTYzODk5MTg0MCwiaXNzIjoiY2FybWFuYWguY29tIn0.XjasXlGB4Zbe74KP1cbLMZUeYSF1rXAwQdnuhOQgXAc",
+	.self_commission_id = "1330000005",
+	.self_commission_error = ""
 	/* pyend */
 };
 
@@ -147,6 +163,7 @@ typedef struct ro_attribute {
 	uint16_t battery_voltage_mv;
 	char attribute_version[11 + 1];
 	uint32_t qrtc;
+	uint32_t qrtc_last_set;
 	char name[32 + 1];
 	char board[32 + 1];
 	char build_id[64 + 1];
@@ -220,8 +237,9 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.reset_count = 0,
 	.up_time = 0,
 	.battery_voltage_mv = 0,
-	.attribute_version = "0.4.43",
+	.attribute_version = "0.4.51",
 	.qrtc = 0,
+	.qrtc_last_set = 0,
 	.name = "",
 	.board = "",
 	.build_id = "0",
@@ -338,7 +356,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[12 ] = { 75 , RO_ATTRX(battery_voltage_mv)            , ATTR_TYPE_U16           , n, n, y, n, n, n, av_uint16           , attr_prepare_battery_voltage_mv     , .min.ux = 0         , .max.ux = 0          },
 	[13 ] = { 93 , RO_ATTRS(attribute_version)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 11         },
 	[14 ] = { 94 , RO_ATTRX(qrtc)                          , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , attr_prepare_qrtc                   , .min.ux = 0         , .max.ux = 0          },
-	[15 ] = { 95 , RW_ATTRX(qrtc_last_set)                 , ATTR_TYPE_U32           , y, n, y, n, n, n, av_uint32           , attr_prepare_qrtc_last_set          , .min.ux = 0         , .max.ux = 0          },
+	[15 ] = { 95 , RO_ATTRX(qrtc_last_set)                 , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , attr_prepare_qrtc_last_set          , .min.ux = 0         , .max.ux = 0          },
 	[16 ] = { 140, RO_ATTRS(name)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[17 ] = { 142, RO_ATTRS(board)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[18 ] = { 143, RO_ATTRS(build_id)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 64         },
@@ -441,7 +459,16 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[115] = { 261, RO_ATTRX(polte_timestamp)               , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[116] = { 262, RW_ATTRX(ble_prepare_timeout)           , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
 	[117] = { 263, RW_ATTRX(temperature_offset)            , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[118] = { 264, RW_ATTRX(lwm2m_enable_bootstrap)        , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[118] = { 264, RW_ATTRX(lwm2m_enable_bootstrap)        , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[119] = { 265, RW_ATTRS(mqtt_client_user_name)         , ATTR_TYPE_STRING        , y, y, n, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[120] = { 266, RW_ATTRS(mqtt_client_password)          , ATTR_TYPE_STRING        , y, y, n, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
+	[121] = { 267, RW_ATTRX(cloud_enable)                  , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[122] = { 268, RW_ATTRS(self_commission_url)           , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[123] = { 269, RW_ATTRS(self_commission_host)          , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 128        },
+	[124] = { 270, RW_ATTRS(self_commission_port)          , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 4          },
+	[125] = { 271, RW_ATTRS(self_commission_token)         , ATTR_TYPE_STRING        , y, y, n, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 256        },
+	[126] = { 272, RW_ATTRS(self_commission_id)            , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[127] = { 273, RW_ATTRS(self_commission_error)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         }
 	/* pyend */
 };
 
@@ -568,7 +595,16 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[261] = &ATTR_TABLE[115],
 	[262] = &ATTR_TABLE[116],
 	[263] = &ATTR_TABLE[117],
-	[264] = &ATTR_TABLE[118]
+	[264] = &ATTR_TABLE[118],
+	[265] = &ATTR_TABLE[119],
+	[266] = &ATTR_TABLE[120],
+	[267] = &ATTR_TABLE[121],
+	[268] = &ATTR_TABLE[122],
+	[269] = &ATTR_TABLE[123],
+	[270] = &ATTR_TABLE[124],
+	[271] = &ATTR_TABLE[125],
+	[272] = &ATTR_TABLE[126],
+	[273] = &ATTR_TABLE[127]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -669,7 +705,7 @@ const char *const attr_get_string_gateway_state(int value)
 		case 10:          return "Cloud Wait For Disconnect";
 		case 11:          return "Cloud Disconnected";
 		case 12:          return "Cloud Error";
-		case 13:          return "Fota Busy ";
+		case 13:          return "Deprecated Fota Busy";
 		case 14:          return "Decommission";
 		case 15:          return "Cloud Request Disconnect";
 		case 16:          return "Cloud Connecting";

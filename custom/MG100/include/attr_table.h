@@ -152,6 +152,15 @@ extern "C" {
 #define ATTR_ID_ble_prepare_timeout                   262
 #define ATTR_ID_temperature_offset                    263
 #define ATTR_ID_lwm2m_enable_bootstrap                264
+#define ATTR_ID_mqtt_client_user_name                 265
+#define ATTR_ID_mqtt_client_password                  266
+#define ATTR_ID_cloud_enable                          267
+#define ATTR_ID_self_commission_url                   268
+#define ATTR_ID_self_commission_host                  269
+#define ATTR_ID_self_commission_port                  270
+#define ATTR_ID_self_commission_token                 271
+#define ATTR_ID_self_commission_id                    272
+#define ATTR_ID_self_commission_error                 273
 /* pyend */
 
 /******************************************************************************/
@@ -159,11 +168,11 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                   119
-#define ATTR_TABLE_MAX_ID                                 264
-#define ATTR_TABLE_WRITABLE_COUNT                         53
-#define ATTR_MAX_STR_LENGTH                               254
-#define ATTR_MAX_STR_SIZE                                 255
+#define ATTR_TABLE_SIZE                                   128
+#define ATTR_TABLE_MAX_ID                                 273
+#define ATTR_TABLE_WRITABLE_COUNT                         62
+#define ATTR_MAX_STR_LENGTH                               256
+#define ATTR_MAX_STR_SIZE                                 257
 #define ATTR_MAX_BIN_SIZE                                 16
 #define ATTR_MAX_INT_SIZE                                 8
 
@@ -216,6 +225,14 @@ extern "C" {
 #define ATTR_POLTE_LATITUDE_MAX_STR_SIZE                  33
 #define ATTR_POLTE_LONGITUDE_MAX_STR_SIZE                 33
 #define ATTR_POLTE_CONFIDENCE_MAX_STR_SIZE                17
+#define ATTR_MQTT_CLIENT_USER_NAME_MAX_STR_SIZE           49
+#define ATTR_MQTT_CLIENT_PASSWORD_MAX_STR_SIZE            65
+#define ATTR_SELF_COMMISSION_URL_MAX_STR_SIZE             33
+#define ATTR_SELF_COMMISSION_HOST_MAX_STR_SIZE            129
+#define ATTR_SELF_COMMISSION_PORT_MAX_STR_SIZE            5
+#define ATTR_SELF_COMMISSION_TOKEN_MAX_STR_SIZE           257
+#define ATTR_SELF_COMMISSION_ID_MAX_STR_SIZE              33
+#define ATTR_SELF_COMMISSION_ERROR_MAX_STR_SIZE           65
 
 /* Attribute Byte Array Lengths */
 #define ATTR_CT_AES_KEY_SIZE                              16
@@ -243,7 +260,7 @@ enum gateway_state {
 	GATEWAY_STATE_CLOUD_WAIT_FOR_DISCONNECT = 10,
 	GATEWAY_STATE_CLOUD_DISCONNECTED = 11,
 	GATEWAY_STATE_CLOUD_ERROR = 12,
-	GATEWAY_STATE_FOTA_BUSY  = 13,
+	GATEWAY_STATE_DEPRECATED_FOTA_BUSY = 13,
 	GATEWAY_STATE_DECOMMISSION = 14,
 	GATEWAY_STATE_CLOUD_REQUEST_DISCONNECT = 15,
 	GATEWAY_STATE_CLOUD_CONNECTING = 16,

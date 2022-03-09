@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.43"
+    "version": "0.4.51"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.43",
+              "x-default": "0.4.51",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -2096,7 +2096,6 @@
               "x-ctype": "uint32_t",
               "x-default": "0",
               "x-example": "0",
-              "x-savable": true,
               "x-readable": true,
               "x-prepare": true
             }
@@ -2901,7 +2900,7 @@
                 "CLOUD_WAIT_FOR_DISCONNECT": 10,
                 "CLOUD_DISCONNECTED": 11,
                 "CLOUD_ERROR": 12,
-                "FOTA_BUSY ": 13,
+                "DEPRECATED_FOTA_BUSY": 13,
                 "DECOMMISSION": 14,
                 "CLOUD_REQUEST_DISCONNECT": 15,
                 "CLOUD_CONNECTING": 16,
@@ -5043,6 +5042,164 @@
               "x-ctype": "bool",
               "x-default": "false",
               "x-example": "true",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "mqtt_client_user_name",
+            "summary": "",
+            "required": false,
+            "x-id": 265,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 48,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-savable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "mqtt_client_password",
+            "summary": "",
+            "required": false,
+            "x-id": 266,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 64,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-savable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "cloud_enable",
+            "summary": "Allow gateway FSM to connect to cloud",
+            "required": false,
+            "x-id": 267,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": "true",
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "self_commission_url",
+            "summary": "",
+            "required": false,
+            "x-id": 268,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/api/register-device",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "self_commission_host",
+            "summary": "",
+            "required": false,
+            "x-id": 269,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 128,
+              "x-ctype": "string",
+              "x-default": "622a42d69ac44edc3def2017.onlosant.com",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "self_commission_port",
+            "summary": "",
+            "required": false,
+            "x-id": 270,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 4,
+              "x-ctype": "string",
+              "x-default": "443",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "self_commission_token",
+            "summary": "",
+            "required": false,
+            "x-id": 271,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 256,
+              "x-ctype": "string",
+              "x-default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJodHRwczovLzYxYWZiNDkzNWNhMDBiN2Q2NDI2YTc4My5-bG9zYW50LWVuZHBvaW50LWRvbWFpbn4vYXBpL3JlZ2lzdGVyLWRldmljZSIsImlhdCI6MTYzODk5MTg0MCwiaXNzIjoiY2FybWFuYWguY29tIn0.XjasXlGB4Zbe74KP1cbLMZUeYSF1rXAwQdnuhOQgXAc",
+              "x-savable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "self_commission_id",
+            "summary": "",
+            "required": false,
+            "x-id": 272,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "1330000005",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "self_commission_error",
+            "summary": "",
+            "required": false,
+            "x-id": 273,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "string",
+              "maximum": 64,
+              "x-ctype": "string",
+              "x-default": "",
               "x-savable": true,
               "x-writable": true,
               "x-readable": true
