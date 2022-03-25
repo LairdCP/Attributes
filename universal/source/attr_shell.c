@@ -369,7 +369,7 @@ static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv)
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	char *fstr = NULL;
-	char *fname = attr_get_quasi_static(ATTR_ID_dump_path);
+	const char *fname = attr_get_quasi_static(ATTR_ID_dump_path);
 	int r = -EPERM;
 	int type;
 
