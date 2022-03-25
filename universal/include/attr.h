@@ -142,7 +142,7 @@ int attr_set_byte_array(attr_id_t id, char const *pv, size_t vlen);
  * @retval pointer if found, pointer to empty string if not found
  */
 
-void *attr_get_quasi_static(attr_id_t id);
+const void *attr_get_quasi_static(attr_id_t id);
 
 /**
  * @brief Copy a string
