@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.43"
+    "version": "0.4.55"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,7 +2055,7 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.43",
+              "x-default": "0.4.55",
               "x-example": "123.456.789",
               "x-readable": true
             }
@@ -3510,12 +3510,14 @@
             ],
             "schema": {
               "type": "string",
-              "minimum": 20,
+              "minimum": 1,
               "maximum": 20,
               "x-ctype": "string",
               "x-default": "",
               "x-example": "",
-              "x-readable": true
+              "x-readable": true,
+              "x-writable": true,
+              "x-broadcast": true
             }
           },
           {

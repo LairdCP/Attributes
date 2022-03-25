@@ -34,46 +34,46 @@ typedef struct rw_attribute {
 	char location[32 + 1];
 	uint32_t passkey;
 	bool lock;
-	int8_t txPower;
-	uint16_t networkId;
-	uint8_t configVersion;
-	uint8_t hardwareVersion;
-	uint32_t qrtcLastSet;
+	int8_t tx_power;
+	uint16_t network_id;
+	uint8_t config_version;
+	uint8_t hardware_version;
+	uint32_t qrtc_last_set;
 	bool commissioned;
-	char rootCaName[48 + 1];
-	char clientCertName[48 + 1];
-	char clientKeyName[48 + 1];
+	char root_ca_name[48 + 1];
+	char client_cert_name[48 + 1];
+	char client_key_name[48 + 1];
 	char endpoint[254 + 1];
 	char port[16 + 1];
-	char clientId[32 + 1];
-	char topicPrefix[32 + 1];
-	enum peer_verify peerVerify;
-	uint8_t motionOdr;
-	uint8_t motionThresh;
-	uint8_t motionScale;
-	uint8_t motionDuration;
-	uint8_t sdLogMaxSize;
-	uint8_t ctAesKey[16];
-	uint32_t joinDelay;
-	uint16_t joinMin;
-	uint16_t joinMax;
-	uint32_t joinInterval;
-	bool delayCloudReconnect;
-	char loadPath[32 + 1];
-	char dumpPath[32 + 1];
+	char client_id[32 + 1];
+	char topic_prefix[32 + 1];
+	enum peer_verify peer_verify;
+	uint8_t motion_odr;
+	uint8_t motion_thresh;
+	uint8_t motion_scale;
+	uint8_t motion_duration;
+	uint8_t sd_log_max_size;
+	uint8_t ct_aes_key[16];
+	uint32_t join_delay;
+	uint16_t join_min;
+	uint16_t join_max;
+	uint32_t join_interval;
+	bool delay_cloud_reconnect;
+	char load_path[32 + 1];
+	char dump_path[32 + 1];
 	float floaty;
-	uint8_t lwm2mPsk[16];
-	char lwm2mClientId[32 + 1];
-	char lwm2mPeerUrl[128 + 1];
-	enum ethernet_type ethernetType;
-	enum ethernet_mode ethernetMode;
-	char ethernetStaticIPAddress[15 + 1];
-	uint8_t ethernetStaticNetmaskLength;
-	char ethernetStaticGateway[15 + 1];
-	char ethernetStaticDNS[15 + 1];
-	char sntpServer[64 + 1];
-	uint32_t blePrepareTimeout;
-	bool lwm2mEnableBootstrap;
+	uint8_t lwm2m_psk[16];
+	char lwm2m_client_id[32 + 1];
+	char lwm2m_peer_url[128 + 1];
+	enum ethernet_type ethernet_type;
+	enum ethernet_mode ethernet_mode;
+	char ethernet_static_ip_address[15 + 1];
+	uint8_t ethernet_static_netmask_length;
+	char ethernet_static_gateway[15 + 1];
+	char ethernet_static_dns[15 + 1];
+	char sntp_server[64 + 1];
+	uint32_t ble_prepare_timeout;
+	bool lwm2m_enable_bootstrap;
 	/* pyend */
 } rw_attribute_t;
 
@@ -82,152 +82,138 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.location = "",
 	.passkey = 123456,
 	.lock = false,
-	.txPower = 0,
-	.networkId = 0,
-	.configVersion = 0,
-	.hardwareVersion = 0,
-	.qrtcLastSet = 0,
+	.tx_power = 0,
+	.network_id = 0,
+	.config_version = 0,
+	.hardware_version = 0,
+	.qrtc_last_set = 0,
 	.commissioned = false,
-	.rootCaName = "/lfs/root_ca.pem",
-	.clientCertName = "/lfs/client_cert.pem",
-	.clientKeyName = "/lfs/client_key.pem",
+	.root_ca_name = "/lfs/root_ca.pem",
+	.client_cert_name = "/lfs/client_cert.pem",
+	.client_key_name = "/lfs/client_key.pem",
 	.endpoint = "a3273rvo818l4w-ats.iot.us-east-1.amazonaws.com",
 	.port = "8883",
-	.clientId = "",
-	.topicPrefix = "mg100-ct/dev/gw/",
-	.peerVerify = 0,
-	.motionOdr = 5,
-	.motionThresh = 10,
-	.motionScale = 2,
-	.motionDuration = 6,
-	.sdLogMaxSize = 0,
-	.ctAesKey = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-	.joinDelay = 0,
-	.joinMin = 1,
-	.joinMax = 100,
-	.joinInterval = 1,
-	.delayCloudReconnect = false,
-	.loadPath = "/lfs/params.txt",
-	.dumpPath = "/lfs/dump.txt",
+	.client_id = "",
+	.topic_prefix = "mg100-ct/dev/gw/",
+	.peer_verify = 0,
+	.motion_odr = 5,
+	.motion_thresh = 10,
+	.motion_scale = 2,
+	.motion_duration = 6,
+	.sd_log_max_size = 0,
+	.ct_aes_key = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+	.join_delay = 0,
+	.join_min = 1,
+	.join_max = 100,
+	.join_interval = 1,
+	.delay_cloud_reconnect = false,
+	.load_path = "/lfs/params.txt",
+	.dump_path = "/lfs/dump.txt",
 	.floaty = 0.13,
-	.lwm2mPsk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
-	.lwm2mClientId = "Client_identity",
-	.lwm2mPeerUrl = "uwterminalx.lairdconnect.com",
-	.ethernetType = 1,
-	.ethernetMode = 2,
-	.ethernetStaticIPAddress = "0.0.0.0",
-	.ethernetStaticNetmaskLength = 0,
-	.ethernetStaticGateway = "0.0.0.0",
-	.ethernetStaticDNS = "0.0.0.0",
-	.sntpServer = "time.windows.com",
-	.blePrepareTimeout = 3600,
-	.lwm2mEnableBootstrap = false
+	.lwm2m_psk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
+	.lwm2m_client_id = "Client_identity",
+	.lwm2m_peer_url = "uwterminalx.lairdconnect.com",
+	.ethernet_type = 1,
+	.ethernet_mode = 2,
+	.ethernet_static_ip_address = "0.0.0.0",
+	.ethernet_static_netmask_length = 0,
+	.ethernet_static_gateway = "0.0.0.0",
+	.ethernet_static_dns = "0.0.0.0",
+	.sntp_server = "time.windows.com",
+	.ble_prepare_timeout = 3600,
+	.lwm2m_enable_bootstrap = false
 	/* pyend */
 };
 
 typedef struct ro_attribute {
 	/* pystart - ro attributes */
-	char firmwareVersion[11 + 1];
-	char resetReason[12 + 1];
-	char bluetoothAddress[12 + 1];
-	uint32_t resetCount;
-	int64_t upTime;
-	char attributeVersion[11 + 1];
+	char firmware_version[11 + 1];
+	char reset_reason[12 + 1];
+	char bluetooth_address[12 + 1];
+	uint32_t reset_count;
+	int64_t up_time;
+	char attribute_version[11 + 1];
 	uint32_t qrtc;
 	char name[32 + 1];
 	char board[32 + 1];
-	char buildId[64 + 1];
-	char appType[32 + 1];
+	char build_id[64 + 1];
+	char app_type[32 + 1];
 	char mount[32 + 1];
-	enum cert_status certStatus;
-	enum gateway_state gatewayState;
-	bool motionAlarm;
-	char gatewayId[15 + 1];
-	enum central_state centralState;
-	char sensorBluetoothAddress[30 + 1];
-	enum fota_control_point fotaControlPoint;
-	enum fota_status fotaStatus;
-	char fotaFileName[64 + 1];
-	uint32_t fotaSize;
-	uint32_t fotaCount;
-	enum generate_psk generatePsk;
-	enum cloud_error cloudError;
-	bool commissioningBusy;
-	enum ethernet_init_error ethernetInitError;
-	uint8_t ethernetMAC[6];
-	bool ethernetCableDetected;
-	enum ethernet_speed ethernetSpeed;
-	enum ethernet_duplex ethernetDuplex;
-	char ethernetIPAddress[15 + 1];
-	uint8_t ethernetNetmaskLength;
-	char ethernetGateway[15 + 1];
-	char ethernetDNS[15 + 1];
-	uint32_t ethernetDHCPLeaseTime;
-	uint32_t ethernetDHCPRenewTime;
-	enum ethernet_dhcp_state ethernetDHCPState;
-	uint8_t ethernetDHCPAttempts;
+	enum cert_status cert_status;
+	enum gateway_state gateway_state;
+	bool motion_alarm;
+	char gateway_id[15 + 1];
+	enum central_state central_state;
+	char sensor_bluetooth_address[30 + 1];
+	enum fota_control_point fota_control_point;
+	enum fota_status fota_status;
+	char fota_file_name[64 + 1];
+	uint32_t fota_size;
+	uint32_t fota_count;
+	enum generate_psk generate_psk;
+	enum cloud_error cloud_error;
+	bool commissioning_busy;
+	enum ethernet_init_error ethernet_init_error;
+	uint8_t ethernet_mac[6];
+	bool ethernet_cable_detected;
+	enum ethernet_speed ethernet_speed;
+	enum ethernet_duplex ethernet_duplex;
+	char ethernet_ip_address[15 + 1];
+	uint8_t ethernet_netmask_length;
+	char ethernet_gateway[15 + 1];
+	char ethernet_dns[15 + 1];
+	uint32_t ethernet_dhcp_lease_time;
+	uint32_t ethernet_dhcp_renew_time;
+	enum ethernet_dhcp_state ethernet_dhcp_state;
+	uint8_t ethernet_dhcp_attempts;
 	/* pyend */
 } ro_attribute_t;
 
 static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	/* pystart - ro defaults */
-	.firmwareVersion = "0.0.0",
-	.resetReason = "RESETPIN",
-	.bluetoothAddress = "0",
-	.resetCount = 0,
-	.upTime = 0,
-	.attributeVersion = "0.4.41",
+	.firmware_version = "0.0.0",
+	.reset_reason = "RESETPIN",
+	.bluetooth_address = "0",
+	.reset_count = 0,
+	.up_time = 0,
+	.attribute_version = "0.4.55",
 	.qrtc = 0,
 	.name = "",
 	.board = "",
-	.buildId = "0",
-	.appType = "",
+	.build_id = "0",
+	.app_type = "",
 	.mount = "/lfs",
-	.certStatus = 0,
-	.gatewayState = 0,
-	.motionAlarm = false,
-	.gatewayId = "",
-	.centralState = 0,
-	.sensorBluetoothAddress = "",
-	.fotaControlPoint = 0,
-	.fotaStatus = 0,
-	.fotaFileName = "",
-	.fotaSize = 0,
-	.fotaCount = 0,
-	.generatePsk = 0,
-	.cloudError = 0,
-	.commissioningBusy = false,
-	.ethernetInitError = 0,
-	.ethernetMAC = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-	.ethernetCableDetected = false,
-	.ethernetSpeed = 0,
-	.ethernetDuplex = 0,
-	.ethernetIPAddress = "0.0.0.0",
-	.ethernetNetmaskLength = 0,
-	.ethernetGateway = "0.0.0.0",
-	.ethernetDNS = "0.0.0.0",
-	.ethernetDHCPLeaseTime = 0,
-	.ethernetDHCPRenewTime = 0,
-	.ethernetDHCPState = 0,
-	.ethernetDHCPAttempts = 0
+	.cert_status = 0,
+	.gateway_state = 0,
+	.motion_alarm = false,
+	.gateway_id = "",
+	.central_state = 0,
+	.sensor_bluetooth_address = "",
+	.fota_control_point = 0,
+	.fota_status = 0,
+	.fota_file_name = "",
+	.fota_size = 0,
+	.fota_count = 0,
+	.generate_psk = 0,
+	.cloud_error = 0,
+	.commissioning_busy = false,
+	.ethernet_init_error = 0,
+	.ethernet_mac = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+	.ethernet_cable_detected = false,
+	.ethernet_speed = 0,
+	.ethernet_duplex = 0,
+	.ethernet_ip_address = "0.0.0.0",
+	.ethernet_netmask_length = 0,
+	.ethernet_gateway = "0.0.0.0",
+	.ethernet_dns = "0.0.0.0",
+	.ethernet_dhcp_lease_time = 0,
+	.ethernet_dhcp_renew_time = 0,
+	.ethernet_dhcp_state = 0,
+	.ethernet_dhcp_attempts = 0
 	/* pyend */
 };
 
 /* pystart - remap */
-#define attr_get_string_certStatus          attr_get_string_cert_status
-#define attr_get_string_gatewayState        attr_get_string_gateway_state
-#define attr_get_string_peerVerify          attr_get_string_peer_verify
-#define attr_get_string_centralState        attr_get_string_central_state
-#define attr_get_string_fotaControlPoint    attr_get_string_fota_control_point
-#define attr_get_string_fotaStatus          attr_get_string_fota_status
-#define attr_get_string_generatePsk         attr_get_string_generate_psk
-#define attr_get_string_cloudError          attr_get_string_cloud_error
-#define attr_get_string_ethernetInitError   attr_get_string_ethernet_init_error
-#define attr_get_string_ethernetType        attr_get_string_ethernet_type
-#define attr_get_string_ethernetMode        attr_get_string_ethernet_mode
-#define attr_get_string_ethernetSpeed       attr_get_string_ethernet_speed
-#define attr_get_string_ethernetDuplex      attr_get_string_ethernet_duplex
-#define attr_get_string_ethernetDHCPState   attr_get_string_ethernet_dhcp_state
 /* pyend */
 
 /******************************************************************************/
@@ -266,85 +252,85 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[0  ] = { 1  , RW_ATTRS(location)                      , ATTR_TYPE_STRING        , y, y, y, y, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[1  ] = { 4  , RW_ATTRX(passkey)                       , ATTR_TYPE_U32           , y, y, y, y, y, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 999999     },
 	[2  ] = { 5  , RW_ATTRX(lock)                          , ATTR_TYPE_BOOL          , y, y, y, y, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[3  ] = { 11 , RO_ATTRS(firmwareVersion)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
-	[4  ] = { 12 , RO_ATTRS(resetReason)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
-	[5  ] = { 13 , RO_ATTRS(bluetoothAddress)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
-	[6  ] = { 14 , RO_ATTRX(resetCount)                    , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[7  ] = { 16 , RO_ATTRX(upTime)                        , ATTR_TYPE_S64           , n, n, y, n, n, n, av_int64            , attr_prepare_upTime                 , .min.ux = 0         , .max.ux = 0          },
-	[8  ] = { 59 , RW_ATTRX(txPower)                       , ATTR_TYPE_S8            , y, y, y, n, y, n, av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
-	[9  ] = { 60 , RW_ATTRX(networkId)                     , ATTR_TYPE_U16           , y, y, y, y, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
-	[10 ] = { 61 , RW_ATTRX(configVersion)                 , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[11 ] = { 63 , RW_ATTRX(hardwareVersion)               , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[12 ] = { 93 , RO_ATTRS(attributeVersion)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 11         },
+	[3  ] = { 11 , RO_ATTRS(firmware_version)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 3         , .max.ux = 11         },
+	[4  ] = { 12 , RO_ATTRS(reset_reason)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 12         },
+	[5  ] = { 13 , RO_ATTRS(bluetooth_address)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 12        , .max.ux = 12         },
+	[6  ] = { 14 , RO_ATTRX(reset_count)                   , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[7  ] = { 16 , RO_ATTRX(up_time)                       , ATTR_TYPE_S64           , n, n, y, n, n, n, av_int64            , attr_prepare_up_time                , .min.ux = 0         , .max.ux = 0          },
+	[8  ] = { 59 , RW_ATTRX(tx_power)                      , ATTR_TYPE_S8            , y, y, y, n, y, n, av_int8             , NULL                                , .min.sx = -40       , .max.sx = 8          },
+	[9  ] = { 60 , RW_ATTRX(network_id)                    , ATTR_TYPE_U16           , y, y, y, y, y, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 65535      },
+	[10 ] = { 61 , RW_ATTRX(config_version)                , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[11 ] = { 63 , RW_ATTRX(hardware_version)              , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[12 ] = { 93 , RO_ATTRS(attribute_version)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 11         },
 	[13 ] = { 94 , RO_ATTRX(qrtc)                          , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , attr_prepare_qrtc                   , .min.ux = 0         , .max.ux = 0          },
-	[14 ] = { 95 , RW_ATTRX(qrtcLastSet)                   , ATTR_TYPE_U32           , y, n, y, n, n, n, av_uint32           , attr_prepare_qrtcLastSet            , .min.ux = 0         , .max.ux = 0          },
+	[14 ] = { 95 , RW_ATTRX(qrtc_last_set)                 , ATTR_TYPE_U32           , y, n, y, n, n, n, av_uint32           , attr_prepare_qrtc_last_set          , .min.ux = 0         , .max.ux = 0          },
 	[15 ] = { 140, RO_ATTRS(name)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[16 ] = { 142, RO_ATTRS(board)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
-	[17 ] = { 143, RO_ATTRS(buildId)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 64         },
-	[18 ] = { 144, RO_ATTRS(appType)                       , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
+	[17 ] = { 143, RO_ATTRS(build_id)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 64         },
+	[18 ] = { 144, RO_ATTRS(app_type)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
 	[19 ] = { 145, RO_ATTRS(mount)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[20 ] = { 146, RW_ATTRX(commissioned)                  , ATTR_TYPE_BOOL          , y, y, y, n, y, n, av_cpb              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[21 ] = { 147, RO_ATTRE(certStatus)                    , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[22 ] = { 148, RW_ATTRS(rootCaName)                    , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
-	[23 ] = { 149, RW_ATTRS(clientCertName)                , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
-	[24 ] = { 150, RW_ATTRS(clientKeyName)                 , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[21 ] = { 147, RO_ATTRE(cert_status)                   , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[22 ] = { 148, RW_ATTRS(root_ca_name)                  , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[23 ] = { 149, RW_ATTRS(client_cert_name)              , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
+	[24 ] = { 150, RW_ATTRS(client_key_name)               , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 48         },
 	[25 ] = { 151, RW_ATTRS(endpoint)                      , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 254        },
 	[26 ] = { 152, RW_ATTRS(port)                          , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 4         , .max.ux = 16         },
-	[27 ] = { 153, RW_ATTRS(clientId)                      , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[28 ] = { 154, RW_ATTRS(topicPrefix)                   , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[29 ] = { 155, RO_ATTRE(gatewayState)                  , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[30 ] = { 156, RW_ATTRE(peerVerify)                    , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[31 ] = { 168, RW_ATTRX(motionOdr)                     , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[32 ] = { 169, RW_ATTRX(motionThresh)                  , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[33 ] = { 170, RW_ATTRX(motionScale)                   , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[34 ] = { 171, RW_ATTRX(motionDuration)                , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
-	[35 ] = { 172, RO_ATTRX(motionAlarm)                   , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[36 ] = { 173, RW_ATTRX(sdLogMaxSize)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[37 ] = { 174, RW_ATTRX(ctAesKey)                      , ATTR_TYPE_BYTE_ARRAY    , y, y, n, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[38 ] = { 176, RO_ATTRS(gatewayId)                     , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 15         },
-	[39 ] = { 188, RO_ATTRE(centralState)                  , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[40 ] = { 189, RO_ATTRS(sensorBluetoothAddress)        , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 30         },
-	[41 ] = { 190, RW_ATTRX(joinDelay)                     , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[42 ] = { 191, RW_ATTRX(joinMin)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[43 ] = { 192, RW_ATTRX(joinMax)                       , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[44 ] = { 193, RW_ATTRX(joinInterval)                  , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[45 ] = { 195, RW_ATTRX(delayCloudReconnect)           , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[46 ] = { 203, RO_ATTRE(fotaControlPoint)              , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[47 ] = { 204, RO_ATTRE(fotaStatus)                    , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[48 ] = { 205, RO_ATTRS(fotaFileName)                  , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
-	[49 ] = { 206, RO_ATTRX(fotaSize)                      , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[50 ] = { 207, RO_ATTRX(fotaCount)                     , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[51 ] = { 208, RW_ATTRS(loadPath)                      , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[52 ] = { 209, RW_ATTRS(dumpPath)                      , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[27 ] = { 153, RW_ATTRS(client_id)                     , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[28 ] = { 154, RW_ATTRS(topic_prefix)                  , ATTR_TYPE_STRING        , y, y, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[29 ] = { 155, RO_ATTRE(gateway_state)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[30 ] = { 156, RW_ATTRE(peer_verify)                   , ATTR_TYPE_S8            , y, y, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[31 ] = { 168, RW_ATTRX(motion_odr)                    , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[32 ] = { 169, RW_ATTRX(motion_thresh)                 , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[33 ] = { 170, RW_ATTRX(motion_scale)                  , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[34 ] = { 171, RW_ATTRX(motion_duration)               , ATTR_TYPE_U8            , y, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 255        },
+	[35 ] = { 172, RO_ATTRX(motion_alarm)                  , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[36 ] = { 173, RW_ATTRX(sd_log_max_size)               , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[37 ] = { 174, RW_ATTRX(ct_aes_key)                    , ATTR_TYPE_BYTE_ARRAY    , y, y, n, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[38 ] = { 176, RO_ATTRS(gateway_id)                    , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 15         },
+	[39 ] = { 188, RO_ATTRE(central_state)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[40 ] = { 189, RO_ATTRS(sensor_bluetooth_address)      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 30         },
+	[41 ] = { 190, RW_ATTRX(join_delay)                    , ATTR_TYPE_U32           , y, y, y, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[42 ] = { 191, RW_ATTRX(join_min)                      , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[43 ] = { 192, RW_ATTRX(join_max)                      , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[44 ] = { 193, RW_ATTRX(join_interval)                 , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[45 ] = { 195, RW_ATTRX(delay_cloud_reconnect)         , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[46 ] = { 203, RO_ATTRE(fota_control_point)            , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[47 ] = { 204, RO_ATTRE(fota_status)                   , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[48 ] = { 205, RO_ATTRS(fota_file_name)                , ATTR_TYPE_STRING        , n, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
+	[49 ] = { 206, RO_ATTRX(fota_size)                     , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[50 ] = { 207, RO_ATTRX(fota_count)                    , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[51 ] = { 208, RW_ATTRS(load_path)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[52 ] = { 209, RW_ATTRS(dump_path)                     , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[53 ] = { 211, RW_ATTRX(floaty)                        , ATTR_TYPE_FLOAT         , y, y, y, n, n, n, av_float            , NULL                                , .min.fx = 0.0       , .max.fx = 0.0        },
-	[54 ] = { 212, RO_ATTRE(generatePsk)                   , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 1          },
-	[55 ] = { 213, RW_ATTRX(lwm2mPsk)                      , ATTR_TYPE_BYTE_ARRAY    , y, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[56 ] = { 214, RW_ATTRS(lwm2mClientId)                 , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
-	[57 ] = { 215, RW_ATTRS(lwm2mPeerUrl)                  , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 128        },
-	[58 ] = { 217, RO_ATTRE(cloudError)                    , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[59 ] = { 218, RO_ATTRX(commissioningBusy)             , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[60 ] = { 221, RO_ATTRE(ethernetInitError)             , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[61 ] = { 222, RO_ATTRX(ethernetMAC)                   , ATTR_TYPE_BYTE_ARRAY    , n, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[62 ] = { 223, RW_ATTRE(ethernetType)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
-	[63 ] = { 224, RW_ATTRE(ethernetMode)                  , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
-	[64 ] = { 225, RO_ATTRX(ethernetCableDetected)         , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[65 ] = { 226, RO_ATTRE(ethernetSpeed)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[66 ] = { 227, RO_ATTRE(ethernetDuplex)                , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
-	[67 ] = { 228, RO_ATTRS(ethernetIPAddress)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[68 ] = { 229, RO_ATTRX(ethernetNetmaskLength)         , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[69 ] = { 230, RO_ATTRS(ethernetGateway)               , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[70 ] = { 231, RO_ATTRS(ethernetDNS)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[71 ] = { 232, RW_ATTRS(ethernetStaticIPAddress)       , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[72 ] = { 233, RW_ATTRX(ethernetStaticNetmaskLength)   , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[73 ] = { 234, RW_ATTRS(ethernetStaticGateway)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[74 ] = { 235, RW_ATTRS(ethernetStaticDNS)             , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
-	[75 ] = { 236, RO_ATTRX(ethernetDHCPLeaseTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
-	[76 ] = { 237, RO_ATTRX(ethernetDHCPRenewTime)         , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
-	[77 ] = { 238, RO_ATTRE(ethernetDHCPState)             , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
-	[78 ] = { 239, RO_ATTRX(ethernetDHCPAttempts)          , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
-	[79 ] = { 241, RW_ATTRS(sntpServer)                    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         },
-	[80 ] = { 262, RW_ATTRX(blePrepareTimeout)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
-	[81 ] = { 264, RW_ATTRX(lwm2mEnableBootstrap)          , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
+	[54 ] = { 212, RO_ATTRE(generate_psk)                  , ATTR_TYPE_U8            , n, y, n, n, y, n, av_cp8              , NULL                                , .min.ux = 0         , .max.ux = 1          },
+	[55 ] = { 213, RW_ATTRX(lwm2m_psk)                     , ATTR_TYPE_BYTE_ARRAY    , y, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[56 ] = { 214, RW_ATTRS(lwm2m_client_id)               , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 1         , .max.ux = 32         },
+	[57 ] = { 215, RW_ATTRS(lwm2m_peer_url)                , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 6         , .max.ux = 128        },
+	[58 ] = { 217, RO_ATTRE(cloud_error)                   , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[59 ] = { 218, RO_ATTRX(commissioning_busy)            , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[60 ] = { 221, RO_ATTRE(ethernet_init_error)           , ATTR_TYPE_S8            , n, n, y, n, n, n, av_int8             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[61 ] = { 222, RO_ATTRX(ethernet_mac)                  , ATTR_TYPE_BYTE_ARRAY    , n, n, y, n, n, n, av_array            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[62 ] = { 223, RW_ATTRE(ethernet_type)                 , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
+	[63 ] = { 224, RW_ATTRE(ethernet_mode)                 , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 1         , .max.ux = 2          },
+	[64 ] = { 225, RO_ATTRX(ethernet_cable_detected)       , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[65 ] = { 226, RO_ATTRE(ethernet_speed)                , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[66 ] = { 227, RO_ATTRE(ethernet_duplex)               , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[67 ] = { 228, RO_ATTRS(ethernet_ip_address)           , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[68 ] = { 229, RO_ATTRX(ethernet_netmask_length)       , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[69 ] = { 230, RO_ATTRS(ethernet_gateway)              , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[70 ] = { 231, RO_ATTRS(ethernet_dns)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[71 ] = { 232, RW_ATTRS(ethernet_static_ip_address)    , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[72 ] = { 233, RW_ATTRX(ethernet_static_netmask_length), ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[73 ] = { 234, RW_ATTRS(ethernet_static_gateway)       , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[74 ] = { 235, RW_ATTRS(ethernet_static_dns)           , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 15         },
+	[75 ] = { 236, RO_ATTRX(ethernet_dhcp_lease_time)      , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[76 ] = { 237, RO_ATTRX(ethernet_dhcp_renew_time)      , ATTR_TYPE_U32           , n, n, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 4294967294 },
+	[77 ] = { 238, RO_ATTRE(ethernet_dhcp_state)           , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 6          },
+	[78 ] = { 239, RO_ATTRX(ethernet_dhcp_attempts)        , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 100        },
+	[79 ] = { 241, RW_ATTRS(sntp_server)                   , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 7         , .max.ux = 64         },
+	[80 ] = { 262, RW_ATTRX(ble_prepare_timeout)           , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 180       , .max.ux = 172800     },
+	[81 ] = { 264, RW_ATTRX(lwm2m_enable_bootstrap)        , ATTR_TYPE_BOOL          , y, y, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          }
 	/* pyend */
 };
 
@@ -477,7 +463,7 @@ attr_index_t attr_table_index(const struct attr_table_entry *const entry)
 /* Local Function Definitions                                                 */
 /******************************************************************************/
 /* pystart - prepare for read - weak implementations */
-__weak int attr_prepare_upTime(void)
+__weak int attr_prepare_up_time(void)
 {
 	return 0;
 }
@@ -487,7 +473,7 @@ __weak int attr_prepare_qrtc(void)
 	return 0;
 }
 
-__weak int attr_prepare_qrtcLastSet(void)
+__weak int attr_prepare_qrtc_last_set(void)
 {
 	return 0;
 }
