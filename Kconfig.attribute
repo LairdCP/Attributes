@@ -202,8 +202,6 @@ config ATTR_CONFIGURATION_VERSION
 config MCUMGR_CMD_ATTRIBUTE_MGMT
 	bool "Enable the attribute MCUMGR interface"
 	depends on MCUMGR
-	select CBOR_FLOATING_POINT
-	select CBOR_HALF_FLOAT_TYPE
 
 if MCUMGR_CMD_ATTRIBUTE_MGMT
 
