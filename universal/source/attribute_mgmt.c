@@ -81,8 +81,6 @@
 #define ATTR_FRAMEWORK_BROADCAST(msg)
 #endif
 
-#define ATTR_DEVICE_MGMT_BUFFER_SIZE 128
-
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
@@ -326,7 +324,6 @@ static void smp_ble_disconnected(struct bt_conn *conn, uint8_t reason)
 
 static int get_parameter(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct get_parameter user_params;
 	struct get_parameter_result response;
@@ -349,16 +346,12 @@ static int get_parameter(struct mgmt_ctxt *ctxt)
 
 	cbor_encode_attribute(user_params._get_parameter_p1, &response);
 
-	if (!cbor_encode_get_parameter_result(buffer, sizeof(buffer), &response,
-					      &rsp_len)) {
+	if (!cbor_encode_get_parameter_result(zse->payload_mut,
+					      (zse->payload_end - zse->payload),
+					      &response, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -455,7 +448,6 @@ static void cbor_encode_attribute(uint16_t param_id,
 
 static int set_parameter(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct set_parameter user_params;
 	struct set_parameter_result response;
@@ -707,16 +699,12 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	response._set_parameter_result_id = user_params._set_parameter_p1;
 	response._set_parameter_result_r = r;
 
-	if (!cbor_encode_set_parameter_result(buffer, sizeof(buffer), &response,
-					      &rsp_len)) {
+	if (!cbor_encode_set_parameter_result(zse->payload_mut,
+					      (zse->payload_end - zse->payload),
+					      &response, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -724,7 +712,6 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 
 static int load_parameter_file(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct load_parameter_file user_params;
 	struct load_parameter_file_result load_parameter_file_data = { 0 };
@@ -783,17 +770,13 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 #endif
 	}
 
-	if (!cbor_encode_load_parameter_file_result(buffer, sizeof(buffer),
+	if (!cbor_encode_load_parameter_file_result(zse->payload_mut,
+						    (zse->payload_end - zse->payload),
 						    &load_parameter_file_data,
 						    &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -801,7 +784,6 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 
 static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct dump_parameter_file user_params;
 	struct dump_parameter_file_result dump_parameter_file_data = { 0 };
@@ -865,17 +847,13 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 
 	dump_parameter_file_data._dump_parameter_file_result_r = r;
 
-	if (!cbor_encode_dump_parameter_file_result(buffer, sizeof(buffer),
+	if (!cbor_encode_dump_parameter_file_result(zse->payload_mut,
+						    (zse->payload_end - zse->payload),
 						    &dump_parameter_file_data,
 						    &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -884,7 +862,6 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 static int factory_reset(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTRIBUTE_MGMT_FACTORY_RESET
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	int r = 0;
 	struct factory_reset_result factory_reset_data = { 0 };
@@ -922,16 +899,12 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 
 	factory_reset_data._factory_reset_result_r = r;
 
-	if (!cbor_encode_factory_reset_result(buffer, sizeof(buffer),
-					      &factory_reset_data, &rsp_len)) {
+	if (!cbor_encode_factory_reset_result(zse->payload_mut,
+					     (zse->payload_end - zse->payload),
+					     &factory_reset_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -942,7 +915,6 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 
 static int set_notify(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct set_notify user_params;
 	struct set_notify_result set_notify_data = { 0 };
@@ -960,16 +932,12 @@ static int set_notify(struct mgmt_ctxt *ctxt)
 		attr_set_notify((attr_id_t)user_params._set_notify_p1,
 				user_params._set_notify_p2);
 
-	if (!cbor_encode_set_notify_result(buffer, sizeof(buffer),
+	if (!cbor_encode_set_notify_result(zse->payload_mut,
+					   (zse->payload_end - zse->payload),
 					   &set_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -977,7 +945,6 @@ static int set_notify(struct mgmt_ctxt *ctxt)
 
 static int get_notify(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct get_notify user_params;
 	struct get_notify_result get_notify_data = { 0 };
@@ -994,16 +961,12 @@ static int get_notify(struct mgmt_ctxt *ctxt)
 	get_notify_data._get_notify_result_r =
 		attr_get_notify((attr_id_t)user_params._get_notify_p1);
 
-	if (!cbor_encode_get_notify_result(buffer, sizeof(buffer),
+	if (!cbor_encode_get_notify_result(zse->payload_mut,
+					   (zse->payload_end - zse->payload),
 					   &get_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1011,23 +974,19 @@ static int get_notify(struct mgmt_ctxt *ctxt)
 
 static int disable_notify(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct disable_notify_result disable_notify_data = { 0 };
         zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	disable_notify_data._disable_notify_result_r = attr_disable_notify();
 
-	if (!cbor_encode_disable_notify_result(
-		    buffer, sizeof(buffer), &disable_notify_data, &rsp_len)) {
+	if (!cbor_encode_disable_notify_result(zse->payload_mut,
+					      (zse->payload_end - zse->payload),
+					      &disable_notify_data,
+					      &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1036,7 +995,6 @@ static int disable_notify(struct mgmt_ctxt *ctxt)
 static int check_lock_status(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct check_lock_status_result check_lock_status_data;
 	bool lock_enabled;
@@ -1068,17 +1026,13 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 	check_lock_status_data._check_lock_status_result_r1 = lock_enabled;
 	check_lock_status_data._check_lock_status_result_r2 = lock_active;
 
-	if (!cbor_encode_check_lock_status_result(buffer, sizeof(buffer),
+	if (!cbor_encode_check_lock_status_result(zse->payload_mut,
+						  (zse->payload_end - zse->payload),
 						  &check_lock_status_data,
 						  &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1090,7 +1044,6 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 static int set_lock_code(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct set_lock_code user_params;
 	struct set_lock_code_result set_lock_code_data;
@@ -1131,16 +1084,12 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 
 	set_lock_code_data._set_lock_code_result_r = r;
 
-	if (!cbor_encode_set_lock_code_result(buffer, sizeof(buffer),
+	if (!cbor_encode_set_lock_code_result(zse->payload_mut,
+					      (zse->payload_end - zse->payload),
 					      &set_lock_code_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1152,7 +1101,6 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 static int lock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct lock_result lock_data;
 	enum settings_passcode_status passcode_status =
@@ -1176,16 +1124,12 @@ static int lock(struct mgmt_ctxt *ctxt)
 
 	lock_data._lock_result_r = r;
 
-	if (!cbor_encode_lock_result(buffer, sizeof(buffer), &lock_data,
-				     &rsp_len)) {
+	if (!cbor_encode_lock_result(zse->payload_mut,
+				     (zse->payload_end - zse->payload),
+				     &lock_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1197,7 +1141,6 @@ static int lock(struct mgmt_ctxt *ctxt)
 static int unlock(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
@@ -1251,16 +1194,12 @@ static int unlock(struct mgmt_ctxt *ctxt)
 
 	unlock_data._unlock_result_r = r;
 
-	if (!cbor_encode_unlock_result(buffer, sizeof(buffer), &unlock_data,
-				       &rsp_len)) {
+	if (!cbor_encode_unlock_result(zse->payload_mut,
+				       (zse->payload_end - zse->payload),
+				       &unlock_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1272,7 +1211,6 @@ static int unlock(struct mgmt_ctxt *ctxt)
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 {
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	struct get_unlock_error_code_result unlock_error_code_data;
 	enum settings_passcode_status passcode_status =
@@ -1296,17 +1234,13 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 	unlock_error_code_data._get_unlock_error_code_result_r1 =
 		passcode_status;
 
-	if (!cbor_encode_get_unlock_error_code_result(buffer, sizeof(buffer),
+	if (!cbor_encode_get_unlock_error_code_result(zse->payload_mut,
+						      (zse->payload_end - zse->payload),
 						      &unlock_error_code_data,
 						      &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1317,7 +1251,6 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 
 static int get_api_version(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	uint8_t *api_version =
 		(uint8_t *)attr_get_quasi_static(ATTR_ID_attribute_version);
@@ -1329,16 +1262,12 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 								 api_version) },
 	};
 
-	if (!cbor_encode_get_api_version_result(buffer, sizeof(buffer),
-						&api_version_data, &rsp_len)) {
+	if (!cbor_encode_get_api_version_result(zse->payload_mut,
+					        (zse->payload_end - zse->payload),
+					        &api_version_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1346,7 +1275,6 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 
 static int get_indices(struct mgmt_ctxt *ctxt)
 {
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	uint32_t rsp_len = 0;
 	uint16_t table_size;
 	uint16_t min_id;
@@ -1359,16 +1287,12 @@ static int get_indices(struct mgmt_ctxt *ctxt)
 	indices_data._get_indices_result_min_id = min_id;
 	indices_data._get_indices_result_max_id = max_id;
 
-	if (!cbor_encode_get_indices_result(buffer, sizeof(buffer),
+	if (!cbor_encode_get_indices_result(zse->payload_mut,
+					    (zse->payload_end - zse->payload),
 					    &indices_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
@@ -1377,7 +1301,6 @@ static int get_indices(struct mgmt_ctxt *ctxt)
 static int get_entry_details(struct mgmt_ctxt *ctxt)
 {
 	int r;
-	uint8_t buffer[ATTR_DEVICE_MGMT_BUFFER_SIZE];
 	static uint16_t last_index;
 	uint32_t rsp_len = 0;
 	attr_id_t id;
@@ -1572,16 +1495,12 @@ static int get_entry_details(struct mgmt_ctxt *ctxt)
 		}
 	}
 
-	if (!cbor_encode_get_entry_details_result(buffer, sizeof(buffer),
+	if (!cbor_encode_get_entry_details_result(zse->payload_mut,
+						  (zse->payload_end - zse->payload),
 						  &entry_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
-        if (rsp_len > (zse->payload_end - zse->payload)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	memcpy(zse->payload_mut, buffer, rsp_len);
 	zse->payload += rsp_len;
 
 	return MGMT_ERR_EOK;
