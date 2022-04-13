@@ -869,7 +869,6 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 	uint8_t factory_reset_enabled = 0;
 #endif
         zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 	if (attr_is_locked() == true) {
@@ -1002,7 +1001,6 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 	uint8_t lock_status;
 	int r = 0;
         zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	r = attr_get(ATTR_ID_lock, &lock_enabled, sizeof(lock_enabled));
 
@@ -1107,7 +1105,6 @@ static int lock(struct mgmt_ctxt *ctxt)
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
         zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (attr_is_locked() == false) {
 		/* Lock the settings */
@@ -1217,7 +1214,6 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
         zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	r = attr_get(ATTR_ID_settings_passcode_status, &passcode_status,
 		     sizeof(passcode_status));
