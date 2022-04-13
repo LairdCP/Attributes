@@ -327,8 +327,8 @@ static int get_parameter(struct mgmt_ctxt *ctxt)
 	uint32_t rsp_len = 0;
 	struct get_parameter user_params;
 	struct get_parameter_result response;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	user_params._get_parameter_p1 = INVALID_PARAM_ID;
 
@@ -456,8 +456,8 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	bool modified = false;
 #endif
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	user_params._set_parameter_p1 = INVALID_PARAM_ID;
 
@@ -717,8 +717,8 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	struct load_parameter_file_result load_parameter_file_data = { 0 };
 	bool modified;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_load_parameter_file(zsd->payload,
 					     (zsd->payload_end - zsd->payload),
@@ -736,7 +736,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		/* The input file is an optional parameter. */
 		r = attr_load(
 			(user_params._load_parameter_file_p1_present == true ?
-				       user_params._load_parameter_file_p1
+				 user_params._load_parameter_file_p1
 					 ._load_parameter_file_p1.value :
 				       attr_get_quasi_static(ATTR_ID_load_path)),
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
@@ -770,10 +770,9 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 #endif
 	}
 
-	if (!cbor_encode_load_parameter_file_result(zse->payload_mut,
-						    (zse->payload_end - zse->payload),
-						    &load_parameter_file_data,
-						    &rsp_len)) {
+	if (!cbor_encode_load_parameter_file_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &load_parameter_file_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -789,9 +788,9 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 	struct dump_parameter_file_result dump_parameter_file_data = { 0 };
 	int r = -EPERM;
 	char *fstr = NULL;
-	char *file_name;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	const char *file_name;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_dump_parameter_file(zsd->payload,
 					     (zsd->payload_end - zsd->payload),
@@ -847,10 +846,9 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 
 	dump_parameter_file_data._dump_parameter_file_result_r = r;
 
-	if (!cbor_encode_dump_parameter_file_result(zse->payload_mut,
-						    (zse->payload_end - zse->payload),
-						    &dump_parameter_file_data,
-						    &rsp_len)) {
+	if (!cbor_encode_dump_parameter_file_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &dump_parameter_file_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -868,7 +866,7 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 #ifdef ATTR_ID_factory_reset_enable
 	uint8_t factory_reset_enabled = 0;
 #endif
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 #ifdef CONFIG_ATTR_SETTINGS_LOCK
 	if (attr_is_locked() == true) {
@@ -899,8 +897,8 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 	factory_reset_data._factory_reset_result_r = r;
 
 	if (!cbor_encode_factory_reset_result(zse->payload_mut,
-					     (zse->payload_end - zse->payload),
-					     &factory_reset_data, &rsp_len)) {
+					      (zse->payload_end - zse->payload),
+					      &factory_reset_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -917,8 +915,8 @@ static int set_notify(struct mgmt_ctxt *ctxt)
 	uint32_t rsp_len = 0;
 	struct set_notify user_params;
 	struct set_notify_result set_notify_data = { 0 };
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_set_notify(zsd->payload,
 				    (zsd->payload_end - zsd->payload),
@@ -947,8 +945,8 @@ static int get_notify(struct mgmt_ctxt *ctxt)
 	uint32_t rsp_len = 0;
 	struct get_notify user_params;
 	struct get_notify_result get_notify_data = { 0 };
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_get_notify(zsd->payload,
 				    (zsd->payload_end - zsd->payload),
@@ -975,14 +973,13 @@ static int disable_notify(struct mgmt_ctxt *ctxt)
 {
 	uint32_t rsp_len = 0;
 	struct disable_notify_result disable_notify_data = { 0 };
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	disable_notify_data._disable_notify_result_r = attr_disable_notify();
 
-	if (!cbor_encode_disable_notify_result(zse->payload_mut,
-					      (zse->payload_end - zse->payload),
-					      &disable_notify_data,
-					      &rsp_len)) {
+	if (!cbor_encode_disable_notify_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &disable_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -1000,7 +997,7 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 	bool lock_active = false;
 	uint8_t lock_status;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	r = attr_get(ATTR_ID_lock, &lock_enabled, sizeof(lock_enabled));
 
@@ -1024,10 +1021,9 @@ static int check_lock_status(struct mgmt_ctxt *ctxt)
 	check_lock_status_data._check_lock_status_result_r1 = lock_enabled;
 	check_lock_status_data._check_lock_status_result_r2 = lock_active;
 
-	if (!cbor_encode_check_lock_status_result(zse->payload_mut,
-						  (zse->payload_end - zse->payload),
-						  &check_lock_status_data,
-						  &rsp_len)) {
+	if (!cbor_encode_check_lock_status_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &check_lock_status_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -1046,8 +1042,8 @@ static int set_lock_code(struct mgmt_ctxt *ctxt)
 	struct set_lock_code user_params;
 	struct set_lock_code_result set_lock_code_data;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_set_lock_code(zsd->payload,
 				       (zsd->payload_end - zsd->payload),
@@ -1104,7 +1100,7 @@ static int lock(struct mgmt_ctxt *ctxt)
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	if (attr_is_locked() == false) {
 		/* Lock the settings */
@@ -1145,8 +1141,8 @@ static int unlock(struct mgmt_ctxt *ctxt)
 	struct unlock_result unlock_data;
 	uint32_t real_lock_code;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_unlock(zsd->payload, (zsd->payload_end - zsd->payload),
 				&user_params, NULL)) {
@@ -1213,7 +1209,7 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 	enum settings_passcode_status passcode_status =
 		SETTINGS_PASSCODE_STATUS_UNDEFINED;
 	int r = 0;
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	r = attr_get(ATTR_ID_settings_passcode_status, &passcode_status,
 		     sizeof(passcode_status));
@@ -1230,10 +1226,9 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 	unlock_error_code_data._get_unlock_error_code_result_r1 =
 		passcode_status;
 
-	if (!cbor_encode_get_unlock_error_code_result(zse->payload_mut,
-						      (zse->payload_end - zse->payload),
-						      &unlock_error_code_data,
-						      &rsp_len)) {
+	if (!cbor_encode_get_unlock_error_code_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &unlock_error_code_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -1250,7 +1245,7 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 	uint32_t rsp_len = 0;
 	uint8_t *api_version =
 		(uint8_t *)attr_get_quasi_static(ATTR_ID_attribute_version);
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	struct get_api_version_result api_version_data = {
 		._get_api_version_result_api_version = { .value = api_version,
@@ -1258,9 +1253,9 @@ static int get_api_version(struct mgmt_ctxt *ctxt)
 								 api_version) },
 	};
 
-	if (!cbor_encode_get_api_version_result(zse->payload_mut,
-					        (zse->payload_end - zse->payload),
-					        &api_version_data, &rsp_len)) {
+	if (!cbor_encode_get_api_version_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &api_version_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -1276,7 +1271,7 @@ static int get_indices(struct mgmt_ctxt *ctxt)
 	uint16_t min_id;
 	uint16_t max_id;
 	struct get_indices_result indices_data = { 0 };
-        zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
 
 	attr_get_indices(&table_size, &min_id, &max_id);
 	indices_data._get_indices_result_table_size = table_size;
@@ -1309,8 +1304,8 @@ static int get_entry_details(struct mgmt_ctxt *ctxt)
 	const struct attr_min_max *max = NULL;
 	struct get_entry_details user_params = { 0 };
 	struct get_entry_details_result entry_data = { 0 };
-        zcbor_state_t *zse = ctxt->cnbe->zs;
-        zcbor_state_t *zsd = ctxt->cnbd->zs;
+	zcbor_state_t *zse = ctxt->cnbe->zs;
+	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
 	if (!cbor_decode_get_entry_details(zsd->payload,
 					   (zsd->payload_end - zsd->payload),
@@ -1491,9 +1486,9 @@ static int get_entry_details(struct mgmt_ctxt *ctxt)
 		}
 	}
 
-	if (!cbor_encode_get_entry_details_result(zse->payload_mut,
-						  (zse->payload_end - zse->payload),
-						  &entry_data, &rsp_len)) {
+	if (!cbor_encode_get_entry_details_result(
+		    zse->payload_mut, (zse->payload_end - zse->payload),
+		    &entry_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 

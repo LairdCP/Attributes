@@ -360,14 +360,14 @@ int attr_set_byte_array(attr_id_t id, char const *pv, size_t vlen)
 	return r;
 }
 
-void *attr_get_quasi_static(attr_id_t id)
+const void *attr_get_quasi_static(attr_id_t id)
 {
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
-		return entry->pData;
+		return (const void *)entry->pData;
 	} else {
-		return (void *)EMPTY_STRING;
+		return (const void *)EMPTY_STRING;
 	}
 }
 

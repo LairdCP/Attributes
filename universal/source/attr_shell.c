@@ -569,7 +569,7 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	char *fstr = NULL;
-	char *fname;
+	const char *fname;
 	int r = -EPERM;
 	int type;
 
