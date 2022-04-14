@@ -2,83 +2,37 @@
 
 if (CONFIG_ATTR)
 
-zephyr_include_directories(universal/include)
-zephyr_include_directories(universal/include/generated)
+zephyr_include_directories(include)
+zephyr_include_directories(include/generated)
 zephyr_sources(
-    universal/source/attr.c
-    universal/source/attr_validator.c
-    universal/source/generated/attribute_mgmt_encode.c
-    universal/source/generated/attribute_mgmt_decode.c
+    src/attr.c
+    src/attr_validator.c
+    src/generated/attribute_mgmt_encode.c
+    src/generated/attribute_mgmt_decode.c
 )
 
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL
-    universal/source/attr_shell.c
+    src/attr_shell.c
 )
 
 zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_ATTRIBUTE_MGMT
-    universal/source/attribute_mgmt.c
+    src/attribute_mgmt.c
 )
 
-if(CONFIG_ATTR_DEVICE_OVERRIDE)
-
-if(CONFIG_ATTR_DEVICE_OVERRIDE_SOURCE_FOLDER)
-    set(ATTR_CUSTOM_PATH_BASE "${CMAKE_SOURCE_DIR}")
-else()
-    set(ATTR_CUSTOM_PATH_BASE "custom")
-endif() # ATTR_DEVICE_OVERRIDE_SOURCE_FOLDER
-
-zephyr_include_directories(${ATTR_CUSTOM_PATH_BASE}/${CONFIG_ATTR_DEVICE_OVERRIDE_NAME}/include)
+zephyr_include_directories(${ATTR_CUSTOM_PATH_BASE}/include)
 zephyr_sources(
-    ${ATTR_CUSTOM_PATH_BASE}/${CONFIG_ATTR_DEVICE_OVERRIDE_NAME}/source/attr_table.c
-    ${ATTR_CUSTOM_PATH_BASE}/${CONFIG_ATTR_DEVICE_OVERRIDE_NAME}/source/attr_custom_validator.c
+    ${ATTR_CUSTOM_PATH_BASE}/src/attr_table.c
 )
 
-else()
-
-if(CONFIG_BOARD_PINNACLE_100_DVK)
-zephyr_include_directories(custom/MG100/include)
+if(EXISTS ${ATTR_CUSTOM_PATH_BASE}/src/attr_custom_validator.c)
 zephyr_sources(
-    custom/MG100/source/attr_table.c
-    custom/MG100/source/attr_custom_validator.c
+    ${ATTR_CUSTOM_PATH_BASE}/src/attr_custom_validator.c
 )
 endif()
 
-if(CONFIG_BOARD_MG100)
-zephyr_include_directories(custom/MG100/include)
-zephyr_sources(
-    custom/MG100/source/attr_table.c
-    custom/MG100/source/attr_custom_validator.c
-)
-endif()
-
-if(CONFIG_BOARD_BL5340_DVK_CPUAPP OR CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
-zephyr_include_directories(custom/BL5340/include)
-zephyr_sources(
-    custom/BL5340/source/attr_table.c
-    custom/BL5340/source/attr_custom_validator.c
-)
-endif()
-
-if(CONFIG_BOARD_BT6)
-zephyr_include_directories(custom/BT610/include)
-zephyr_sources(
-    custom/BT610/source/attr_table.c
-    custom/BT610/source/attr_custom_validator.c
-)
-endif()
-
-if(CONFIG_BOARD_BT520)
-zephyr_include_directories(custom/BT520/include)
-zephyr_sources(
-    custom/BT520/source/attr_table.c
-    custom/BT520/source/attr_custom_validator.c
-)
-endif()
-
-endif() # CONFIG_ATTR_DEVICE_OVERRIDE
 
 if(CONFIG_ATTR_SETTINGS_LOCK)
-zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK universal/source/shell_lock.c)
+zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK src/shell_lock.c)
 endif()
 
 if(CONFIG_FRAMEWORK)

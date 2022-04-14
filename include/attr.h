@@ -39,6 +39,12 @@ BUILD_ASSERT(ATTR_TABLE_MAX_ID < (1 << (8 * sizeof(attr_id_t))),
 	     "List element size too small");
 #endif
 
+enum attr_dump {
+	ATTR_DUMP_RW = 0,
+	ATTR_DUMP_W = 1,
+	ATTR_DUMP_RO = 2,
+};
+
 /******************************************************************************/
 /* Function Definitions                                                       */
 /******************************************************************************/

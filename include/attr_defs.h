@@ -101,7 +101,6 @@ typedef const char *const get_string_function(int value);
 typedef struct attr_table_entry ate_t;
 
 struct attr_table_entry {
-	const attr_id_t id;
 	const char *const name;
 	void *const pData;
 	const void *const pDefault;

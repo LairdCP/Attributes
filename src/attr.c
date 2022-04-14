@@ -70,7 +70,7 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 BUILD_ASSERT(CONFIG_LCZ_PARAM_FILE_INIT_PRIORITY < CONFIG_ATTR_INIT_PRIORITY,
 	     "Invalid init priority");
 
-#define LOG_ALT_USED() LOG_DBG("alt value used id [%u]: %d", id, r)
+#define LOG_ALT_USED() LOG_DBG("Alt value used ID [%u]: %d", id, r)
 
 #define GET_ENUM_STRING(x) (entry->gsf == NULL) ? EMPTY_STRING : entry->gsf(x)
 
@@ -744,7 +744,7 @@ attr_id_t attr_get_id(const char *name)
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		if (strcmp(name, ATTR_TABLE[i].name) == 0) {
-			return ATTR_TABLE[i].id;
+			return i;
 		}
 	}
 #endif
@@ -765,7 +765,7 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 	if (r < 0) {
 		if (r == -EPERM) {
 			shell_print(shell, CONFIG_ATTR_SHOW_FMT "******",
-				    entry->id, entry->name);
+				    attr_table_index(entry), entry->name);
 		}
 		return r;
 	}
@@ -773,62 +773,70 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 	switch (entry->type) {
 	case ATTR_TYPE_BOOL:
 		memcpy(&u, entry->pData, entry->size);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
-			    entry->name, u ? "true" : "false");
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s",
+			    attr_table_index(entry), entry->name,
+			    u ? "true" : "false");
 		break;
 
 	case ATTR_TYPE_U8:
 	case ATTR_TYPE_U16:
 	case ATTR_TYPE_U32:
 		memcpy(&u, entry->pData, entry->size);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%u %s", entry->id,
-			    entry->name, u, GET_ENUM_STRING(u));
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%u %s",
+			    attr_table_index(entry), entry->name, u,
+			    GET_ENUM_STRING(u));
 		break;
 
 	case ATTR_TYPE_U64:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRIu64, entry->id,
-			    entry->name, *(uint64_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRIu64,
+			    attr_table_index(entry), entry->name,
+			    *(uint64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_S8:
 		i = (int32_t)(*(int8_t *)entry->pData);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
-			    entry->name, i, GET_ENUM_STRING(i));
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s",
+			    attr_table_index(entry), entry->name, i,
+			    GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S16:
 		i = (int32_t)(*(int16_t *)entry->pData);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
-			    entry->name, i, GET_ENUM_STRING(i));
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s",
+			    attr_table_index(entry), entry->name, i,
+			    GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S32:
 		i = *(int32_t *)entry->pData;
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s", entry->id,
-			    entry->name, i, GET_ENUM_STRING(i));
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%d %s",
+			    attr_table_index(entry), entry->name, i,
+			    GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S64:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRId64, entry->id,
-			    entry->name, *(int64_t *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%" PRId64,
+			    attr_table_index(entry), entry->name,
+			    *(int64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_FLOAT:
 		memcpy(&f, entry->pData, entry->size);
 		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
 			 f);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s", entry->id,
-			    entry->name, float_str);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s",
+			    attr_table_index(entry), entry->name, float_str);
 		break;
 
 	case ATTR_TYPE_STRING:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "'%s'", entry->id,
-			    entry->name, (char *)entry->pData);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "'%s'",
+			    attr_table_index(entry), entry->name,
+			    (char *)entry->pData);
 		break;
 
 	default:
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "size: %u", entry->id,
-			    entry->name, entry->size);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "size: %u",
+			    attr_table_index(entry), entry->name, entry->size);
 		shell_hexdump(shell, entry->pData, entry->size);
 		break;
 	}
@@ -953,7 +961,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (dump) [%u] status: %d",
-						ATTR_TABLE[i].id, r);
+						i, r);
 					break;
 				} else {
 					count += 1;
@@ -1219,13 +1227,13 @@ static int save_attributes(void)
 			if ((ATTR_TABLE[i].flags & FLAGS_SAVABLE) &&
 			    !(ATTR_TABLE[i].flags & FLAGS_DEPRECATED)) {
 				r = lcz_param_file_generate_file(
-					ATTR_TABLE[i].id, convert_attr_type(i),
+					i, convert_attr_type(i),
 					ATTR_TABLE[i].pData, get_attr_length(i),
 					&fstr);
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (save) [%u] status: %d",
-						ATTR_TABLE[i].id, r);
+						i, r);
 					break;
 				}
 			}
@@ -1361,7 +1369,7 @@ static void change_handler(bool send_notifications)
 		    (ATTR_TABLE[i].flags & FLAGS_BROADCAST) &&
 		    !skip_broadcast) {
 			if (pb != NULL) {
-				pb->list[pb->count++] = ATTR_TABLE[i].id;
+				pb->list[pb->count++] = i;
 			}
 		}
 #endif
@@ -1372,7 +1380,7 @@ static void change_handler(bool send_notifications)
 
 		if ((modified || unchanged) && send_notifications &&
 		    atomic_test_bit(notify, i)) {
-			notification_handler(ATTR_TABLE[i].id);
+			notification_handler(i);
 		}
 
 		atomic_clear_bit(attr_modified, i);
@@ -1597,8 +1605,8 @@ static int show(const ate_t *const entry, bool change_handler)
 	r = allow_show(entry, change_handler);
 	if (r < 0) {
 		if (r == -EPERM) {
-			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******", entry->id,
-				 entry->name);
+			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******",
+				 attr_table_index(entry), entry->name);
 		}
 		return r;
 	}
@@ -1606,62 +1614,64 @@ static int show(const ate_t *const entry, bool change_handler)
 	switch (entry->type) {
 	case ATTR_TYPE_BOOL:
 		memcpy(&u, entry->pData, entry->size);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", entry->id, entry->name,
-			 u ? "true" : "false");
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", attr_table_index(entry),
+			 entry->name, u ? "true" : "false");
 		break;
 
 	case ATTR_TYPE_U8:
 	case ATTR_TYPE_U16:
 	case ATTR_TYPE_U32:
 		memcpy(&u, entry->pData, entry->size);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%u %s", entry->id, entry->name,
-			 u, GET_ENUM_STRING(u));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%u %s", attr_table_index(entry),
+			 entry->name, u, GET_ENUM_STRING(u));
 		break;
 
 	case ATTR_TYPE_U64:
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRIu64, entry->id,
-			 entry->name, *(uint64_t *)entry->pData);
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRIu64,
+			 attr_table_index(entry), entry->name,
+			 *(uint64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_S8:
 		i = (int32_t)(*(int8_t *)entry->pData);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", entry->id, entry->name,
-			 i, GET_ENUM_STRING(i));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", attr_table_index(entry),
+			 entry->name, i, GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S16:
 		i = (int32_t)(*(int16_t *)entry->pData);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", entry->id, entry->name,
-			 i, GET_ENUM_STRING(i));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", attr_table_index(entry),
+			 entry->name, i, GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S32:
 		i = *(int32_t *)entry->pData;
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", entry->id, entry->name,
-			 i, GET_ENUM_STRING(i));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%d %s", attr_table_index(entry),
+			 entry->name, i, GET_ENUM_STRING(i));
 		break;
 
 	case ATTR_TYPE_S64:
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRId64, entry->id,
-			 entry->name, *(int64_t *)entry->pData);
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%" PRId64,
+			 attr_table_index(entry), entry->name,
+			 *(int64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_FLOAT:
 		memcpy(&f, entry->pData, entry->size);
 		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
 			 f);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", entry->id, entry->name,
-			 log_strdup(float_str));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", attr_table_index(entry),
+			 entry->name, log_strdup(float_str));
 		break;
 
 	case ATTR_TYPE_STRING:
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "'%s'", entry->id, entry->name,
-			 log_strdup((char *)entry->pData));
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "'%s'", attr_table_index(entry),
+			 entry->name, log_strdup((char *)entry->pData));
 		break;
 
 	default:
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "size: %u", entry->id,
-			 entry->name, entry->size);
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "size: %u",
+			 attr_table_index(entry), entry->name, entry->size);
 		LOG_HEXDUMP_DBG(entry->pData, entry->size, "");
 		break;
 	}
@@ -1701,7 +1711,7 @@ static int load_attributes(const char *fname, const char *feedback_path,
 				   &error_count, skip_non_writeable);
 
 			if (error_count != 0) {
-				/* Error occurred during verification, no point
+				/* Error occured during verification, no point
 				 * in continuing
 				 */
 				r = -EINVAL;
@@ -1791,7 +1801,7 @@ static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
 			if (binlen <= 0) {
 				r = -EINVAL;
 				LOG_ERR("Unable to convert hex->bin for id: %d",
-					entry->id);
+					attr_table_index(entry));
 			} else {
 				r = validate_or_write(entry, ATTR_TYPE_ANY, bin,
 						      binlen);
@@ -1834,7 +1844,8 @@ static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 	}
 
 	if (r < 0) {
-		LOG_WRN("failure id: %u %s", entry->id, entry->name);
+		LOG_WRN("Failure id: %u %s", attr_table_index(entry),
+			entry->name);
 		LOG_HEXDUMP_DBG(pv, vlen, "attr data");
 	}
 	return r;
@@ -1858,7 +1869,8 @@ static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 #endif
 
 	if (r < 0) {
-		LOG_WRN("validation failure id: %u %s", entry->id, entry->name);
+		LOG_WRN("Validation failure id: %u %s", attr_table_index(entry),
+			entry->name);
 		LOG_HEXDUMP_DBG(pv, vlen, "attr data");
 	}
 	return r;
@@ -1900,7 +1912,8 @@ static bool is_writable(const ate_t *const entry)
 	}
 
 	if (!r) {
-		LOG_DBG("Id [%u] %s is %s", entry->id, entry->name,
+		LOG_DBG("ID [%u] %s is %s", attr_table_index(entry),
+			entry->name,
 			(settings_locked == false ?
 				       "not writable" :
 				       "locked by settings passcode"));
@@ -2193,7 +2206,7 @@ int attr_update_config_version(void)
 void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
 {
 	*table_size = ATTR_TABLE_SIZE;
-	*min_id = ATTR_TABLE[0].id;
+	*min_id = 0;
 	*max_id = ATTR_TABLE_MAX_ID;
 }
 
@@ -2207,7 +2220,7 @@ int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
 		return -EINVAL;
 	}
 
-	*id = ATTR_TABLE[index].id;
+	*id = index;
 	name = ATTR_TABLE[index].name;
 	*size = ATTR_TABLE[index].size;
 	*type = ATTR_TABLE[index].type;

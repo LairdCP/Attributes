@@ -131,22 +131,34 @@ The API file can be used to describe enumerations. The parameter 'x-enum-include
 
 ### Projects
 
-There are common attribute files (universal folder) and files specific to each project. Each attribute has an 'x-project' field that indicates what project it is for.
+There are common attribute files (include and src folders) and files specific to each project. Each attribute has an 'x-project' field that indicates what project it is for.
 
-To generate the custom files for new project, copy an existing custom folder, rename it with the project name, and run the generate command.
+To generate the custom files for new project, run the python generator in the generator folder. Have the command point to location of the application index file that contains the references for the attributes.
+Example of what the project index file will look like:
 ```
-python attribute_generator.py BT420
+openrpc: 1.2.6
+info:
+  title: Project_Index
+  version: 0.0.1
+methods: []
+components:
+  contentDescriptors:
+    device_params:
+      name: device_parameters
+      schema:
+        type: array
+      x-device-parameters:
+        - $ref: ./app/attributes/app_params.yml
+        - $ref: ./components/flags/attributes/flags_params.yml
 ```
-
-#### Uniqueness
-
-Across all Laird Connectivity systems, IDs are supposed to be unique. This means that if an attribute is used for multiple projects, it may not be possible to safely change its schema. A new id may be required for a very similar item.
-
-The current JSON format doesn't allow for different projects to have different min, max, default, or broadcast values.
+Example of the generate command. With the index file named app.yml
+```
+python attribute_generator.py C:/Industrial_BT_IO/BT6xx/bt6xx_firmware"
+```
 
 ## Customization
 
-For a custom project, a new attributes.json file can be created. Unless compatibility with Laird Connectivity applications is desired, then IDs can be different.
+For a custom project, a new attributes file can be created. The IDs will be created as generation time.
 
 ## Custom Field Definitions
 
