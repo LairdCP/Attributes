@@ -265,26 +265,4 @@ config ATTR_SHELL_FEEDBACK_FILE
 
 endif # ATTR_LOAD_FEEDBACK
 
-config ATTR_DEVICE_OVERRIDE
-	bool "Enable attribute name override"
-	help
-	  Will allow manual overriding of the files used for custom
-	  attributes in the custom folder.
-
-if ATTR_DEVICE_OVERRIDE
-
-config ATTR_DEVICE_OVERRIDE_NAME
-	string "File name for attributes"
-	help
-	  Override name to load files from in custom folder.
-
-config ATTR_DEVICE_OVERRIDE_SOURCE_FOLDER
-	bool "Use source folder as base for attributes"
-	help
-	  Will use the current project's source folder as the base
-	  folder for where custom attribute files are located instead
-	  of the 'custom' folder in the attributes module folder.
-
-endif # ATTR_DEVICE_OVERRIDE
-
 endif # ATTR
