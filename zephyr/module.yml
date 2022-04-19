@@ -1,5 +1,5 @@
 build:
   cmake: .
-  kconfig: ./Kconfig.attribute
+  kconfig: ./Kconfig
   depends:
   - cmake_functions
