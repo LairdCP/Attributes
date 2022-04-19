@@ -19,6 +19,10 @@ zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_ATTRIBUTE_MGMT
     src/attribute_mgmt.c
 )
 
+if (NOT ATTR_CUSTOM_PATH_BASE)
+message(FATAL_ERROR "ATTR_CUSTOM_PATH_BASE has not been set in application CMakeLists.txt file")
+endif()
+
 zephyr_include_directories(${ATTR_CUSTOM_PATH_BASE}/include)
 zephyr_sources(
     ${ATTR_CUSTOM_PATH_BASE}/src/attr_table.c
