@@ -809,10 +809,11 @@ static int sha_256(struct mgmt_ctxt *ctxt)
 	CborError err = 0;
 	int r = -EPERM;
 	uint8_t hash[FSU_HASH_SIZE] = { 0x00 };
+
+#ifdef CONFIG_FSU_HASH
 	size_t name_length;
 	size_t file_size;
 
-#ifdef CONFIG_FSU_HASH
 	memset(param.buf, 0, sizeof(param.buf));
 
 	struct cbor_attr_t params_attr[] = { { .attribute = "p1",

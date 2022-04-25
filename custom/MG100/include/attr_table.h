@@ -161,6 +161,16 @@ extern "C" {
 #define ATTR_ID_self_commission_token                 271
 #define ATTR_ID_self_commission_id                    272
 #define ATTR_ID_self_commission_error                 273
+#define ATTR_ID_gps_last_obtained                     274
+#define ATTR_ID_gps_timeout                           275
+#define ATTR_ID_gps_interval                          276
+#define ATTR_ID_losant_state                          277
+#define ATTR_ID_losant_error_state                    278
+#define ATTR_ID_losant_error_count                    279
+#define ATTR_ID_check_in_rate                         280
+#define ATTR_ID_gps_latitude_degrees                  281
+#define ATTR_ID_gps_longitude_degrees                 282
+#define ATTR_ID_fota_max_retries                      283
 /* pyend */
 
 /******************************************************************************/
@@ -168,9 +178,9 @@ extern "C" {
 /******************************************************************************/
 
 /* pystart - attribute constants */
-#define ATTR_TABLE_SIZE                                   128
-#define ATTR_TABLE_MAX_ID                                 273
-#define ATTR_TABLE_WRITABLE_COUNT                         62
+#define ATTR_TABLE_SIZE                                   138
+#define ATTR_TABLE_MAX_ID                                 283
+#define ATTR_TABLE_WRITABLE_COUNT                         68
 #define ATTR_MAX_STR_LENGTH                               256
 #define ATTR_MAX_STR_SIZE                                 257
 #define ATTR_MAX_BIN_SIZE                                 16
@@ -407,6 +417,35 @@ enum polte_status {
 	POLTE_STATUS_BUSY = 127,
 };
 
+enum losant_state {
+	LOSANT_STATE_WAIT_FOR_NETWORK = 0,
+	LOSANT_STATE_WAIT_FOR_VALID_TIME = 1,
+	LOSANT_STATE_GPS_START = 2,
+	LOSANT_STATE_GPS_WAIT = 3,
+	LOSANT_STATE_GET_DEVICES = 4,
+	LOSANT_STATE_ENABLE_CLOUD = 5,
+	LOSANT_STATE_CONNECT = 6,
+	LOSANT_STATE_SUBSCRIBE = 7,
+	LOSANT_STATE_HOUSEKEEPING = 8,
+	LOSANT_STATE_ROUTER_PUBLISH = 9,
+	LOSANT_STATE_END_DEVICE_PUBLISH = 10,
+	LOSANT_STATE_IDLE = 11,
+	LOSANT_STATE_CHECK_IN = 12,
+	LOSANT_STATE_SET_GPS = 13,
+	LOSANT_STATE_FIFO_DISPATCHER = 14,
+	LOSANT_STATE_RETRY = 15,
+	LOSANT_STATE_ERROR = 16,
+	LOSANT_STATE_FOTA_DISPATCHER = 17,
+	LOSANT_STATE_FOTA_FILE_TRANSFER = 18,
+	LOSANT_STATE_FOTA_INITIATE = 19,
+	LOSANT_STATE_FOTA_MODEM = 20,
+	LOSANT_STATE_FOTA_MODEM_INSTALL = 21,
+	LOSANT_STATE_FOTA_GATEWAY = 22,
+	LOSANT_STATE_FOTA_CLEANUP = 23,
+	LOSANT_STATE_REBOOT = 254,
+	LOSANT_STATE_NO_ERROR = 255,
+};
+
 enum attr_dump {
 	ATTR_DUMP_RW = 0,
 	ATTR_DUMP_W = 1,
@@ -434,6 +473,7 @@ BUILD_ASSERT(sizeof(enum modem_functionality) == ATTR_SIZE_S32);
 BUILD_ASSERT(sizeof(enum gps_status) == ATTR_SIZE_S8);
 BUILD_ASSERT(sizeof(enum polte_control_point) == ATTR_SIZE_U8);
 BUILD_ASSERT(sizeof(enum polte_status) == ATTR_SIZE_S32);
+BUILD_ASSERT(sizeof(enum losant_state) == ATTR_SIZE_U8);
 /* pyend */
 
 /******************************************************************************/
@@ -468,6 +508,7 @@ const char *const attr_get_string_modem_functionality(int value);
 const char *const attr_get_string_gps_status(int value);
 const char *const attr_get_string_polte_control_point(int value);
 const char *const attr_get_string_polte_status(int value);
+const char *const attr_get_string_losant_state(int value);
 /* pyend */
 
 #ifdef __cplusplus

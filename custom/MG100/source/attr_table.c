@@ -73,7 +73,6 @@ typedef struct rw_attribute {
 	uint8_t lwm2m_psk[16];
 	char lwm2m_client_id[32 + 1];
 	char lwm2m_peer_url[128 + 1];
-	uint32_t gps_rate;
 	char polte_user[16 + 1];
 	char polte_password[16 + 1];
 	uint32_t ble_prepare_timeout;
@@ -88,6 +87,11 @@ typedef struct rw_attribute {
 	char self_commission_token[256 + 1];
 	char self_commission_id[32 + 1];
 	char self_commission_error[64 + 1];
+	uint32_t gps_last_obtained;
+	uint32_t gps_timeout;
+	uint32_t gps_interval;
+	uint16_t check_in_rate;
+	uint8_t fota_max_retries;
 	/* pyend */
 } rw_attribute_t;
 
@@ -135,7 +139,6 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.lwm2m_psk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
 	.lwm2m_client_id = "Client_identity",
 	.lwm2m_peer_url = "uwterminalx.lairdconnect.com",
-	.gps_rate = 0,
 	.polte_user = "",
 	.polte_password = "",
 	.ble_prepare_timeout = 3600,
@@ -149,7 +152,12 @@ static const rw_attribute_t DEFAULT_RW_ATTRIBUTE_VALUES = {
 	.self_commission_port = "443",
 	.self_commission_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJodHRwczovLzYxYWZiNDkzNWNhMDBiN2Q2NDI2YTc4My5-bG9zYW50LWVuZHBvaW50LWRvbWFpbn4vYXBpL3JlZ2lzdGVyLWRldmljZSIsImlhdCI6MTYzODk5MTg0MCwiaXNzIjoiY2FybWFuYWguY29tIn0.XjasXlGB4Zbe74KP1cbLMZUeYSF1rXAwQdnuhOQgXAc",
 	.self_commission_id = "1330000005",
-	.self_commission_error = ""
+	.self_commission_error = "",
+	.gps_last_obtained = 0,
+	.gps_timeout = 600,
+	.gps_interval = 172800,
+	.check_in_rate = 900,
+	.fota_max_retries = 3
 	/* pyend */
 };
 
@@ -209,6 +217,7 @@ typedef struct ro_attribute {
 	bool commissioning_busy;
 	char imsi[15 + 1];
 	enum modem_functionality modem_functionality;
+	uint32_t gps_rate;
 	char gps_latitude[32 + 1];
 	char gps_longitude[32 + 1];
 	char gps_time[32 + 1];
@@ -226,6 +235,11 @@ typedef struct ro_attribute {
 	char polte_longitude[32 + 1];
 	char polte_confidence[16 + 1];
 	uint32_t polte_timestamp;
+	enum losant_state losant_state;
+	uint8_t losant_error_state;
+	uint32_t losant_error_count;
+	float gps_latitude_degrees;
+	float gps_longitude_degrees;
 	/* pyend */
 } ro_attribute_t;
 
@@ -237,7 +251,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.reset_count = 0,
 	.up_time = 0,
 	.battery_voltage_mv = 0,
-	.attribute_version = "0.4.51",
+	.attribute_version = "0.4.77",
 	.qrtc = 0,
 	.qrtc_last_set = 0,
 	.name = "",
@@ -285,6 +299,7 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.commissioning_busy = false,
 	.imsi = "",
 	.modem_functionality = 0,
+	.gps_rate = 0,
 	.gps_latitude = "",
 	.gps_longitude = "",
 	.gps_time = "",
@@ -301,7 +316,12 @@ static const ro_attribute_t DEFAULT_RO_ATTRIBUTE_VALUES = {
 	.polte_latitude = "",
 	.polte_longitude = "",
 	.polte_confidence = "",
-	.polte_timestamp = 0
+	.polte_timestamp = 0,
+	.losant_state = 0,
+	.losant_error_state = 0,
+	.losant_error_count = 172800,
+	.gps_latitude_degrees = 0.0,
+	.gps_longitude_degrees = 0.0
 	/* pyend */
 };
 
@@ -401,7 +421,7 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[57 ] = { 182, RO_ATTRE(lte_rat)                       , ATTR_TYPE_U8            , n, y, y, n, y, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 1          },
 	[58 ] = { 183, RO_ATTRS(iccid)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 20         },
 	[59 ] = { 184, RO_ATTRS(lte_serial_number)             , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 14         },
-	[60 ] = { 185, RO_ATTRS(lte_version)                   , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 29         },
+	[60 ] = { 185, RO_ATTRS(lte_version)                   , ATTR_TYPE_STRING        , n, n, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 29         },
 	[61 ] = { 186, RO_ATTRS(bands)                         , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 20        , .max.ux = 20         },
 	[62 ] = { 187, RO_ATTRS(active_bands)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 20        , .max.ux = 20         },
 	[63 ] = { 188, RO_ATTRE(central_state)                 , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
@@ -437,10 +457,10 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[93 ] = { 218, RO_ATTRX(commissioning_busy)            , ATTR_TYPE_BOOL          , n, n, y, n, n, n, av_bool             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[94 ] = { 219, RO_ATTRS(imsi)                          , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 14        , .max.ux = 15         },
 	[95 ] = { 220, RO_ATTRE(modem_functionality)           , ATTR_TYPE_S32           , n, n, y, n, n, n, av_int32            , attr_prepare_modem_functionality    , .min.ux = 0         , .max.ux = 0          },
-	[96 ] = { 242, RW_ATTRX(gps_rate)                      , ATTR_TYPE_U32           , y, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[96 ] = { 242, RO_ATTRX(gps_rate)                      , ATTR_TYPE_U32           , n, y, n, n, y, n, av_cp32             , NULL                                , .min.ux = 0         , .max.ux = 0          },
 	[97 ] = { 243, RO_ATTRS(gps_latitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[98 ] = { 244, RO_ATTRS(gps_longitude)                 , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[99 ] = { 245, RO_ATTRS(gps_time)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
+	[99 ] = { 245, RO_ATTRS(gps_time)                      , ATTR_TYPE_STRING        , n, n, y, n, y, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
 	[100] = { 246, RO_ATTRS(gps_fix_type)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 3          },
 	[101] = { 247, RO_ATTRS(gps_hepe)                      , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
 	[102] = { 248, RO_ATTRS(gps_altitude)                  , ATTR_TYPE_STRING        , n, n, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 16         },
@@ -468,7 +488,17 @@ const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {
 	[124] = { 270, RW_ATTRS(self_commission_port)          , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 4          },
 	[125] = { 271, RW_ATTRS(self_commission_token)         , ATTR_TYPE_STRING        , y, y, n, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 256        },
 	[126] = { 272, RW_ATTRS(self_commission_id)            , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 32         },
-	[127] = { 273, RW_ATTRS(self_commission_error)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         }
+	[127] = { 273, RW_ATTRS(self_commission_error)         , ATTR_TYPE_STRING        , y, y, y, n, n, n, av_string           , NULL                                , .min.ux = 0         , .max.ux = 64         },
+	[128] = { 274, RW_ATTRX(gps_last_obtained)             , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[129] = { 275, RW_ATTRX(gps_timeout)                   , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 30        , .max.ux = 3600       },
+	[130] = { 276, RW_ATTRX(gps_interval)                  , ATTR_TYPE_U32           , y, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[131] = { 277, RO_ATTRE(losant_state)                  , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[132] = { 278, RO_ATTRX(losant_error_state)            , ATTR_TYPE_U8            , n, n, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[133] = { 279, RO_ATTRX(losant_error_count)            , ATTR_TYPE_U32           , n, y, y, n, n, n, av_uint32           , NULL                                , .min.ux = 0         , .max.ux = 0          },
+	[134] = { 280, RW_ATTRX(check_in_rate)                 , ATTR_TYPE_U16           , y, y, y, n, n, n, av_uint16           , NULL                                , .min.ux = 60        , .max.ux = 86400      },
+	[135] = { 281, RO_ATTRX(gps_latitude_degrees)          , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = -90.0     , .max.fx = 90.0       },
+	[136] = { 282, RO_ATTRX(gps_longitude_degrees)         , ATTR_TYPE_FLOAT         , n, n, y, n, n, n, av_float            , NULL                                , .min.fx = -180.0    , .max.fx = 180.0      },
+	[137] = { 283, RW_ATTRX(fota_max_retries)              , ATTR_TYPE_U8            , y, y, y, n, n, n, av_uint8            , NULL                                , .min.ux = 0         , .max.ux = 10         }
 	/* pyend */
 };
 
@@ -604,7 +634,17 @@ static const struct attr_table_entry * const ATTR_MAP[] = {
 	[270] = &ATTR_TABLE[124],
 	[271] = &ATTR_TABLE[125],
 	[272] = &ATTR_TABLE[126],
-	[273] = &ATTR_TABLE[127]
+	[273] = &ATTR_TABLE[127],
+	[274] = &ATTR_TABLE[128],
+	[275] = &ATTR_TABLE[129],
+	[276] = &ATTR_TABLE[130],
+	[277] = &ATTR_TABLE[131],
+	[278] = &ATTR_TABLE[132],
+	[279] = &ATTR_TABLE[133],
+	[280] = &ATTR_TABLE[134],
+	[281] = &ATTR_TABLE[135],
+	[282] = &ATTR_TABLE[136],
+	[283] = &ATTR_TABLE[137]
 	/* pyend */
 };
 BUILD_ASSERT(ARRAY_SIZE(ATTR_MAP) == (ATTR_TABLE_MAX_ID + 1),
@@ -913,6 +953,39 @@ const char *const attr_get_string_polte_status(int value)
 		case 100:         return "Locate In Progress";
 		case 127:         return "Busy";
 		default:          return errno_str_get(value);
+	}
+}
+
+const char *const attr_get_string_losant_state(int value)
+{
+	switch (value) {
+		case 0:           return "Wait For Network";
+		case 1:           return "Wait For Valid Time";
+		case 2:           return "Gps Start";
+		case 3:           return "Gps Wait";
+		case 4:           return "Get Devices";
+		case 5:           return "Enable Cloud";
+		case 6:           return "Connect";
+		case 7:           return "Subscribe";
+		case 8:           return "Housekeeping";
+		case 9:           return "Router Publish";
+		case 10:          return "End Device Publish";
+		case 11:          return "Idle";
+		case 12:          return "Check In";
+		case 13:          return "Set Gps";
+		case 14:          return "Fifo Dispatcher";
+		case 15:          return "Retry";
+		case 16:          return "Error";
+		case 17:          return "Fota Dispatcher";
+		case 18:          return "Fota File Transfer";
+		case 19:          return "Fota Initiate";
+		case 20:          return "Fota Modem";
+		case 21:          return "Fota Modem Install";
+		case 22:          return "Fota Gateway";
+		case 23:          return "Fota Cleanup";
+		case 254:         return "Reboot";
+		case 255:         return "No Error";
+		default:          return "?";
 	}
 }
 

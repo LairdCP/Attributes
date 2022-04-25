@@ -2,7 +2,7 @@
   "openrpc": "1.2.6",
   "info": {
     "title": "Pinnacle Parameters",
-    "version": "0.4.51"
+    "version": "0.4.77"
   },
   "methods": {
     "$ref": "file:./sentrius_methods.json"
@@ -2055,14 +2055,14 @@
               "minimum": 6,
               "maximum": 11,
               "x-ctype": "string",
-              "x-default": "0.4.51",
+              "x-default": "0.4.77",
               "x-example": "123.456.789",
               "x-readable": true
             }
           },
           {
             "name": "qrtc",
-            "summary": "Quasi-RTC (epoch in seconds often referenced from from Jan 1, 1970)",
+            "summary": "Quasi-RTC (epoch in seconds referenced from from Jan 1, 1970)",
             "required": true,
             "x-id": 94,
             "x-projects": [
@@ -3496,7 +3496,8 @@
               "x-ctype": "string",
               "x-default": "",
               "x-example": "",
-              "x-readable": true
+              "x-readable": true,
+              "x-broadcast": true
             }
           },
           {
@@ -4628,7 +4629,6 @@
               "x-example": "0",
               "x-writable": true,
               "x-broadcast": true,
-              "x-savable": true,
               "x-validator": "cp32"
             }
           },
@@ -4680,7 +4680,8 @@
               "x-ctype": "string",
               "x-default": "",
               "x-example": "2009 01 30 20:27:18",
-              "x-readable": true
+              "x-readable": true,
+              "x-broadcast": true
             }
           },
           {
@@ -5128,7 +5129,7 @@
               "type": "string",
               "maximum": 128,
               "x-ctype": "string",
-              "x-default": "622a42d69ac44edc3def2017.onlosant.com",
+              "x-default": "",
               "x-savable": true,
               "x-writable": true,
               "x-readable": true
@@ -5164,7 +5165,7 @@
               "type": "string",
               "maximum": 256,
               "x-ctype": "string",
-              "x-default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJodHRwczovLzYxYWZiNDkzNWNhMDBiN2Q2NDI2YTc4My5-bG9zYW50LWVuZHBvaW50LWRvbWFpbn4vYXBpL3JlZ2lzdGVyLWRldmljZSIsImlhdCI6MTYzODk5MTg0MCwiaXNzIjoiY2FybWFuYWguY29tIn0.XjasXlGB4Zbe74KP1cbLMZUeYSF1rXAwQdnuhOQgXAc",
+              "x-default": "",
               "x-savable": true,
               "x-writable": true
             }
@@ -5203,6 +5204,205 @@
               "x-savable": true,
               "x-writable": true,
               "x-readable": true
+            }
+          },
+          {
+            "name": "gps_last_obtained",
+            "summary": "Epoch time that GPS was obtained (UTC, Seconds from Jan 1, 1970)",
+            "required": true,
+            "x-id": 274,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": 0,
+              "x-savable": true,
+              "x-readable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "gps_timeout",
+            "summary": "Maximum time in seconds to wait for GPS result",
+            "required": true,
+            "x-id": 275,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "minimum": 30,
+              "maximum": 3600,
+              "x-default": 600,
+              "x-savable": true,
+              "x-readable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "gps_interval",
+            "summary": "Interval at which to go into airplane mode to get GPS",
+            "required": true,
+            "x-id": 276,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": 172800,
+              "x-savable": true,
+              "x-readable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "losant_state",
+            "summary": "Losant Task State",
+            "required": true,
+            "x-id": 277,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": 0,
+              "x-readable": true,
+              "enum": {
+                "WAIT_FOR_NETWORK": 0,
+                "WAIT_FOR_VALID_TIME": 1,
+                "GPS_START": 2,
+                "GPS_WAIT": 3,
+                "GET_DEVICES": 4,
+                "ENABLE_CLOUD": 5,
+                "CONNECT": 6,
+                "SUBSCRIBE": 7,
+                "HOUSEKEEPING": 8,
+                "ROUTER_PUBLISH": 9,
+                "END_DEVICE_PUBLISH": 10,
+                "IDLE": 11,
+                "CHECK_IN": 12,
+                "SET_GPS": 13,
+                "FIFO_DISPATCHER": 14,
+                "RETRY": 15,
+                "ERROR": 16,
+                "FOTA_DISPATCHER": 17,
+                "FOTA_FILE_TRANSFER": 18,
+                "FOTA_INITIATE": 19,
+                "FOTA_MODEM": 20,
+                "FOTA_MODEM_INSTALL": 21,
+                "FOTA_GATEWAY": 22,
+                "FOTA_CLEANUP": 23,
+                "REBOOT": 254,
+                "NO_ERROR": 255
+              }
+            }
+          },
+          {
+            "name": "losant_error_state",
+            "summary": "Last state that caused an error",
+            "required": true,
+            "x-id": 278,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "integer",
+              "x-ctype": "uint8_t",
+              "x-default": 0,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "losant_error_count",
+            "summary": "Number of errors in Losant state machine since last reset",
+            "required": true,
+            "x-id": 279,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": 172800,
+              "x-readable": true,
+              "x-writable": true
+            }
+          },
+          {
+            "name": "check_in_rate",
+            "summary": "Seconds between router queries",
+            "required": true,
+            "x-id": 280,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint16_t",
+              "minimum": 60,
+              "maximum": 86400,
+              "x-default": 900,
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true
+            }
+          },
+          {
+            "name": "gps_latitude_degrees",
+            "summary": "Latitude converted from from Degrees, Minutes and Seconds string to decimal degrees",
+            "required": false,
+            "x-id": 281,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "minimum": -90.0,
+              "maximum": 90.0,
+              "x-default": 0.0,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "gps_longitude_degrees",
+            "summary": "Longitude converted from Degrees, Minutes and Seconds string to decimal degrees",
+            "required": false,
+            "x-id": 282,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "float",
+              "minimum": -180.0,
+              "maximum": 180.0,
+              "x-default": 0.0,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "fota_max_retries",
+            "summary": "Maximum retries for each step of FOTA",
+            "required": true,
+            "x-id": 283,
+            "x-projects": [
+              "MG100"
+            ],
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint8_t",
+              "minimum": 0,
+              "maximum": 10,
+              "x-default": 3,
+              "x-readable": true,
+              "x-writable": true,
+              "x-savable": true
             }
           }
         ]
