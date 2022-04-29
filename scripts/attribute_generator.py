@@ -776,6 +776,8 @@ class attributes:
                 s = s.replace("3 D", "3D")
                 s = s.replace("Nb1", "NB1")
                 s = s.replace("1 M", "1M")
+                s = s.replace("Wb S1", "WB-S1")
+                s = s.replace("Nb S1", "NB-S1")
                 lst.append(s)
 
         return ''.join(lst)
