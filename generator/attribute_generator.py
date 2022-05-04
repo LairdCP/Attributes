@@ -729,6 +729,7 @@ class attributes:
         """Create the settings/attributes/properties *.c file"""
         name = os.path.join(ATTR_SOURCE_FILE_PATH, TABLE_FILE_NAME + ".c")
         print("Writing " + name)
+        remove_list = []
         with open(name, 'w') as fout:
             for index, line in enumerate(lst):
                 next_line = index + 1
@@ -748,23 +749,19 @@ class attributes:
                         next_line, self.CreateStruct("ro", False))
                     next_line = next_line + 1
                     lst.insert(next_line, self.CreateStruct("ro", True))
-                    next_line = next_line + 1
-                    lst.insert(next_line, self.create_local_define())
                 elif "Global Data" in line:
                     next_line = next_line + 1
                     lst.insert(next_line, self.create_global_constants())
                     next_line = next_line + 1
                     lst.insert(next_line, self.CreateAttrTable())
                 elif "Local Data" in line:
-                    # Remove the unused header in the file
-                    lst.pop(index + 1)
-                    lst.pop(index)
-                    lst.pop(index - 1)
+                    next_line = next_line + 1
+                    lst.insert(next_line, self.create_local_define())
                 elif "Local Function Prototypes" in line:
                     # Remove the unused header in the file
-                    lst.pop(index + 1)
-                    lst.pop(index)
-                    lst.pop(index - 1)
+                    remove_list.append(index - 1)
+                    remove_list.append(index)
+                    remove_list.append(index + 1)
                 elif "Global Function Definitions" in line:
                     next_line = next_line + 1
                     lst.insert(next_line, self.create_table_functions())
@@ -775,9 +772,12 @@ class attributes:
                     lst.insert(next_line, self.CreateGetStringFunctions())
                 elif "Interrupt Service" in line:
                     # Remove the unused header in the file
-                    lst.pop(index + 1)
-                    lst.pop(index)
-                    lst.pop(index - 1)
+                    remove_list.append(index - 1)
+                    remove_list.append(index)
+                    remove_list.append(index + 1)
+            for i in range(len(remove_list)-1, 0, -1):
+                # Remove the lines that were saved once the entire file was gone through
+                lst.pop(remove_list[i])
             fout.writelines(lst)
 
     def CreateIds(self) -> str:
