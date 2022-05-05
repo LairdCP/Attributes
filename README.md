@@ -2,6 +2,18 @@
 
 The attribute module is a system for saving configuration to non-volatile memory, reporting read-only/run-time parameters, and issuing commands.
 
+## Generation
+
+Copy the attributes.json file from the template directory.  Modify as desired. If desired, run the renumber script. Then run the attribute generator script.
+
+```
+python3 lib\attributes\scripts\attribute_generator.py project\attr\attributes.json
+```
+
+The script will generate the custom attr_table header and source files using the templates.
+
+Custom validator generation is not supported at this time and must be done manually.
+
 ## API
 
 The attribute API is described using OpenRPC in the file attributes.json.
@@ -129,15 +141,6 @@ Sometimes an action is desired before a value is read. For example, when reading
 
 The API file can be used to describe enumerations. The parameter 'x-enum-include-errno' can be set to true to also include negative error numbers.
 
-### Projects
-
-There are common attribute files (universal folder) and files specific to each project. Each attribute has an 'x-project' field that indicates what project it is for.
-
-To generate the custom files for new project, copy an existing custom folder, rename it with the project name, and run the generate command.
-```
-python attribute_generator.py BT420
-```
-
 #### Uniqueness
 
 Across all Laird Connectivity systems, IDs are supposed to be unique. This means that if an attribute is used for multiple projects, it may not be possible to safely change its schema. A new id may be required for a very similar item.
@@ -155,7 +158,7 @@ The following fields are specific to this implementation and are not part of the
 | Field                | Required | Default | Description                                                           |
 | -------------------- | -------- | ------- | --------------------------------------------------------------------- |
 | x-id                 | y        | NA      | Unique ID of attribute                                                |
-| x-projects           | y        | NA      | Project is used by attribute generator                                |
+| x-projects           | y        | NA      | (deprecated) Project is used by attribute generator                   |
 | x-ctype              | y        | NA      | Variable type in C. "string" converted to "char" by generator.        |
 | x-default            | y        | NA      | Default value                                                         |
 | x-example            | n        | NA      | A commonly used or alternate value                                    |

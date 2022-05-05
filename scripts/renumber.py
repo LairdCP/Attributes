@@ -2,13 +2,16 @@ import os
 import logging
 import log_wrapper
 import sys
+from pathlib import Path
 
-FILE_NAME = "./attributes.json"
+file_name = Path("")
 
 STRING_TO_FIND = '"x-id":'
 
-BASE = 140
-OFFSET = 150
+# Renumber attributes that are greater than equal to base
+base = 0
+# Offset to apply to renumbering
+offset = 0
 
 
 def renumber(argv):
@@ -20,9 +23,9 @@ def renumber(argv):
     """
     logger = logging.getLogger('renumber')
     lst = []
-    count = OFFSET
-    with open(FILE_NAME, 'r') as fin:
-        logger.debug("Opened file " + FILE_NAME)
+    count = offset
+    with open(file_name, 'r') as fin:
+        logger.debug(f"Opened file {file_name}")
         for line in fin:
             default_append = True
             if STRING_TO_FIND in line:
@@ -30,7 +33,7 @@ def renumber(argv):
                     x_id, number = line.split()
                     # Leave room for another (possibly incomplete) attribute list
                     number = number.strip(',')
-                    if int(number) >= BASE:
+                    if int(number) >= base:
                         s = x_id + ' ' + str(count) + ',\n'
                         lst.append(s)
                         default_append = False
@@ -42,13 +45,28 @@ def renumber(argv):
                 lst.append(line)
 
     if len(lst) > 0:
-        with open(FILE_NAME, 'w') as fout:
+        with open(file_name, 'w') as fout:
             fout.writelines(lst)
-            logger.debug("Wrote file " + FILE_NAME)
+            logger.debug(f"Wrote file {file_name}")
 
-    logger.info(f'{count - OFFSET} total attributes')
+    logger.info(f'{count - offset} total attributes')
 
 
 if __name__ == "__main__":
     log_wrapper.setup(__file__, console_level=logging.DEBUG, file_mode='a')
+
+    if ((len(sys.argv)-1)) == 1:
+        name = sys.argv[1]
+        base = 0
+        offset = 0
+    elif ((len(sys.argv)-1)) == 3:
+        name = sys.argv[1]
+        base = int(sys.argv[2])
+        offset = int(sys.argv[3])
+    else:
+        name = ""
+        raise ValueError('JSON attribute source file must be listed.')
+
+    file_name = Path(name)
+
     renumber(sys.argv)

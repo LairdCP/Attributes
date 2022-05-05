@@ -214,9 +214,7 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				break;
 			}
 
-			if (r < 0) {
-				shell_error(shell, "Set failed %d", r);
-			}
+			shell_print(shell, "Set status: %d", r);
 
 		} else {
 			shell_error(shell, "Invalid id");
@@ -238,6 +236,7 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 	if ((argc == 3) && (argv[1] != NULL) && (argv[2] != NULL)) {
 		id = get_id(argv[1]);
 		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]));
+		shell_print(shell, "Set status (string): %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
 		return -EINVAL;
@@ -315,9 +314,7 @@ static int ats_mod_cmd(const struct shell *shell, size_t argc, char **argv)
 				break;
 			}
 
-			if (r < 0) {
-				shell_error(shell, "Set failed %d", r);
-			}
+			shell_print(shell, "Set status (mod): %d", r);
 
 		} else {
 			shell_error(shell, "Invalid id");

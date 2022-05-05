@@ -7,6 +7,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+from importlib.resources import path
 import json
 import jsonref
 import collections
@@ -14,8 +15,9 @@ import os
 import inflection
 import sys
 import math
+import shutil
+from pathlib import Path
 
-ATTRIBUTE_VERSION_ARRAY_INDEX = 93
 JSON_INDENT = '  '
 
 # Left Justified Field Widths
@@ -28,10 +30,55 @@ GS_CASE_WIDTH = 18
 TYPE_WIDTH = 24
 MIN_MAX_WIDTH = 20
 
-BASE_FILE_PATH = "./custom/%PROJ%"
-HEADER_FILE_PATH = "%BASE%/include/"
-SOURCE_FILE_PATH = "%BASE%/source/"
-TABLE_FILE_NAME = "attr_table"
+header_file_path = Path("")
+source_file_path = Path("")
+
+
+def PathAndTemplateHandler(json_file_name):
+    """
+    Build header and source file paths based on location of attributes.json.
+    If required, make destination folders.
+    If required, copy template files from library.
+    """
+    global header_file_path
+    global source_file_path
+    # Add folder name to path
+    # Ensure directories used for generation exist
+    #
+    # Project Folder Structure
+    # ./attributes.json
+    # ./include/attr_table.h
+    # ./source/attr_table.c
+    #
+    local_path = Path(os.path.dirname(json_file_name))
+    header_file_path = local_path.joinpath("include")
+    source_file_path = local_path.joinpath("source")
+    print(f"source dir: {local_path}")
+    if (not os.path.isdir(header_file_path)):
+        os.mkdir(header_file_path)
+        print("Created header folder for project")
+    if (not os.path.isdir(source_file_path)):
+        os.mkdir(source_file_path)
+        print("Created source folder for project")
+
+    # Add file name to path
+    # If .h and .c file don't exist, then copy them from template folder
+    #
+    # Attribute Library Folder Structure
+    # ./scripts/*.py
+    # ./template/attr_table.h
+    # ./template/attr_table.c
+    #
+    header_file_path = header_file_path.joinpath("attr_table.h")
+    source_file_path = source_file_path.joinpath("attr_table.c")
+    script_parent_dir = Path(os.path.dirname(__file__)).parent
+    print(f"script dir: {script_parent_dir}")
+    if (not os.path.exists(header_file_path)):
+        shutil.copyfile(script_parent_dir.joinpath(
+            "template", "include", "attr_table.h"), header_file_path)
+    if (not os.path.exists(source_file_path)):
+        shutil.copyfile(script_parent_dir.joinpath(
+            "template", "source", "attr_table.c"), source_file_path)
 
 
 def ToYesNo(b) -> str:
@@ -101,14 +148,13 @@ def GenEnums(lst, enums, names, errno):
 
 
 class attributes:
-    def __init__(self, project: str, fname: str):
+    def __init__(self, fname):
 
         # The following items are loaded from the configuration file
         self.parameterList = 0
         self.projectAttributeCount = 0
         self.apiTotalAttributes = 0
-        self.MaxNameLength = 0
-        self.project = project
+        self.maxNameLength = 0
         self.largestNumberSize = 0
 
         self.id = []
@@ -138,28 +184,29 @@ class attributes:
         self.IncrementVersion(fname)
         self.LoadConfig(fname)
 
-    def IncrementVersion(self, fname: str) -> None:
+    def IncrementVersion(self, fname) -> None:
         """
         Increment version of the form x.y.z and write it back to the file.
         """
         with open(fname, 'r') as f:
             data = json.load(f)
-            api_version = data['info']['version']
             major, minor, build = data['info']['version'].split('.')
             build = int(build) + 1
             new_version = f'{major}.{minor}.{build}'
             data['info']['version'] = new_version
-            try:
-                data['components']['contentDescriptors']['deviceParams']['x-device-parameters'][ATTRIBUTE_VERSION_ARRAY_INDEX]['schema']['x-default'] = new_version
-            except:
-                print("Unable to write api version")
 
-            print(new_version)
+            plist = data['components']['contentDescriptors']['deviceParams']['x-device-parameters']
+            for p in plist:
+                if p['name'] == "attribute_version":
+                    p['schema']['x-default'] = new_version
+                    with open(fname, 'w') as f:
+                        json.dump(data, f, indent=JSON_INDENT)
+                    print(new_version)
+                    return
 
-        with open(fname, 'w') as f:
-            json.dump(data, f, indent=JSON_INDENT)
+            print("Unable to write api version")
 
-    def remove_decimal_point_from_integers(self, fname: str) -> None:
+    def remove_decimal_point_from_integers(self, fname) -> None:
         """
         The PC test tool previously required all min/max values to be floats.
         This is no longer the case and decimal points can be removed.
@@ -182,83 +229,53 @@ class attributes:
                     except:
                         pass
 
-        # hack to restore methods before save
-        data['methods'] = '{"$ref": "file:./sentrius_methods.json"}'
-
         with open(fname, 'w') as f:
             json.dump(data, f, indent=JSON_INDENT)
 
-    def LoadConfig(self, fname: str) -> None:
+    def LoadConfig(self, fname) -> None:
         with open(fname, 'r') as f:
             data = jsonref.load(f)
             self.parameterList = data['components']['contentDescriptors']['deviceParams']['x-device-parameters']
             self.apiTotalAttributes = len(self.parameterList)
-            file_name = HEADER_FILE_PATH + TABLE_FILE_NAME
-            self.inputHeaderFileName = file_name
-            self.outputHeaderFileName = file_name + ""
-            file_name = SOURCE_FILE_PATH + TABLE_FILE_NAME
-            self.inputSourceFileName = file_name
-            self.outputSourceFileName = file_name + ""
-
-            # Extract enums defined in methods
-            methodList = data['methods']['sentrius']
-            for i in methodList:
-                try:
-                    self.methodEnums.append(i['params'][0]['schema']['enum'])
-                    try:
-                        self.methodEnumNames.append(
-                            i['params'][0]['schema']['x-enum-name'])
-                    except:
-                        print("Method enum not found")
-
-                    try:
-                        self.methodEnumIncludeErrno.append(
-                            i['params'][0]['schema']['x-enum-include-errno'])
-                    except:
-                        self.methodEnumIncludeErrno.append(False)
-
-                except:
-                    continue
 
             # Extract the properties for each parameter
             for p in self.parameterList:
                 self.apiName.append(p['name'])
                 self.apiId.append(p['x-id'])
-                if self.project in p['x-projects']:
-                    # required fields
-                    self.name.append(p['name'])
-                    self.id.append(p['x-id'])
-                    # required schema fields
-                    a = p['schema']
-                    self.default.append(a['x-default'])
-                    self.type.append(a['x-ctype'])
-                    # optional schema fields have a default value
-                    self.arraySize.append(GetNumberField(a, 'x-array-size'))
-                    self.max.append(GetNumberField(a, 'maximum'))
-                    self.min.append(GetNumberField(a, 'minimum'))
-                    self.lockable.append(GetBoolField(a, 'x-lockable'))
-                    self.broadcast.append(GetBoolField(a, 'x-broadcast'))
-                    self.readable.append(GetBoolField(a, 'x-readable'))
-                    self.writable.append(GetBoolField(a, 'x-writable'))
-                    self.savable.append(GetBoolField(a, 'x-savable'))
-                    self.deprecated.append(GetBoolField(a, 'x-deprecated'))
-                    self.validator.append(GetStringField(a, 'x-validator'))
-                    self.prepare.append(GetBoolField(a, 'x-prepare'))
-                    self.enum.append(GetDictionaryField(a, 'enum'))
-                    self.enum_include_errno.append(
-                        GetBoolField(a, 'x-enum-include-errno'))
-                    # Max string size is only required for strings.
-                    # Min and max are lengths when type is a string.
-                    if a['x-ctype'] == "string":
-                        self.stringMax.append(GetNumberField(a, 'maximum'))
-                    else:
-                        self.stringMax.append(0)
+                # required fields
+                self.name.append(p['name'])
+                self.id.append(p['x-id'])
+                # required schema fields
+                a = p['schema']
+                self.default.append(a['x-default'])
+                self.type.append(a['x-ctype'])
+                # optional schema fields have a default value
+                self.arraySize.append(GetNumberField(a, 'x-array-size'))
+                self.max.append(GetNumberField(a, 'maximum'))
+                self.min.append(GetNumberField(a, 'minimum'))
+                self.lockable.append(GetBoolField(a, 'x-lockable'))
+                self.broadcast.append(GetBoolField(a, 'x-broadcast'))
+                self.readable.append(GetBoolField(a, 'x-readable'))
+                self.writable.append(GetBoolField(a, 'x-writable'))
+                self.savable.append(GetBoolField(a, 'x-savable'))
+                self.deprecated.append(GetBoolField(a, 'x-deprecated'))
+                self.validator.append(GetStringField(a, 'x-validator'))
+                self.prepare.append(GetBoolField(a, 'x-prepare'))
+                self.enum.append(GetDictionaryField(a, 'enum'))
+                self.enum_include_errno.append(
+                    GetBoolField(a, 'x-enum-include-errno'))
+                # Max string size is only required for strings.
+                # Min and max are lengths when type is a string.
+                if a['x-ctype'] == "string":
+                    self.stringMax.append(GetNumberField(a, 'maximum'))
+                else:
+                    self.stringMax.append(0)
 
             self.projectAttributeCount = len(self.name)
             print(f"API Total Attributes {self.apiTotalAttributes}")
             print(
-                f"Project {self.project} Attributes {self.projectAttributeCount}")
-            print(f"Project {self.project} Maximum ID {max(self.id)}")
+                f"Project Attributes {self.projectAttributeCount}")
+            print(f"Project Maximum ID {max(self.id)}")
             self.PrintAvailableIds()
             pass
 
@@ -421,19 +438,24 @@ class attributes:
         else:
             return ""
 
-    def GetDefault(self, kind: str, default: str) -> str:
+    def GetDefault(self, kind: str, default) -> str:
         if default == "NA":
             if kind == "char":
                 return '""'
             elif kind == "float":
-                return 0.0
+                return str(0.0)
             else:
-                return 0
+                return str(0)
         else:
             if kind == "char":
                 return ('"' + default + '"')
+            elif type(default) == bool:
+                if default:
+                    return "true"
+                else:
+                    return "false"
             else:
-                return default
+                return str(default)
 
     def GetPrepareString(self, index: int) -> str:
         name = self.name[index]
@@ -476,16 +498,16 @@ class attributes:
         """
         self.CheckForDuplicates()
         self.CreateSourceFile(
-            self.CreateInsertionList(SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c"))
+            self.CreateInsertionList(source_file_path))
         self._CreateAttributeHeaderFile(
-            self.CreateInsertionList(HEADER_FILE_PATH + TABLE_FILE_NAME + ".h"))
+            self.CreateInsertionList(header_file_path))
 
-    def CreateInsertionList(self, name: str) -> list:
+    def CreateInsertionList(self, name) -> list:
         """
         Read in the c/h file and create a list of strings that
         is ready for the attribute information to be inserted
         """
-        print("Reading " + name)
+        print(f"Reading {name}")
         lst = []
         with open(name, 'r') as fin:
             copying = True
@@ -509,8 +531,6 @@ class attributes:
         struct = []
         for i in range(self.projectAttributeCount):
             savable = self.savable[i]
-            writable = self.writable[i]
-            readable = self.readable[i]
             if (category == 'rw' and savable) or (
                     (category == 'ro') and not savable):
                 name = self.name[i]
@@ -526,10 +546,9 @@ class attributes:
                     kind = self.type[i]
                     i_max = self.arraySize[i]
 
-                default = self.default[i]
                 # Use tabs because we use tabs with Zephyr/clang-format.
                 if default_values:
-                    result = f"\t.{name} = {self.GetDefault(kind, default)}," + "\n"
+                    result = f"\t.{name} = {self.GetDefault(kind, self.default[i])}," + "\n"
                 else:
                     result = f"\t{kind} {name}{self.GenerateVariable(kind, i_max)};" + "\n"
                 struct.append(result)
@@ -565,8 +584,8 @@ class attributes:
 
     def CreateSourceFile(self, lst: list) -> None:
         """Create the settings/attributes/properties *.c file"""
-        name = SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c"
-        print("Writing " + name)
+        name = source_file_path
+        print(f"Writing {name}")
         with open(name, 'w') as fout:
             for index, line in enumerate(lst):
                 next_line = index + 1
@@ -621,7 +640,7 @@ class attributes:
         if (self.largestNumberSize > maxBinSize):
             maxBinSize = self.largestNumberSize
 
-        self.MaxNameLength = len(max(self.name, key=len))
+        self.maxNameLength = len(max(self.name, key=len))
 
         defs.append(self.JustifyDefine(
             "TABLE_SIZE", "", self.projectAttributeCount))
@@ -643,7 +662,7 @@ class attributes:
         return ''.join(defs)
 
     def JustifyDefine(self, key: str, suffix: str, value: int) -> str:
-        width = self.MaxNameLength + DEFINE_WIDTH
+        width = self.maxNameLength + DEFINE_WIDTH
         if len(suffix) != 0:
             name = key + "_" + suffix
         else:
@@ -763,8 +782,8 @@ class attributes:
 
     def _CreateAttributeHeaderFile(self, lst: list) -> None:
         """Create the attribute header file"""
-        name = HEADER_FILE_PATH + TABLE_FILE_NAME + ".h"
-        print("Writing " + name)
+        name = header_file_path
+        print(f"Writing {name}")
         with open(name, 'w') as fout:
             for index, line in enumerate(lst):
                 next_line = index + 1
@@ -792,43 +811,16 @@ class attributes:
 
 
 if __name__ == "__main__":
-    file_name = "./attributes.json"
     if ((len(sys.argv)-1)) == 1:
-        project = sys.argv[1]
-    elif ((len(sys.argv)-1)) == 2:
-        project = sys.argv[1]
-        file_name = sys.argv[2]
+        json_file = sys.argv[1]
     else:
-        project = "MG100"
+        json_file = ""
+        raise ValueError('JSON attribute source file must be listed.')
 
-    # Add project name to paths
-    BASE_FILE_PATH = BASE_FILE_PATH.replace("%PROJ%", project)
-    HEADER_FILE_PATH = HEADER_FILE_PATH.replace("%BASE%", BASE_FILE_PATH)
-    SOURCE_FILE_PATH = SOURCE_FILE_PATH.replace("%BASE%", BASE_FILE_PATH)
+    PathAndTemplateHandler(json_file)
 
-    # Ensure path directories exists, else create them
-    if (not os.path.isdir(BASE_FILE_PATH)):
-        os.mkdir(BASE_FILE_PATH)
-        print("Created base folder for project " +
-              project + " at " + BASE_FILE_PATH)
-    if (not os.path.isdir(HEADER_FILE_PATH)):
-        os.mkdir(HEADER_FILE_PATH)
-        print("Created header folder for project " +
-              project + " at " + HEADER_FILE_PATH)
-    if (not os.path.isdir(SOURCE_FILE_PATH)):
-        os.mkdir(SOURCE_FILE_PATH)
-        print("Created source folder for project " +
-              project + " at " + SOURCE_FILE_PATH)
-
-    # Ensure .h and .c file exist
-    if (not os.path.exists(HEADER_FILE_PATH + TABLE_FILE_NAME + ".h")):
-        raise Exception("Missing header file for project " + project +
-                        " at " + HEADER_FILE_PATH + TABLE_FILE_NAME + ".h")
-    if (not os.path.exists(SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c")):
-        raise Exception("Missing source file for project " + project +
-                        " at " + SOURCE_FILE_PATH + TABLE_FILE_NAME + ".c")
-
-    # Parse attributes
-    a = attributes(project, file_name)
+    # The header/source file paths are globals.
+    # They are used when generating files.
+    a = attributes(json_file)
 
     a.UpdateFiles()

@@ -8,7 +8,7 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(attr, 4);
+LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 
 #define LOG_SHOW LOG_INF
 
@@ -310,6 +310,9 @@ int attr_set_uint32(attr_id_t id, uint32_t value)
 
 	if (entry != NULL) {
 		TAKE_MUTEX(attr_mutex);
+		/* Any type is used because this function can modify
+		 * bool, uint8_t, uint16_t, and uint32_t.
+		 */
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);

@@ -8,6 +8,11 @@ menuconfig ATTR
 	depends on FILE_SYSTEM_UTILITIES
 	depends on LCZ_PARAM_FILE
 
+module=ATTR
+module-dep=LOG
+module-str=ATTR
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
 if ATTR
 
 config ATTR_BROADCAST
@@ -23,11 +28,6 @@ config ATTR_INIT_PRIORITY
 	help
 	  Can't be higher than LCZ_PARAM_FILE_INIT_PRIORITY.
 	  Recommended to be higher than main thread init priority.
-
-config ATTR_LOG_LEVEL
-	int "Log level for Attributes module"
-	range 0 4
-	default 3
 
 config ATTR_FILE_NAME
 	string "File name for attributes"

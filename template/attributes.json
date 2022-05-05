@@ -1,0 +1,191 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "Pinnacle Parameters",
+    "version": "0.4.84"
+  },
+  "components": {
+    "contentDescriptors": {
+      "deviceParams": {
+        "name": "Device Parameters",
+        "schema": {
+          "name": "Sentrius Attributes",
+          "type": "array"
+        },
+        "x-device-parameters": [
+          {
+            "name": "sensor_name",
+            "summary": "Sensor Name",
+            "x-id": 0,
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "maximum": 23,
+              "x-ctype": "string",
+              "x-default": "",
+              "x-example": "BT610",
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "location",
+            "summary": "Device Location",
+            "x-id": 1,
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "NA",
+              "x-example": "myRoom",
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "advertising_interval",
+            "summary": "Advertising Interval in milliseconds",
+            "x-id": 2,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 10000,
+              "x-ctype": "uint16_t",
+              "x-default": 1000,
+              "x-example": 1000,
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "advertising_duration",
+            "summary": "Advertising duration of an event in milliseconds. 0=No events advertised",
+            "x-id": 3,
+            "schema": {
+              "type": "integer",
+              "maximum": 65535,
+              "x-ctype": "uint16_t",
+              "x-default": 15000,
+              "x-example": 15000,
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "passkey",
+            "summary": "Six-Digit Numeric Passkey",
+            "x-id": 4,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "x-ctype": "uint32_t",
+              "x-default": 123456,
+              "x-example": 987654,
+              "x-lockable": true,
+              "x-broadcast": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "lock",
+            "summary": "true = locked, false = unlocked: Used by the mobile APP to indicate settings are locked\n When true, lockable parameters can't be changed",
+            "x-id": 5,
+            "schema": {
+              "type": "integer",
+              "x-ctype": "bool",
+              "x-default": false,
+              "x-example": false,
+              "x-lockable": true,
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "up_time",
+            "summary": "Time in milliseconds since the last reboot",
+            "x-id": 16,
+            "schema": {
+              "type": "number",
+              "x-ctype": "int64_t",
+              "x-default": 0,
+              "x-example": 0,
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "qrtc",
+            "summary": "Quasi-RTC (epoch in seconds referenced from from Jan 1, 1970)",
+            "x-id": 94,
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": 0,
+              "x-example": 0,
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "qrtc_last_set",
+            "summary": "Last time the RTC was set",
+            "x-id": 95,
+            "schema": {
+              "type": "number",
+              "x-ctype": "uint32_t",
+              "x-default": 0,
+              "x-example": 0,
+              "x-readable": true,
+              "x-prepare": true
+            }
+          },
+          {
+            "name": "load_path",
+            "summary": "(Default) Absolute file name for load parameters command",
+            "x-id": 208,
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/params.txt",
+              "x-example": "/ext/params.txt",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          },
+          {
+            "name": "dump_path",
+            "summary": "(Default) Absolute file name for dump command",
+            "x-id": 209,
+            "schema": {
+              "type": "string",
+              "maximum": 32,
+              "x-ctype": "string",
+              "x-default": "/lfs/dump.txt",
+              "x-example": "/ext/dump.txt",
+              "x-savable": true,
+              "x-writable": true,
+              "x-readable": true
+            }
+          }
+        ]
+      }
+    }
+  }
+}

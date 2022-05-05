@@ -2,42 +2,33 @@
 
 if (CONFIG_ATTR)
 
-zephyr_include_directories(universal/include)
+zephyr_include_directories(include)
 zephyr_sources(
-    universal/source/attr.c
-    universal/source/attr_validator.c
+    source/attr.c
+    source/attr_validator.c
 )
 
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL
-    universal/source/attr_shell.c
+    source/attr_shell.c
 )
 
 zephyr_sources_ifdef(CONFIG_MCUMGR_CMD_SENTRIUS_MGMT
-    universal/source/sentrius_mgmt.c
+    source/sentrius_mgmt.c
 )
 
-
-if(CONFIG_BOARD_PINNACLE_100_DVK)
-zephyr_include_directories(custom/MG100/include)
-zephyr_sources(
-    custom/MG100/source/attr_table.c
-    custom/MG100/source/attr_custom_validator.c
-)
+if (NOT ATTR_PATH)
+message(FATAL_ERROR "set(ATTR_PATH \"path\") not in application CMakeLists.txt file")
 endif()
 
-if(CONFIG_BOARD_MG100)
-zephyr_include_directories(custom/MG100/include)
+zephyr_include_directories(${ATTR_PATH}/include)
 zephyr_sources(
-    custom/MG100/source/attr_table.c
-    custom/MG100/source/attr_custom_validator.c
+    ${ATTR_PATH}/source/attr_table.c
 )
-endif()
 
-if(CONFIG_BOARD_BL5340_DVK_CPUAPP OR CONFIG_BOARD_BL5340PA_DVK_CPUAPP)
-zephyr_include_directories(custom/BL5340/include)
+if(EXISTS ${ATTR_PATH}/source/attr_custom_validator.c)
+zephyr_compile_definitions(ATTR_CUSTOM_VALIDATOR)
 zephyr_sources(
-    custom/BL5340/source/attr_table.c
-    custom/BL5340/source/attr_custom_validator.c
+    ${ATTR_PATH}/source/attr_custom_validator.c
 )
 endif()
 

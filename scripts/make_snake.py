@@ -3,21 +3,18 @@ import logging
 import log_wrapper
 import sys
 import inflection
+from pathlib import Path
 
-FILE_NAME = "./attributes.json"
+file_name = Path("")
 
 STRING_TO_FIND = '"name":'
-
-BASE = 140
-OFFSET = 150
 
 
 def make_snake(argv):
     logger = logging.getLogger('make_snake')
     lst = []
-    count = OFFSET
-    with open(FILE_NAME, 'r') as fin:
-        logger.debug("Opened file " + FILE_NAME)
+    with open(file_name, 'r') as fin:
+        logger.debug(f"Opened file {file_name}")
         for line in fin:
             default_append = True
             if STRING_TO_FIND in line:
@@ -35,11 +32,20 @@ def make_snake(argv):
                 lst.append(line)
 
     if len(lst) > 0:
-        with open(FILE_NAME, 'w') as fout:
+        with open(file_name, 'w') as fout:
             fout.writelines(lst)
-            logger.debug("Wrote file " + FILE_NAME)
+            logger.debug(f"Wrote file {file_name}")
 
 
 if __name__ == "__main__":
     log_wrapper.setup(__file__, console_level=logging.DEBUG, file_mode='a')
+
+    if ((len(sys.argv)-1)) == 1:
+        name = sys.argv[1]
+    else:
+        name = ""
+        raise ValueError('JSON attribute source file must be listed.')
+
+    file_name = Path(name)
+
     make_snake(sys.argv)
