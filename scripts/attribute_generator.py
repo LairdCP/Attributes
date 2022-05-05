@@ -14,6 +14,7 @@ import collections
 import os
 import inflection
 import sys
+import subprocess
 import math
 import shutil
 from pathlib import Path
@@ -501,6 +502,8 @@ class attributes:
             self.CreateInsertionList(source_file_path))
         self._CreateAttributeHeaderFile(
             self.CreateInsertionList(header_file_path))
+        subprocess.call(f"clang-format -i -style=file {source_file_path}")
+        subprocess.call(f"clang-format -i -style=file {header_file_path}")
 
     def CreateInsertionList(self, name) -> list:
         """
