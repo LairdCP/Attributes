@@ -719,6 +719,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	int r = 0;
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
+	const char *load_path;
 
 	if (!cbor_decode_load_parameter_file(zsd->payload,
 					     (zsd->payload_end - zsd->payload),
@@ -731,14 +732,18 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		r = -EACCES;
 	}
 #endif
+#ifdef ATTR_ID_load_path
+	load_path = attr_get_quasi_static(ATTR_ID_load_path);
+#else
+	load_path = "/lfs/attr.txt";
+#endif
 
 	if (r == 0) {
 		/* The input file is an optional parameter. */
 		r = attr_load(
 			(user_params._load_parameter_file_p1_present == true ?
 				 user_params._load_parameter_file_p1
-					 ._load_parameter_file_p1.value :
-				       attr_get_quasi_static(ATTR_ID_load_path)),
+					 ._load_parameter_file_p1.value : (void *)load_path),
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
 			CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
 #else
@@ -805,16 +810,22 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 #endif
 
 	if (r == 0) {
+		file_name = NULL;
 #ifdef CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME
 		/* The output file is an optional parameter */
 		if (user_params._dump_parameter_file_p2_present == true) {
 			file_name = user_params._dump_parameter_file_p2
 					    ._dump_parameter_file_p2.value;
-		} else {
+		}
+#endif
+#ifdef ATTR_ID_dump_path
+		if (file_name == NULL) {
 			file_name = attr_get_quasi_static(ATTR_ID_dump_path);
 		}
 #else
-		file_name = attr_get_quasi_static(ATTR_ID_dump_path);
+		if (file_name == NULL) {
+			file_name = "/lfs/dump.txt";
+		}
 #endif
 
 		/* This will malloc a string as large as maximum parameter file size. */
@@ -1243,9 +1254,14 @@ static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 static int get_api_version(struct mgmt_ctxt *ctxt)
 {
 	uint32_t rsp_len = 0;
-	uint8_t *api_version =
-		(uint8_t *)attr_get_quasi_static(ATTR_ID_attribute_version);
+	uint8_t *api_version;
 	zcbor_state_t *zse = ctxt->cnbe->zs;
+
+#if defined(ATTR_ID_api_version)
+	api_version = (uint8_t *)attr_get_quasi_static(ATTR_ID_api_version);
+#else
+#error "Attribute api_version is required"
+#endif
 
 	struct get_api_version_result api_version_data = {
 		._get_api_version_result_api_version = { .value = api_version,

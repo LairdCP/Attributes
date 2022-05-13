@@ -189,7 +189,7 @@ class attributes:
                     name = value['name']
                     value['x-id'] = id_num
                     id_num = id_num + 1
-                    if (name == 'attribute_version'):
+                    if (name == 'api_version'):
                         major, minor, build = value['x-default'].split('.')
                         build = int(build) + 1
                         new_version = f'{major}.{minor}.{build}'
@@ -197,7 +197,7 @@ class attributes:
                         param_version_found = True
 
             if (param_version_found == False):
-                print("Unable to write api version")
+                raise Exception("Unable to set API version. An api_version attribute is required.")
             else:
                 data['info']['version'] = new_version
                 print(fname + file_type, f"Version = {new_version}")

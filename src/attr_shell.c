@@ -581,7 +581,12 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 	}
 #endif
 
+#ifdef ATTR_ID_dump_path
 	fname = attr_get_quasi_static(ATTR_ID_dump_path);
+#else
+	fname = "/lfs/dump.txt";
+	shell_warn(shell, "ATTR_ID_dump_path not defined. Assuming %s", fname);
+#endif
 
 	if ((argc >= 2) && (argv[1] != NULL)) {
 		type = MAX((int)strtol(argv[1], NULL, 0), 0);
