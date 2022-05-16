@@ -251,6 +251,29 @@ const void *attr_get_quasi_static(attr_id_t id)
 	}
 }
 
+const char *const attr_get_enum_string(attr_id_t id)
+{
+	/* Use status of copy to simplify type handling */
+	union {
+		int32_t s;
+		uint32_t u;
+	} d;
+
+	ATTR_ENTRY_DECL(id);
+
+	if (entry == NULL) {
+		return "ID not found";
+	} else if (entry->gsf == NULL) {
+		return "ID doesn't have get string function";
+	} else if (attr_copy_uint32(&d.u, id) == 0) {
+		return entry->gsf(d.u);
+	} else if (attr_copy_signed32(&d.s, id) == 0) {
+		return entry->gsf(d.s);
+	} else {
+		return "Enum string not supported for type";
+	}
+}
+
 int attr_copy_string(char *pv, attr_id_t id, size_t max_len)
 {
 	ATTR_ENTRY_DECL(id);
