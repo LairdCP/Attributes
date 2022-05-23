@@ -18,6 +18,7 @@ import subprocess
 import math
 import shutil
 from pathlib import Path
+from dataclasses import dataclass
 
 JSON_INDENT = '  '
 
@@ -33,6 +34,13 @@ MIN_MAX_WIDTH = 20
 
 header_file_path = Path("")
 source_file_path = Path("")
+util_file_path = Path("")
+
+
+@dataclass
+class Skeleton:
+    lst: list
+    file_name: Path
 
 
 def PathAndTemplateHandler(json_file_name):
@@ -43,6 +51,7 @@ def PathAndTemplateHandler(json_file_name):
     """
     global header_file_path
     global source_file_path
+    global util_file_path
     # Add folder name to path
     # Ensure directories used for generation exist
     #
@@ -67,8 +76,8 @@ def PathAndTemplateHandler(json_file_name):
     #
     # Attribute Library Folder Structure
     # ./scripts/*.py
-    # ./template/attr_table.h
-    # ./template/attr_table.c
+    # ./template/include/attr_table.h
+    # ./template/source/attr_table.c
     #
     header_file_path = header_file_path.joinpath("attr_table.h")
     source_file_path = source_file_path.joinpath("attr_table.c")
@@ -80,6 +89,12 @@ def PathAndTemplateHandler(json_file_name):
     if (not os.path.exists(source_file_path)):
         shutil.copyfile(script_parent_dir.joinpath(
             "template", "source", "attr_table.c"), source_file_path)
+
+    # Repeat process for utility file
+    util_file_path = local_path.joinpath("include", "attr_util.h")
+    if (not os.path.exists(util_file_path)):
+        shutil.copyfile(script_parent_dir.joinpath(
+            "template", "include", "attr_util.h"), util_file_path)
 
 
 def ToYesNo(b) -> str:
@@ -498,33 +513,34 @@ class attributes:
         Update the attribute c/h files.
         """
         self.CheckForDuplicates()
-        self.CreateSourceFile(
-            self.CreateInsertionList(source_file_path))
-        self._CreateAttributeHeaderFile(
-            self.CreateInsertionList(header_file_path))
+        self.CreateSourceFile(self.CreateSkeleton(source_file_path))
+        self.CreateHeaderFile(self.CreateSkeleton(header_file_path))
+        self.CreateUtilFile(self.CreateSkeleton(util_file_path))
+
         subprocess.call(f"clang-format -i -style=file {source_file_path}")
         subprocess.call(f"clang-format -i -style=file {header_file_path}")
+        subprocess.call(f"clang-format -i -style=file {util_file_path}")
 
-    def CreateInsertionList(self, name) -> list:
+    def CreateSkeleton(self, file_name: Path) -> Skeleton:
         """
-        Read in the c/h file and create a list of strings that
-        is ready for the attribute information to be inserted
+        Read in the c/h file and create a list (of strings) that
+        doesn't include the regions that are going to be generated/inserted later.
         """
-        print(f"Reading {name}")
-        lst = []
-        with open(name, 'r') as fin:
+        x = Skeleton([], file_name)
+        print(f"Reading {x.file_name}")
+        with open(x.file_name, 'r') as fin:
             copying = True
             for line in fin:
                 if "pystart" in line:
-                    lst.append(line)
+                    x.lst.append(line)
                     copying = False
                 elif "pyend" in line:
-                    lst.append(line)
+                    x.lst.append(line)
                     copying = True
                 elif copying:
-                    lst.append(line)
+                    x.lst.append(line)
 
-        return lst
+        return x
 
     def CreateStruct(self, category: str, default_values: bool, remove_last_comma: bool) -> str:
         """
@@ -585,42 +601,50 @@ class attributes:
 
         print(f"Available API IDs\n {available}")
 
-    def CreateSourceFile(self, lst: list) -> None:
+    def CreateSourceFile(self, x: Skeleton) -> None:
         """Create the settings/attributes/properties *.c file"""
-        name = source_file_path
-        print(f"Writing {name}")
-        with open(name, 'w') as fout:
-            for index, line in enumerate(lst):
+        print(f"Writing {x.file_name}")
+        with open(x.file_name, 'w') as fout:
+            for index, line in enumerate(x.lst):
                 next_line = index + 1
                 if "pystart - " in line:
                     if "attribute table" in line:
-                        lst.insert(next_line, self.CreateAttrTable())
+                        x.lst.insert(next_line, self.CreateAttrTable())
                     elif "attribute map" in line:
-                        lst.insert(next_line, self.CreateMap())
+                        x.lst.insert(next_line, self.CreateMap())
                     elif "rw attributes" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateStruct("rw", False, False))
                     elif "rw defaults" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateStruct("rw", True, True))
                     elif "ro attributes" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateStruct("ro", False, True))
                     elif "ro defaults" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateStruct("ro", True, True))
                     elif "prepare for read - weak implementations" in line:
-                        lst.insert(next_line, self.CreatePrepare(False))
+                        x.lst.insert(next_line, self.CreatePrepare(False))
                     elif "get string" in line:
-                        lst.insert(next_line, self.CreateGetStringFunctions())
+                        x.lst.insert(
+                            next_line, self.CreateGetStringFunctions())
 
-            fout.writelines(lst)
+            fout.writelines(x.lst)
 
     def CreateIds(self) -> str:
         """Create attribute ids for header file"""
         ids = []
         for name, id in zip(self.name, self.id):
             result = f"#define ATTR_ID_{name}".ljust(ID_WIDTH) + str(id) + "\n"
+            ids.append(result)
+        return ''.join(ids)
+
+    def CreateIsEnabledDefines(self) -> str:
+        """Create defines that allow IS_ENABLED macros to work"""
+        ids = []
+        for id in self.id:
+            result = f"#define _ATTRX{id} _YYYY,\n"
             ids.append(result)
         return ''.join(ids)
 
@@ -737,7 +761,7 @@ class attributes:
 
         return ''.join(lst)
 
-    def CreateGetStringProtypes(self) -> str:
+    def CreateGetStringPrototypes(self) -> str:
         """
         Get string function uses integer type so that signature is generic.
         """
@@ -785,34 +809,45 @@ class attributes:
 
         return ''.join(lst)
 
-    def _CreateAttributeHeaderFile(self, lst: list) -> None:
+    def CreateHeaderFile(self, x: Skeleton) -> None:
         """Create the attribute header file"""
-        name = header_file_path
-        print(f"Writing {name}")
-        with open(name, 'w') as fout:
-            for index, line in enumerate(lst):
+        print(f"Writing {x.file_name}")
+        with open(x.file_name, 'w') as fout:
+            for index, line in enumerate(x.lst):
                 next_line = index + 1
                 if "pystart - " in line:
                     if "attribute ids" in line:
-                        lst.insert(next_line, self.CreateIds())
+                        x.lst.insert(next_line, self.CreateIds())
                     elif "attribute indices" in line:
-                        lst.insert(next_line, self.CreateIndices())
+                        x.lst.insert(next_line, self.CreateIndices())
                     elif "attribute constants" in line:
-                        lst.insert(next_line, self.CreateConstants())
+                        x.lst.insert(next_line, self.CreateConstants())
                     elif "prepare for read" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreatePrepare(True))
                     elif "enumerations" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateEnums())
                     elif "enum size check" in line:
-                        lst.insert(
+                        x.lst.insert(
                             next_line, self.CreateEnumSizeCheck())
                     elif "get string" in line:
-                        lst.insert(
-                            next_line, self.CreateGetStringProtypes())
+                        x.lst.insert(
+                            next_line, self.CreateGetStringPrototypes())
 
-            fout.writelines(lst)
+            fout.writelines(x.lst)
+
+    def CreateUtilFile(self, x: Skeleton) -> None:
+        """Create the attribute header utility file"""
+        print(f"Writing {x.file_name}")
+        with open(x.file_name, 'w') as fout:
+            for index, line in enumerate(x.lst):
+                next_line = index + 1
+                if "pystart - " in line:
+                    if "attribute present" in line:
+                        x.lst.insert(next_line, self.CreateIsEnabledDefines())
+
+            fout.writelines(x.lst)
 
 
 if __name__ == "__main__":

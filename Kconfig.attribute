@@ -66,6 +66,14 @@ config ATTR_FLOAT_MAX_STR_SIZE
 	help
 	  An example with ATTR_FLOAT_FMT of %0.4e is -2.8171e+000.
 
+config ATTR_ID_CONDITIONAL_CODE_ENABLE
+	bool "Allow preprocssor resolution of attribute names into ids"
+	help
+	  When enabled undefined attribute names return invalid id when
+	  use with ATTR_ID macro.
+	  When disabled undefined attribute names
+	  will result in compilation errors.
+
 config MCUMGR_CMD_SENTRIUS_MGMT
 	bool "Enable the Sentrius MCUMGR interface"
 	depends on MCUMGR

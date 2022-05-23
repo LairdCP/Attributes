@@ -247,6 +247,7 @@ const void *attr_get_quasi_static(attr_id_t id)
 	if (entry != NULL) {
 		return (const void *)entry->pData;
 	} else {
+		LOG_DBG("Empty string used for id: %d", id);
 		return (const void *)EMPTY_STRING;
 	}
 }
@@ -1064,7 +1065,7 @@ static void change_handler(bool send_notifications)
 #ifdef CONFIG_ATTR_BROADCAST
 	if (pb != NULL) {
 		if (pb->count == 0) {
-			/* Don't send an empty messsage */
+			/* Don't send an empty message */
 			BufferPool_Free(pb);
 		} else {
 			if (Framework_Broadcast((FwkMsg_t *)pb, MSG_SIZE) !=

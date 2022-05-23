@@ -1,8 +1,12 @@
 /**
- * @file attr_.c
+ * @file attr.h
  * @brief
  *
- * Copyright (c) 2021 Laird Connectivity
+ * Copyright (c) 2011-2014, Wind River Systems, Inc.
+ * Copyright (c) 2020, Nordic Semiconductor ASA
+ * Copyright (c) 2022 Laird Connectivity
+ *
+ * IS_ENABLED logic from sys/util_internal.h (modified).
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -16,6 +20,7 @@ extern "C" {
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
+#include <zephyr.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <shell/shell.h>
@@ -25,6 +30,7 @@ extern "C" {
 #endif
 
 #include "attr_table.h"
+#include "attr_util.h"
 
 /******************************************************************************/
 /* Global Constants, Macros and type Definitions                              */
@@ -37,6 +43,32 @@ typedef struct attr_broadcast_msg {
 } attr_changed_msg_t;
 BUILD_ASSERT(ATTR_TABLE_MAX_ID < (1 << (8 * sizeof(attr_id_t))),
 	     "List element size too small");
+#endif
+
+/* Return 1 if attribute is present
+ * This relies on names being unique enough across different projects.
+ * (As does #ifdef ATTR_ID_<name>).
+ */
+#define IS_ATTR_ENABLED(an_id) IS_ATTR_ENABLED1(an_id)
+
+#define IS_ATTR_ENABLED1(an_id) IS_ATTR_ENABLED2(_ATTRX##an_id)
+#define IS_ATTR_ENABLED2(one_or_two_args) IS_ATTR_ENABLED3(one_or_two_args 1, 0)
+#define IS_ATTR_ENABLED3(ignore_this, val, ...) val
+
+/* If valid return ID of attribute, otherwise return invalid ID */
+#define ATTR_ID(a_name) ATTR_NAME(a_name)
+
+#ifdef CONFIG_ATTR_ID_CONDITIONAL_CODE_ENABLE
+#define ATTR_NAME(a_name) COND_CODE_2_ATTR(ATTR_ID_##a_name)
+#define COND_CODE_2_ATTR(an_id) COND_CODE_1_ATTR(an_id)
+#define COND_CODE_1_ATTR(an_id)                                                \
+	__COND_CODE_ATTR(_ATTRX##an_id, (an_id), (ATTR_TABLE_SIZE))
+#define __COND_CODE_ATTR(one_or_two_args, _if_code, _else_code)                \
+	__GET_ARG2_DE_BRACKET_ATTR(one_or_two_args _if_code, _else_code)
+#define __GET_ARG2_DE_BRACKET_ATTR(ignore_this, val, ...) __DE_BRACKET_ATTR val
+#define __DE_BRACKET_ATTR(...) __VA_ARGS__
+#else
+#define ATTR_NAME(a_name) ATTR_ID_##a_name
 #endif
 
 /******************************************************************************/
@@ -405,7 +437,7 @@ int attr_delete(void);
  * @param type the type of dump to perform
  *
  * @retval negative error code, number of parameters on success
- * If result is positive, then caller is responsbile for freeing fstr.
+ * If result is positive, then caller is responsible for freeing fstr.
  */
 int attr_prepare_then_dump(char **fstr, enum attr_dump type);
 
@@ -434,7 +466,7 @@ int attr_load(const char *abs_path);
 /**
  * @brief Notification callback
  *
- * @note override weak impelmentation in application
+ * @note override weak implementation in application
  *
  * @param id of attribute that has changed.
  *
