@@ -45,6 +45,13 @@ enum attr_dump {
 	ATTR_DUMP_RO = 2,
 };
 
+
+/* Defines for setting/clearing flags via length parameter
+ * used in the attr_set_flags and attr_clear_flags functions
+ */
+#define ATTR_FLAG_CLEAR 0
+#define ATTR_FLAG_SET 1
+
 /******************************************************************************/
 /* Function Definitions                                                       */
 /******************************************************************************/
@@ -220,6 +227,37 @@ int attr_set_signed64(attr_id_t id, int64_t value);
  */
 int attr_set_uint32(attr_id_t id, uint32_t value);
 
+/**
+ * @brief Helper function to set atomic_t flags.
+ * With the value of bitmask to set bit(s) other bits may also be set or cleared.
+ *
+ * @param id an attribute id.
+ * @param bitmask The bits to set.
+ *
+ * @retval negative error code, 0 on success
+ */
+int attr_set_flags(attr_id_t id, atomic_val_t bitmask);
+
+/**
+ * @brief Helper function for clearing atomic_t flags.
+ * With the value of bitmask to clear bit(s) other bits may also be set or cleared.
+ *
+ * @param id an attribute id.
+ * @param bitmask The bits to clear.
+ *
+ * @retval negative error code, 0 on success
+ */
+int attr_clear_flags(attr_id_t id, atomic_val_t bitmask);
+
+/**
+ * @brief Function to check if bits are active in the flag
+ *
+ * @param id an attribute id.
+ * @param bitmask The bits to check.
+ *
+ * @retval false bits not set, true for bits set
+ */
+bool attr_are_flags_set(attr_id_t id, atomic_val_t bitmask);
 /**
  * @brief Helper function for setting uint8, 16 or 32, without broadcast or
  * notification
@@ -599,7 +637,7 @@ void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id);
  * @param Will be set to pointer to max of attribute if successful and field
  * exists
  */
-int attr_get_entry_details(uint16_t index, attr_id_t *id, const char * name,
+int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
 			   size_t *size, enum attr_type *type,
 			   enum attr_flags *flags, bool *prepared,
 			   const struct attr_min_max *min,

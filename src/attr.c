@@ -438,6 +438,63 @@ int attr_set_uint32(attr_id_t id, uint32_t value)
 	return r;
 }
 
+int attr_set_flags(attr_id_t id, atomic_val_t bitmask)
+{
+	ATTR_ENTRY_DECL(id);
+	int r = -ENOENT;
+
+	if (entry != NULL) {
+		TAKE_MUTEX(attr_mutex);
+		/* Writing flags may cause other flags to be set or cleared
+		 * depending on the associations
+		 */
+		r = attr_write(entry, ATTR_TYPE_ATOMIC, &bitmask,
+			       ATTR_FLAG_SET);
+		if (r == 0) {
+			r = save_single(entry);
+			change_single(entry, ENABLE_NOTIFICATIONS);
+		}
+		GIVE_MUTEX(attr_mutex);
+	}
+	return r;
+}
+
+int attr_clear_flags(attr_id_t id, atomic_val_t bitmask)
+{
+	ATTR_ENTRY_DECL(id);
+	int r = -ENOENT;
+
+	if (entry != NULL) {
+		TAKE_MUTEX(attr_mutex);
+		/* Writing flags may cause other flags to be set or cleared
+		 * depending on the associations
+		 */
+		r = attr_write(entry, ATTR_TYPE_ATOMIC, &bitmask,
+			       ATTR_FLAG_CLEAR);
+		if (r == 0) {
+			r = save_single(entry);
+			change_single(entry, ENABLE_NOTIFICATIONS);
+		}
+		GIVE_MUTEX(attr_mutex);
+	}
+	return r;
+}
+
+bool attr_are_flags_set(attr_id_t id, atomic_val_t bitmask)
+{
+	ATTR_ENTRY_DECL(id);
+	bool mask_match_status = false;
+
+	if (entry != NULL) {
+		if (((atomic_val_t *)entry->pData & bitmask) == bitmask) {
+			mask_match_status = true;
+		} else {
+			mask_match_status = false;
+		}
+	}
+
+	return mask_match_status;
+}
 int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value)
 {
 	ATTR_ENTRY_DECL(id);
