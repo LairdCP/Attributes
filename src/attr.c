@@ -483,17 +483,13 @@ int attr_clear_flags(attr_id_t id, atomic_val_t bitmask)
 bool attr_are_flags_set(attr_id_t id, atomic_val_t bitmask)
 {
 	ATTR_ENTRY_DECL(id);
-	bool mask_match_status = false;
 
 	if (entry != NULL) {
-		if (((atomic_val_t *)entry->pData & bitmask) == bitmask) {
-			mask_match_status = true;
-		} else {
-			mask_match_status = false;
+		if (((*(atomic_val_t *)entry->pData) & bitmask) == bitmask) {
+			return true;
 		}
 	}
-
-	return mask_match_status;
+	return false;
 }
 int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value)
 {
