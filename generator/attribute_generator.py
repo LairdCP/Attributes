@@ -767,8 +767,6 @@ class attributes:
                     lst.insert(next_line, self.create_table_functions())
                 elif "Local Function Definitions" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line, self.CreatePrepare(False))
-                    next_line = next_line + 1
                     lst.insert(next_line, self.CreateGetStringFunctions())
                 elif "Interrupt Service" in line:
                     # Remove the unused header in the file
@@ -884,17 +882,13 @@ class attributes:
     def GeneratePrepareFunctionName(self, index: int) -> str:
         return
 
-    def CreatePrepare(self, prototype: bool) -> str:
-        """Create prototypes or weak implementation for prepare to read functions"""
+    def CreatePrepare(self) -> str:
+        """Create prototypes for prepared read functions"""
         lst = []
         lst.append("/* pystart - prepare for read */\n")
         for create, name in zip(self.prepare, self.name):
             if create:
-                s = "int attr_prepare_" + name + "(void)"
-                if prototype:
-                    s += ";\n"
-                else:
-                    s = "__weak " + s + "\n{\n\treturn 0;\n}\n\n"
+                s = "int attr_prepare_" + name + "(void);\n"
 
                 lst.append(s)
         lst.append("/* pyend */\n\n")
@@ -1032,7 +1026,7 @@ class attributes:
                 elif "Global Function" in line:
                     next_line = next_line + 1
                     lst.insert(
-                        next_line, self.CreatePrepare(True))
+                        next_line, self.CreatePrepare())
                     next_line = next_line + 1
                     lst.insert(
                         next_line, self.CreateGetStringProtypes())
