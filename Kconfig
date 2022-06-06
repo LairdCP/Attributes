@@ -24,11 +24,6 @@ config ATTR_INIT_PRIORITY
 	  Can't be higher than LCZ_PARAM_FILE_INIT_PRIORITY.
 	  Recommended to be higher than main thread init priority.
 
-config ATTR_LOG_LEVEL
-	int "Log level for Attributes module"
-	range 0 4
-	default 3
-
 config ATTR_FILE_NAME
 	string "File name for attributes"
 	default "attr.txt"
@@ -264,5 +259,15 @@ config ATTR_SHELL_FEEDBACK_FILE
 	  which is output when the load parameter shell command is used.
 
 endif # ATTR_LOAD_FEEDBACK
+
+# Include logging configuration
+module = ATTR
+module-str = ATTR
+source "subsys/logging/Kconfig.template.log_config"
+
+# Include logging configuration for attribute validation
+module = ATTR_VALIDATION
+module-str = ATTR_VALIDATION
+source "subsys/logging/Kconfig.template.log_config"
 
 endif # ATTR
