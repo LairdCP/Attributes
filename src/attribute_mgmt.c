@@ -118,82 +118,66 @@ static const struct mgmt_handler ATTRIBUTE_MGMT_HANDLERS[] = {
 	[ATTRIBUTE_MGMT_ID_GET_PARAMETER] = {
 		.mh_write = NULL,
 		.mh_read = get_parameter,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_PARAMETER] = {
 		.mh_write = set_parameter,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_LOAD_PARAMETER_FILE] = {
 		.mh_write = load_parameter_file,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_DUMP_PARAMETER_FILE] = {
 		.mh_write = dump_parameter_file,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_FACTORY_RESET] = {
 		.mh_write = factory_reset,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_NOTIFY] = {
 		.mh_write = set_notify,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_NOTIFY] = {
 		.mh_write = NULL,
 		.mh_read = get_notify,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_DISABLE_NOTIFY] = {
 		.mh_write = disable_notify,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_CHECK_LOCK_STATUS] = {
 		.mh_write = NULL,
 		.mh_read = check_lock_status,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_SET_LOCK_CODE] = {
 		.mh_write = set_lock_code,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_LOCK] = {
 		.mh_write = lock,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_UNLOCK] = {
 		.mh_write = unlock,
 		.mh_read = NULL,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_UNLOCK_ERROR_CODE] = {
 		.mh_write = NULL,
 		.mh_read = get_unlock_error_code,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_API_VERSION] = {
 		.mh_write = NULL,
 		.mh_read = get_api_version,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_INDICES] = {
 		.mh_write = NULL,
 		.mh_read = get_indices,
-		.use_custom_cbor_encoder = true,
 	},
 	[ATTRIBUTE_MGMT_ID_GET_ENTRY_DETAILS] = {
 		.mh_write = NULL,
 		.mh_read = get_entry_details,
-		.use_custom_cbor_encoder = true,
 	}
 };
 
