@@ -34,9 +34,9 @@ MIN_MAX_WIDTH = 20
 OPTION_BITMASK_WIDTH = 6
 
 TEMPLATE_FILE_PATH = "%COMPONENTS%/app_source_file_template/templates/"
-ATTR_HEADER_FILE_PATH = "%INDEX%/components/attributes/include/"
-ATTR_SOURCE_FILE_PATH = "%INDEX%/components/attributes/src/"
-ATTR_COMBINE_FILE_PATH = "%INDEX%/components/attributes/attributes/"
+ATTR_HEADER_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/include/"
+ATTR_SOURCE_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/src/"
+ATTR_COMBINE_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/attributes/"
 TABLE_FILE_NAME = "attr_table"
 COMBINE_FILE_NAME = "attributes"
 
@@ -107,21 +107,43 @@ def GenEnums(lst, enums, names, errno):
             s += "};\n\n"
             lst.append(s)
 
-def create_complete_attribute_file(location: str):
+def create_complete_attribute_file(location: str, attr_combine_path: str, key_names: list):
     json_file_name = COMBINE_FILE_NAME + ".json"
     yaml_file_name = COMBINE_FILE_NAME + ".yml"
-    ref = dollar_ref.resolve_file(location, ATTR_COMBINE_FILE_PATH)
+    ref = dollar_ref.resolve_file(location, attr_combine_path)
 
     try:
-        os.makedirs(ATTR_COMBINE_FILE_PATH)
-        print("Directory '% s' created" % ATTR_COMBINE_FILE_PATH)
+        os.makedirs(attr_combine_path)
+        print("Directory '% s' created" % attr_combine_path)
     except:
         pass
 
-    with open(os.path.join(ATTR_COMBINE_FILE_PATH, yaml_file_name), 'w') as f:
+    # Remove the other compenent refrence links
+    del ref['components']['contentDescriptors']['aux_components']
+
+    # Combine all the selected project parameters
+    device_params = ref['components']['contentDescriptors']['device_params']
+    base_params = []
+    base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', 'x-device-parameters'))
+    for i in range(len(key_names)):
+        if f"x-{key_names[i]}" in device_params:
+            base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', f'x-{key_names[i]}'))
+
+    # Remove the array items from device_params that will not be used in the output file
+    remove_items = []
+    for k, value in enumerate(device_params):
+        if (("name") or ("schema") or ("x-device-parameters")) not in value:
+           remove_items.append(value)
+    for r in range(len(remove_items)):
+        del ref['components']['contentDescriptors']['device_params'][remove_items[r]]
+
+    # Update with the modified keys
+    device_params.update({'x-device-parameters': base_params})
+    # Generate the attribute files for both ymal and json
+    with open(os.path.join(attr_combine_path, yaml_file_name), 'w') as f:
         yaml.dump(ref, f, indent=2, sort_keys = False)
 
-    with open(os.path.join(ATTR_COMBINE_FILE_PATH, json_file_name), 'w') as f:
+    with open(os.path.join(attr_combine_path, json_file_name), 'w') as f:
         json.dump(ref, f, indent=JSON_INDENT, sort_keys = False)
 
 class attributes:
@@ -583,14 +605,14 @@ class attributes:
         else:
             raise TypeError(f"Type {ctype} not expected in c-type for {name} parameter")
 
-    def UpdateFiles(self) -> None:
+    def UpdateFiles(self, header_file_path: str, source_file_path: str) -> None:
         """
         Update the attribute c/h files.
         """
-        self.CreateSourceFile(
-            self.CreateInsertionList(os.path.join(ATTR_SOURCE_FILE_PATH, TABLE_FILE_NAME + ".c")))
-        self._CreateAttributeHeaderFile(
-            self.CreateInsertionList(os.path.join(ATTR_HEADER_FILE_PATH, TABLE_FILE_NAME + ".h")))
+        self.CreateSourceFile(source_file_path,
+            self.CreateInsertionList(source_file_path))
+        self._CreateAttributeHeaderFile(header_file_path,
+            self.CreateInsertionList(header_file_path))
 
     def CreateInsertionList(self, name: str) -> list:
         """
@@ -725,12 +747,11 @@ class attributes:
         global_names.append("/* pyend */\n\n")
         return ''.join(global_names)
 
-    def CreateSourceFile(self, lst: list) -> None:
+    def CreateSourceFile(self, source_file_path: str, lst: list) -> None:
         """Create the settings/attributes/properties *.c file"""
-        name = os.path.join(ATTR_SOURCE_FILE_PATH, TABLE_FILE_NAME + ".c")
-        print("Writing " + name)
+        print("Writing " + source_file_path)
         remove_list = []
-        with open(name, 'w') as fout:
+        with open(source_file_path, 'w') as fout:
             for index, line in enumerate(lst):
                 next_line = index + 1
                 if "Includes" in line:
@@ -1008,11 +1029,10 @@ class attributes:
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
 
-    def _CreateAttributeHeaderFile(self, lst: list) -> None:
+    def _CreateAttributeHeaderFile(self, header_file_path: str, lst: list) -> None:
         """Create the attribute header file"""
-        name = os.path.join(ATTR_HEADER_FILE_PATH, TABLE_FILE_NAME + ".h")
-        print("Writing " + name)
-        with open(name, 'w') as fout:
+        print("Writing " + header_file_path)
+        with open(header_file_path, 'w') as fout:
             for index, line in enumerate(lst):
                 next_line = index + 1
                 if "Includes" in line:
@@ -1043,13 +1063,18 @@ class attributes:
 if __name__ == "__main__":
     file_name_in = "app.yml"
     template_file_name = "template"
-    if ((len(sys.argv)-1)) == 1:
-        location = sys.argv[1]
-    elif ((len(sys.argv)-1)) == 2:
-        location = sys.argv[1]
-        file_name_in = sys.argv[2]
+    key_names = []
+    if (len(sys.argv)-1) < 1:
+        raise ValueError('No location entered for the yaml file listing the attribute parameters')
     else:
-        raise ValueError('No location or file name entered for the yaml file listing the attribute parameters')
+        for i, arg in enumerate(sys.argv):
+            if i == 1:
+                location = sys.argv[1]
+                # Check for project key
+                if (i == (len(sys.argv)-1)):
+                    key_names.append("")
+            elif i > 1:
+                key_names.append(arg)
 
     # Add index location name to paths
     script_dir = Path(os.path.dirname(__file__))
@@ -1059,26 +1084,43 @@ if __name__ == "__main__":
     ATTR_COMBINE_FILE_PATH = os.path.normpath(ATTR_COMBINE_FILE_PATH.replace("%INDEX%", location))
     TEMPLATE_FILE_PATH = os.path.normpath(TEMPLATE_FILE_PATH.replace("%COMPONENTS%", component_dir))
 
-    # Ensure .h and .c file exist
-    complete_header_name = os.path.join(ATTR_HEADER_FILE_PATH, TABLE_FILE_NAME + ".h")
-    complete_source_name = os.path.join(ATTR_SOURCE_FILE_PATH, TABLE_FILE_NAME + ".c")
     complete_yml_file_name = os.path.join(location, file_name_in)
 
-    if (not os.path.exists(complete_header_name)):
+    complete_attr_source_paths = []
+    complete_attr_header_paths = []
+    key_file_name = ""
+    number_key_names = len(key_names)
+    index = 0
+    # Change the file path names if key name is used
+    while(number_key_names > 0):
+        key_file_name = (f"{key_file_name}{key_names[index]}")
+        number_key_names = number_key_names -1
+        if(number_key_names > 0):
+            index = index + 1
+            key_file_name = (f"{key_file_name}_")
+
+    header_path = os.path.normpath(ATTR_HEADER_FILE_PATH.replace("%KEY_NAME%", key_file_name))
+    source_path = os.path.normpath(ATTR_SOURCE_FILE_PATH.replace("%KEY_NAME%", key_file_name))
+    attr_combine_path = os.path.normpath(ATTR_COMBINE_FILE_PATH.replace("%KEY_NAME%", key_file_name))
+    complete_attr_header_path = os.path.join(header_path, TABLE_FILE_NAME + ".h")
+    complete_attr_source_path = os.path.join(source_path, TABLE_FILE_NAME + ".c")
+
+    # Ensure .h and .c file exist
+    if (not os.path.exists(complete_attr_header_path)):
         try:
-            os.makedirs(ATTR_HEADER_FILE_PATH)
-            print("Directory '%s' created" % ATTR_HEADER_FILE_PATH)
+            os.makedirs(header_path)
+            print("Directory '%s' created" % header_path)
         except:
             pass
 
         # Copy the file to destination dir
-        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".h"), complete_header_name)
+        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".h"), complete_attr_header_path)
 
         copying = True
-        dummy_file = complete_header_name + ".bak"
+        dummy_file = complete_attr_header_path + ".bak"
         line_number = 0
         copy_next_line = 0
-        with open(complete_header_name, "r") as f, open(dummy_file, 'w') as write_obj:
+        with open(complete_attr_header_path, "r") as f, open(dummy_file, 'w') as write_obj:
             for line in f:
                 # Need to remove the function prototype comment at the bottom of template file
                 if (("/**\n" == line) and (line_number > 0)):
@@ -1099,19 +1141,19 @@ if __name__ == "__main__":
                     write_obj.write(line)
                 line_number = line_number + 1
 
-        os.remove(complete_header_name)
-        os.rename(dummy_file, complete_header_name)
+        os.remove(complete_attr_header_path)
+        os.rename(dummy_file, complete_attr_header_path)
 
-    if (not os.path.exists(complete_source_name)):
+    if (not os.path.exists(complete_attr_source_path)):
         try:
-            os.makedirs(ATTR_SOURCE_FILE_PATH)
-            print("Directory '%s' created" % ATTR_SOURCE_FILE_PATH)
+            os.makedirs(source_path)
+            print("Directory '%s' created" % source_path)
         except:
             pass
 
         # Copy the file to destination dir
-        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".c"), complete_source_name)
-        with open(complete_source_name, "r") as f:
+        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".c"), complete_attr_source_path)
+        with open(complete_attr_source_path, "r") as f:
             source_lines = f.readlines()
             for i, line in enumerate(source_lines):
                 if "logging" in line:
@@ -1125,13 +1167,13 @@ if __name__ == "__main__":
                 if "TEMPLATE" in line:
                     source_lines[i] = source_lines[i].replace(template_file_name.upper(), TABLE_FILE_NAME.upper())
             f.seek(0)
-        with open(complete_source_name, "w") as f:
+        with open(complete_attr_source_path, "w") as f:
             f.writelines(source_lines)
 
     # Read index
-    create_complete_attribute_file(complete_yml_file_name)
+    create_complete_attribute_file(complete_yml_file_name, attr_combine_path, key_names)
 
     # Parse attributes
-    a = attributes(os.path.join(ATTR_COMBINE_FILE_PATH, COMBINE_FILE_NAME))
-
-    a.UpdateFiles()
+    a = attributes(os.path.join(attr_combine_path, COMBINE_FILE_NAME))
+    
+    a.UpdateFiles(complete_attr_header_path, complete_attr_source_path)
