@@ -128,7 +128,7 @@ class attributes:
     def __init__(self, fname: str):
 
         # The following items are loaded from the configuration file
-        self.parameterList = 0
+        self.parameter_list = 0
         self.projectAttributeCount = 0
         self.number_attribute_files= 0
         self.maxNameLength = 0
@@ -177,10 +177,10 @@ class attributes:
             else:
                 data = json.load(f)
             param_version_found = False
-            parameterList = data['components']['contentDescriptors']['device_params']['x-device-parameters']
+            parameter_list = data['components']['contentDescriptors']['device_params']['x-device-parameters']
 
             id_num = 0
-            for p in parameterList:
+            for p in parameter_list:
                 # Get key names as list:
                 keys = list(p.keys())
                 for list_count in range(len(keys)):
@@ -211,11 +211,11 @@ class attributes:
     def LoadConfig(self, fname: str) -> None:
         with open(fname, 'r') as f:
             data = yaml.load(f, Loader=yaml.FullLoader)
-            self.parameterList = data['components']['contentDescriptors']['device_params']['x-device-parameters']
-            self.number_attribute_files = len(self.parameterList)
+            self.parameter_list = data['components']['contentDescriptors']['device_params']['x-device-parameters']
+            self.number_attribute_files = len(self.parameter_list)
 
             # Extract the properties for each parameter
-            for p in self.parameterList:
+            for p in self.parameter_list:
                 # Get key names as list:
                 keys = list(p.keys())
                 for list_count in range(len(keys)):
@@ -323,7 +323,7 @@ class attributes:
 
             self.projectAttributeCount = len(self.name)
             print(f"API Total Attribute Files {self.number_attribute_files}")
-            print(f"Total Attribute = {self.projectAttributeCount}")
+            print(f"Total Attributes = {self.projectAttributeCount}")
             pass
 
     def GetType(self, index: int) -> str:

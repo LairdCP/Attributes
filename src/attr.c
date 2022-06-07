@@ -1764,7 +1764,7 @@ static int load_attributes(const char *fname, const char *feedback_path,
 				   &error_count, skip_non_writeable);
 
 			if (error_count != 0) {
-				/* Error occured during verification, no point
+				/* Error occurred during verification, no point
 				 * in continuing
 				 */
 				r = -EINVAL;
