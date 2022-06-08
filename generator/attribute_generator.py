@@ -129,6 +129,13 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
         if f"x-{key_names[i]}" in device_params:
             base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', f'x-{key_names[i]}'))
 
+    # Orginize the methods
+    methods_used = []
+    methods_list = ref['methods']
+    for i in range(len(methods_list)):
+        methods_used.extend(dollar_ref.pluck(methods_list[i], 'methods'))
+    ref.update({'methods': methods_used})
+
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
     for k, value in enumerate(device_params):

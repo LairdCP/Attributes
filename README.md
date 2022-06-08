@@ -6,13 +6,12 @@ The attribute module is a system for saving configuration to non-volatile memory
 
 The attribute API is described using OpenRPC in the file attributes.json.
 
-The attributes.json file is processed by a Python script. It generates C-code.
 
 Keywords specific to this implementation are prefixed with "x-". Keywords contain information about the external API and control the generation of C-code. They affect the behavior of the attribute system. For example, "x-writable" allows a value to be written from the SMP interface.
 
 ### Identification
 
-Each attribute has a unique ID. The ID is used to reference each attribute in the SMP command.
+Each attribute has a sequential ID. The ID is used to reference each attribute in the SMP command.
 
 ## SMP Interface
 
@@ -149,38 +148,52 @@ components:
         type: array
       x-device-parameters:
         - $ref: ./app/attributes/app_params.yml
+	  x-BT610:
         - $ref: ./components/flags/attributes/flags_params.yml
 ```
 Example of the generate command. With the index file named app.yml
 ```
-python attribute_generator.py C:/Industrial_BT_IO/BT6xx/bt6xx_firmware"
+python attribute_generator.py C:/Industrial_BT_IO/BT6xx/bt6xx_firmware BT610
 ```
 
 ## Customization
 
-For a custom project, a new attributes file can be created. The IDs will be created as generation time.
+For a custom project, a new attributes file can be created. The IDs will be created at generation time.
 
 ## Custom Field Definitions
 
 The following fields are specific to this implementation and are not part of the OpenRPC specification. They are prefixed with 'x-'.
 
-| Field                | Required | Default | Description                                                           |
-| -------------------- | -------- | ------- | --------------------------------------------------------------------- |
-| x-id                 | y        | NA      | Unique ID of attribute                                                |
-| x-projects           | y        | NA      | Project is used by attribute generator                                |
-| x-ctype              | y        | NA      | Variable type in C. "string" converted to "char" by generator.        |
-| x-default            | y        | NA      | Default value                                                         |
-| x-example            | n        | NA      | A commonly used or alternate value                                    |
-| x-lockable           | n        | false   | If true, when attributes are locked then value cannot be written      |
-| x-broadcast          | n        | false   | If framework is enabled, generate attribute changed broadcast message |
-| x-savable            | n        | false   | Save value to file system                                             |
-| x-writable           | n        | false   | If true, value can be written from SMP or loaded from file            |
-| x-readable           | n        | false   | If true, value can be read from SMP and dumped to a file              |
-| x-array-size         | n        | 0       | Number of elements for an array type                                  |
-| x-deprecated         | n        | false   | No longer used, prevents re-use of id or failures due to missing id   |
-| x-validator          | n        | type    | Override for write validation function. Often used for control points |
-| x-prepare            | n        | NA      | Optional function that is called before a value is read or dumped     |
-| x-enum-include-errno | n        | false   | If true, then include negative error numbers as part of enum          |
+| Field                    | Required | Default | Description                                                                                |
+| ------------------------ | -------- | ------- | ------------------------------------------------------------------------------------------ |
+| x-id                     | y        | NA      | Unique ID of attribute                                                                     |
+| x-ctype                  | y        | NA      | Variable type in C. "string" converted to "char" by generator.                             |
+| x-default                | y        | NA      | Default value                                                                              |
+| x-example                | n        | NA      | A commonly used or alternate value                                                         |
+| x-lockable               | n        | false   | If true, when attributes are locked then value cannot be written                           |
+| x-broadcast              | n        | false   | If framework is enabled, generate attribute changed broadcast message                      |
+| x-savable                | n        | false   | Save value to file system                                                                  |
+| x-writable               | n        | false   | If true, value can be written from SMP or loaded from file                                 |
+| x-readable               | n        | false   | If true, value can be read from SMP and dumped to a file                                   |
+| x-array-size             | n        | 0       | Number of elements for an array type                                                       |
+| x-deprecated             | n        | false   | No longer used, prevents re-use of id or failures due to missing id                        |
+| x-validator              | n        | type    | Override for write validation function. Often used for control points                      |
+| x-prepare                | n        | NA      | Optional function that is called before a value is read or dumped                          |
+| x-enum-include-errno     | n        | false   | If true, then include negative error numbers as part of enum                               |
+| x-hide-in-dump           | n        | false   | If true, hidden attribute, do not show anything in dump                                    |
+| x-obscure-in-dump        | n        | false   | If true, obscured attribute, show asterisks for value in dump                              |
+| x-show-on-change         | n        | false   | If attribute value changes, override hidden (x-hide-on-show) option and show the new value |
+| x-notify-if-unchanged    | n        | false   | If true, report value even if it is unchanged                                              |
+| x-show-unlocked-override | n        | false   | If attribute lock is unlocked, override hidden (x-hide-on-show) and show the value         |
+| x-obscure-in-show        | n        | false   | If true, obscured attribute value with asterisks when requested                            |
+| x-hide-in-show           | n        | false   | If true, hide attribute show nothing when requested                                        |
+| x-dump-unlocked-override | n        | false   | If attribute lock is unlocked, override hidden (x-hide-on-show) and show the value in dump |
+
+The following are used by the methods
+
+| Field                   | Required | Default | Description                                                             |
+| ----------------------- | -------- | ------- | ----------------------------------------------------------------------- |
+| x-management-option     | y        | NA      | The options for the smp interface for the method: ReadWrite, Write, Read|
 
 Custom validators are specified by the suffix of the validator function name.
 ```

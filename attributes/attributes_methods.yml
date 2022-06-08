@@ -1,0 +1,825 @@
+info:
+  title: attributes_methods
+  group_id: 65
+methods:
+  - name: get_parameter
+    summary: Get Parameter
+    description: ""
+    x-management-option: ReadWrite
+    x-id: 1
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter ID
+        description: Parameter ID
+        required: true
+        x-ctype: uint16_t
+        x-sequencenumber: 1
+        x-default: null
+        x-example: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 65535
+    result:
+      name: get_parameter_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: result
+          description: negative error code if an error occurred, otherwise size of data returned
+          required: true
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          x-default: 0
+          x-example: 0
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: id
+          summary: Parameter ID
+          description: Parameter ID
+          required: true
+          x-ctype: uint16_t
+          x-sequencenumber: 2
+          x-default: 0
+          x-example: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 65535
+        - name: r1
+          summary: Value
+          description: Actual type sent depends on the parameter itself chosen.
+          required: false
+          x-ctype: string
+          x-sequencenumber: 3
+          x-default: 0
+          x-example: 0
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
+  - name: set_parameter
+    summary: Set Parameter
+    description: Set an attribute
+    x-management-option: ReadWrite
+    x-id: 2
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter ID
+        description: Parameter ID
+        required: true
+        x-ctype: uint16_t
+        x-sequencenumber: 1
+        x-default: 0
+        x-example: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 65535
+      - name: p2
+        summary: Parameter Value
+        description: Actual type sent depends on the parameter itself chosen in p1
+        required: true
+        x-ctype: string
+        x-sequencenumber: 2
+        x-default: 0
+        x-example: 1
+        schema:
+          type: string
+          minLength: 0
+          maxLength: 0
+    result:
+      name: set_parameter_result
+      schema:
+        type: array
+      x-result:
+        - name: id
+          summary: The id number of what is being set
+          required: true
+          x-ctype: uint16_t
+          x-sequencenumber: 1
+          x-default: 0
+          x-example: 3
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 65535
+        - name: r
+          summary: Result status of setting the value. Will return 0 if successful, negative if error
+          description: ""
+          required: true
+          x-ctype: int32_t
+          x-sequencenumber: 2
+          x-default: null
+          x-example: 0
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: load_parameter_file
+    summary: Load parameters from a file
+    description: Used in conjunction with file system commands
+    x-management-option: ReadWrite
+    x-id: 3
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: File name
+        description: Input file is an optional
+        required: false
+        x-ctype: string
+        x-default: 0
+        x-example: /lfs/attr.txt
+        x-sequencenumber: 1
+        schema:
+          type: string
+          minLength: 0
+          maxLength: 0
+    result:
+      name: load_parameter_file_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-example: 0
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: f
+          summary: Path to the feedback file containing load error details
+          required: false
+          x-example: /ext/feedback.txt
+          x-ctype: string
+          x-sequencenumber: 2
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
+  - name: dump_parameter_file
+    summary: Dump chosen parameters to a file
+    description: Used in conjunction with file system commands
+    x-management-option: ReadWrite
+    x-id: 4
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Have the parameter choose the dump type
+        description: Dump Type: 0 = read/write, 1 = writable, 2 = read-only
+        required: true
+        x-ctype: uint8_t
+        x-default: 0
+        x-example: 2
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2
+      - name: p2
+        summary: File name
+        description: Output file is an optional parameter
+        required: false
+        x-ctype: string
+        x-default: 0
+        x-example: /lfs/dump.txt
+        x-sequencenumber: 1
+        schema:
+          type: string
+          minLength: 0
+          maxLength: 0
+    result:
+      name: dump_parameter_file_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, length of file in bytes on success
+          required: true
+          x-example: 0
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: n
+          summary: Name
+          description: The absolute path name of the dump file on the file system. Returned only when successful.
+          required: false
+          x-example: /ext/dump.txt
+          x-ctype: string
+          x-sequencenumber: 2
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
+  - name: factory_reset
+    summary: This will force a factory reset of the device.
+    x-management-option: ReadWrite
+    x-id: 5
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter 1
+        description: Dummy
+        required: false
+        x-ctype: uint8_t
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 0
+    result:
+      name: factory_reset_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-example: 0
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: set_notify
+    summary: Set notification flag
+    description: Device generates BLE notifications for corresponding attribute
+    x-management-option: ReadWrite
+    x-id: 6
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter 1
+        description: Attribute ID
+        required: true
+        x-ctype: uint16_t
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 65535
+      - name: p2
+        summary: Parameter 2
+        description: Value to set notification flag to
+        required: true
+        x-ctype: bool
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 2
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1
+    result:
+      name: set_notify_result
+      schema:
+        type: array
+      x-result:
+        - name: id
+          summary: Attribute id
+          required: true
+          x-example: 0
+          x-ctype: uint16_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 65535
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-example: 0
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: get_notify
+    summary: Get notification flag
+    description: Device generates BLE notifications for corresponding attribute
+    x-management-option: ReadWrite
+    x-id: 7
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter 1
+        description: Parameter Id
+        required: true
+        x-ctype: uint16_t
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 65535
+    result:
+      name: get_notify_result
+      schema:
+        type: array
+      x-result:
+        - name: id
+          summary: Attribute id
+          required: true
+          x-example: 0
+          x-ctype: uint16_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 65535
+        - name: r
+          summary: Result
+          description: Notification state
+          required: true
+          x-example: 0
+          x-ctype: uint16_t
+          x-sequencenumber: 2
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: disable_notify
+    summary: Disable All Notifications
+    x-management-option: ReadWrite
+    x-id: 8
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Parameter 1
+        description: Dummy
+        required: false
+        x-ctype: uint8_t
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 0
+    result:
+      name: disable_notify_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-example: 0
+          x-ctype: int32_t
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: check_lock_status
+    summary: Check lock status of module
+    x-management-option: ReadWrite
+    x-id: 9
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Dummy
+        description: Dummy
+        required: false
+        x-ctype: uint8_t
+        x-sequencenumber: 1
+        x-default: 0
+        x-example: 0
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 0
+    result:
+      name: check_lock_status_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-ctype: int32_t
+          x-example: "0"
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: r1
+          summary: Lock Setup
+          description: True if the lock has been setup, false otherwise
+          required: true
+          x-ctype: bool
+          x-sequencenumber: 2
+          x-default: 0
+          x-example: 1
+          schema:
+            ype: bool
+            minimum: 0
+            maximum: 1
+        - name: r2
+          summary: Lock Currently Enabled
+          description: True if the lock is currently engaged, false otherwise
+          required: true
+          x-ctype: bool
+          x-sequencenumber: 3
+          x-default: 0
+          x-example: 1
+          schema:
+            type: bool
+            minimum: 0
+            maximum: 1
+  - name: set_lock_code
+    summary: Set lock code of module
+    description: If successful, will update the lock code and the lock will engage when the UART/BLE device disconnects
+    x-management-option: ReadWrite
+    x-id: 10
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Lock code
+        description: Lock Code
+        required: true
+        x-ctype: uint32_t
+        x-sequencenumber: 1
+        x-default: null
+        x-example: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 999999
+    result:
+      name: set_lock_code_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-ctype: int32_t
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: lock
+    summary: Lock module configuration
+    x-management-option: ReadWrite
+    x-id: 11
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Dummy Parameter
+        description: Dummy Parameter
+        required: false
+        x-ctype: uint8_t
+        x-default: 0
+        x-example: 1
+        x-sequencenumber: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 0
+    result:
+      name: lock_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-ctype: int32_t
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: unlock
+    summary: Unlock module configuration
+    x-management-option: ReadWrite
+    x-id: 12
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Unlock code
+        required: true
+        x-ctype: uint32_t
+        x-sequencenumber: 1
+        x-default: null
+        x-example: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 999999
+      - name: p2
+        summary: Disable lock
+        description: If set to true, will clear the lock entirely until it is manually re-enabled
+        required: true
+        x-ctype: bool
+        x-sequencenumber: 2
+        x-default: null
+        x-example: 1
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1
+    result:
+      name: unlock_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-ctype: int32_t
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+  - name: get_unlock_error_code
+    summary: Check last error code umlock error code (clears last error on read)
+    x-management-option: ReadWrite
+    x-id: 13
+    x-group_id: 65
+    params:
+      - name: p1
+        summary: Dummy
+        description: Dummy
+        required: false
+        x-ctype: uint8_t
+        x-sequencenumber: 1
+        x-default: 0
+        x-example: 0
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 0
+    result:
+      name: get_unlock_error_result
+      schema:
+        type: array
+      x-result:
+        - name: r
+          summary: Result
+          description: Negative error code, 0 on success
+          required: true
+          x-ctype: int32_t
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: r1
+          summary: Unlock error code
+          description: Error code from last unlock attempt, 0 = no error, 1 = valid code, 2 = invalid code. Reset to 0 on read
+          required: true
+          x-ctype: int8_t
+          x-sequencenumber: 2
+          x-default: null
+          x-example: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 2
+  - name: get_api_version
+    summary: Return the current version of api document parameter
+    x-management-option: ReadWrite
+    x-id: 14
+    x-group_id: 65
+    params: []
+    result:
+      name: get_api_version_result
+      schema:
+        type: array
+      x-result:
+        - name: api_version
+          summary: Result
+          description: Return api version stored in memory
+          required: true
+          x-ctype: string
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: string
+            minLength: 6
+            maxLength: 11
+  - name: get_indices
+    summary: Return info on the attribute table size
+    x-management-option: ReadWrite
+    x-id: 15
+    x-group_id: 65
+    params: []
+    result:
+      name: get_api_version_result
+      schema:
+        type: array
+      x-result:
+        - name: table_size
+          summary: Result
+          description: Returns total number items in attribute table
+          required: true
+          x-ctype: uint32_t
+          x-example: 172
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: min_id
+          summary: Result
+          description: Returns number of the id first item in the table (should be zero)
+          required: true
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 2
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: max_id
+          summary: result
+          description: returns number of the id last item in the table
+          required: true
+          x-ctype: uint32_t
+          x-example: 58
+          x-sequencenumber: 3
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+  - name: get_entry_details
+    summary: Return the current version of api document parameter
+    x-management-option: ReadWrite
+    x-id: 16
+    x-group_id: 65
+    params:
+      - name: method
+        summary: Transversal method
+        description: index = 0, first = 1, last = 2, next = 3, previous = 4
+        required: true
+        x-ctype: uint8_t
+        x-sequencenumber: 1
+        x-default: 0
+        x-example: 3
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4
+      - name: index
+        summary: Attribute index
+        description: Attribute index
+        required: false
+        x-ctype: uint32_t
+        x-sequencenumber: 2
+        x-default: 0
+        x-example: 35
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 999999
+    result:
+      name: get_entry_details_result
+      schema:
+        type: array
+      x-result:
+        - name: index
+          summary: Attribute index
+          description: Attribute index
+          required: true
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 1
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: res
+          summary: Result code
+          description: Result code
+          required: true
+          x-ctype: int32_t
+          x-example: 0
+          x-sequencenumber: 2
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 0
+        - name: id
+          summary: Attribute ID
+          description: Attribute ID
+          required: false
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 3
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: name
+          summary: Attribute name
+          description: Attribute name
+          required: false
+          x-ctype: string
+          x-example: 0
+          x-sequencenumber: 4
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
+        - name: size
+          summary: Attribute size (bytes)
+          description: Attribute size (bytes)
+          required: false
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 5
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: type
+          summary: Attribute type
+          description: Attribute type
+          required: false
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 6
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: flags
+          summary: Attribute flags
+          description: Attribute flags
+          required: false
+          x-ctype: uint32_t
+          x-example: 0
+          x-sequencenumber: 7
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 999999
+        - name: prepared
+          summary: Attribute prepared read
+          description: Attribute prepared read
+          required: false
+          x-ctype: bool
+          x-example: 0
+          x-sequencenumber: 8
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1
+        - name: min
+          summary: Attribute minimum value
+          description: Actual type sent depends on the parameter itself
+          required: false
+          x-ctype: string
+          x-example: 0
+          x-sequencenumber: 9
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
+        - name: max
+          summary: Attribute maximum value
+          description: Actual type sent depends on the parameter itself
+          required: false
+          x-ctype: string
+          x-example: 0
+          x-sequencenumber: 10
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 0
