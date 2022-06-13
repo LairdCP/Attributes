@@ -110,7 +110,7 @@ def GenEnums(lst, enums, names, errno):
 def create_complete_attribute_file(location: str, attr_combine_path: str, key_names: list):
     json_file_name = COMBINE_FILE_NAME + ".json"
     yaml_file_name = COMBINE_FILE_NAME + ".yml"
-    ref = dollar_ref.resolve_file(location, attr_combine_path)
+    ref = dollar_ref.resolve_file(location, '')
 
     try:
         os.makedirs(attr_combine_path)
