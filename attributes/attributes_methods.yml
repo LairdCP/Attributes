@@ -175,7 +175,7 @@ methods:
     params:
       - name: p1
         summary: Have the parameter choose the dump type
-        description: Dump Type: 0 = read/write, 1 = writable, 2 = read-only
+        description: Dump Type 0 = read/write, 1 = writable, 2 = read-only
         required: true
         x-ctype: uint8_t
         x-default: 0
