@@ -267,9 +267,9 @@ class attributes:
                         self.deprecated.append(GetBoolField(value, 'x-deprecated'))
                         # Required schema fields
                         a = value['schema']
-                        self.check_valid_type(a['type'], a['x-ctype'], name_check)
+                        self.check_valid_type(a['type'], value['x-ctype'], name_check)
                         self.type.append(a['type'])
-                        self.ctype.append(a['x-ctype'])
+                        self.ctype.append(value['x-ctype'])
 
                         # Min and max are lengths
                         if a['type'] == "string":
