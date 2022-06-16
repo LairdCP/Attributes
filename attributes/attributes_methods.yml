@@ -437,7 +437,7 @@ methods:
           x-default: 0
           x-example: 1
           schema:
-            ype: bool
+            type: bool
             minimum: 0
             maximum: 1
         - name: r2
