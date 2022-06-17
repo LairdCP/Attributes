@@ -5,7 +5,7 @@ methods:
   - name: get_parameter
     summary: Get Parameter
     description: ""
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 1
     x-group_id: 65
     params:
@@ -65,7 +65,7 @@ methods:
   - name: set_parameter
     summary: Set Parameter
     description: Set an attribute
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 2
     x-group_id: 65
     params:
@@ -124,7 +124,7 @@ methods:
   - name: load_parameter_file
     summary: Load parameters from a file
     description: Used in conjunction with file system commands
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 3
     x-group_id: 65
     params:
@@ -169,7 +169,7 @@ methods:
   - name: dump_parameter_file
     summary: Dump chosen parameters to a file
     description: Used in conjunction with file system commands
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 4
     x-group_id: 65
     params:
@@ -226,7 +226,7 @@ methods:
             maxLength: 0
   - name: factory_reset
     summary: This will force a factory reset of the device.
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 5
     x-group_id: 65
     params:
@@ -261,7 +261,7 @@ methods:
   - name: set_notify
     summary: Set notification flag
     description: Device generates BLE notifications for corresponding attribute
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 6
     x-group_id: 65
     params:
@@ -318,7 +318,7 @@ methods:
   - name: get_notify
     summary: Get notification flag
     description: Device generates BLE notifications for corresponding attribute
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 7
     x-group_id: 65
     params:
@@ -362,7 +362,7 @@ methods:
             maximum: 0
   - name: disable_notify
     summary: Disable All Notifications
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 8
     x-group_id: 65
     params:
@@ -396,7 +396,7 @@ methods:
             maximum: 0
   - name: check_lock_status
     summary: Check lock status of module
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 9
     x-group_id: 65
     params:
@@ -455,7 +455,7 @@ methods:
   - name: set_lock_code
     summary: Set lock code of module
     description: If successful, will update the lock code and the lock will engage when the UART/BLE device disconnects
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 10
     x-group_id: 65
     params:
@@ -489,7 +489,7 @@ methods:
             maximum: 0
   - name: lock
     summary: Lock module configuration
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 11
     x-group_id: 65
     params:
@@ -523,7 +523,7 @@ methods:
             maximum: 0
   - name: unlock
     summary: Unlock module configuration
-    x-management-option: ReadWrite
+    x-management-option: Write
     x-id: 12
     x-group_id: 65
     params:
@@ -568,7 +568,7 @@ methods:
             maximum: 0
   - name: get_unlock_error_code
     summary: Check last error code umlock error code (clears last error on read)
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 13
     x-group_id: 65
     params:
@@ -614,7 +614,7 @@ methods:
             maximum: 2
   - name: get_api_version
     summary: Return the current version of api document parameter
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 14
     x-group_id: 65
     params: []
@@ -636,7 +636,7 @@ methods:
             maxLength: 11
   - name: get_indices
     summary: Return info on the attribute table size
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 15
     x-group_id: 65
     params: []
@@ -680,7 +680,7 @@ methods:
             maximum: 999999
   - name: get_entry_details
     summary: Return the current version of api document parameter
-    x-management-option: ReadWrite
+    x-management-option: Read
     x-id: 16
     x-group_id: 65
     params:
