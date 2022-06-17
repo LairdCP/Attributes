@@ -139,6 +139,13 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
         methods_used.extend(dollar_ref.pluck(methods_list[i], 'methods'))
     ref.update({'methods': methods_used})
 
+    # Organize the attributes
+    attributes_used = []
+    attributes_list = ref['components']['contentDescriptors']['device_params']['x-device-parameters']
+    for i in range(len(attributes_list)):
+        attributes_used.extend(dollar_ref.pluck(attributes_list[i], 'attributes'))
+    base_params = attributes_used
+
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
     for k, value in enumerate(device_params):
@@ -213,20 +220,15 @@ class attributes:
 
             id_num = 0
             for p in parameter_list:
-                # Get key names as list:
-                keys = list(p.keys())
-                for list_count in range(len(keys)):
-                    # Now we can access the elements of the list 'keys' containing all the keys of 'dict'
-                    value = p[keys[list_count]]
-                    name = value['name']
-                    value['x-id'] = id_num
-                    id_num = id_num + 1
-                    if (name == 'api_version'):
-                        major, minor, build = value['x-default'].split('.')
-                        build = int(build) + 1
-                        new_version = f'{major}.{minor}.{build}'
-                        value['x-default'] = new_version
-                        param_version_found = True
+                name = p['name']
+                p['x-id'] = id_num
+                id_num = id_num + 1
+                if (name == 'api_version'):
+                    major, minor, build = p['x-default'].split('.')
+                    build = int(build) + 1
+                    new_version = f'{major}.{minor}.{build}'
+                    p['x-default'] = new_version
+                    param_version_found = True
 
             if (param_version_found == False):
                 raise Exception("Unable to set API version. An api_version attribute is required.")
@@ -248,110 +250,105 @@ class attributes:
 
             # Extract the properties for each parameter
             for p in self.parameter_list:
-                # Get key names as list:
-                keys = list(p.keys())
-                for list_count in range(len(keys)):
-                    # Now we can access the elements of the list 'keys' containing all the keys of 'dict'
-                    value = p[keys[list_count]]
-                    # These fields should be in every parameter
-                    name_check = value['name']
-                    if self.check_for_duplicates(name_check) == False:
-                        print(f"Duplicate Attribute {name_check}")
-                        print("Skipping attribute")
+                # These fields should be in every parameter
+                name_check = p['name']
+                if self.check_for_duplicates(name_check) == False:
+                    print(f"Duplicate Attribute {name_check}")
+                    print("Skipping attribute")
+                else:
+                    self.name.append(p['name'])
+                    self.id.append(p['x-id'])
+                    self.default.append(p['x-default'])
+                    self.lockable.append(GetBoolField(p, 'x-lockable'))
+                    self.broadcast.append(GetBoolField(p, 'x-broadcast'))
+                    self.readable.append(GetBoolField(p, 'x-readable'))
+                    self.writable.append(GetBoolField(p, 'x-writable'))
+                    self.savable.append(GetBoolField(p, 'x-savable'))
+                    self.deprecated.append(GetBoolField(p, 'x-deprecated'))
+                    # Required schema fields
+                    a = p['schema']
+                    self.check_valid_type(a['type'], p['x-ctype'], name_check)
+                    self.type.append(a['type'])
+                    self.ctype.append(p['x-ctype'])
+
+                    # Min and max are lengths
+                    if a['type'] == "string":
+                        # stringMax string size is only required for strings.
+                        self.stringMax.append(GetNumberField(a, 'maxLength'))
+                        self.max.append(GetNumberField(a, 'maxLength'))
+                        self.min.append(GetNumberField(a, 'minLength'))
+                    elif a['type'] == "array":
+                        self.max.append(GetNumberField(a, 'maxItems'))
+                        self.min.append(GetNumberField(a, 'minItems'))
                     else:
-                        self.name.append(value['name'])
-                        self.id.append(value['x-id'])
-                        self.default.append(value['x-default'])
-                        self.lockable.append(GetBoolField(value, 'x-lockable'))
-                        self.broadcast.append(GetBoolField(value, 'x-broadcast'))
-                        self.readable.append(GetBoolField(value, 'x-readable'))
-                        self.writable.append(GetBoolField(value, 'x-writable'))
-                        self.savable.append(GetBoolField(value, 'x-savable'))
-                        self.deprecated.append(GetBoolField(value, 'x-deprecated'))
-                        # Required schema fields
-                        a = value['schema']
-                        self.check_valid_type(a['type'], value['x-ctype'], name_check)
-                        self.type.append(a['type'])
-                        self.ctype.append(value['x-ctype'])
+                        self.max.append(GetNumberField(a, 'maximum'))
+                        self.min.append(GetNumberField(a, 'minimum'))
 
-                        # Min and max are lengths
-                        if a['type'] == "string":
-                            # stringMax string size is only required for strings.
-                            self.stringMax.append(GetNumberField(a, 'maxLength'))
-                            self.max.append(GetNumberField(a, 'maxLength'))
-                            self.min.append(GetNumberField(a, 'minLength'))
-                        elif a['type'] == "array":
-                            self.max.append(GetNumberField(a, 'maxItems'))
-                            self.min.append(GetNumberField(a, 'minItems'))
-                        else:
-                            self.max.append(GetNumberField(a, 'maximum'))
-                            self.min.append(GetNumberField(a, 'minimum'))
+                    # Optional schema
+                    self.enum.append(GetDictionaryField(a, 'enum'))
 
-                        # Optional schema
-                        self.enum.append(GetDictionaryField(a, 'enum'))
+                    # Optional fields have a default value
+                    self.arraySize.append(GetNumberField(p, 'x-array-size'))
+                    obscureInShow = GetBoolField(p, 'x-obscure-in-show')
+                    hideInShow = GetBoolField(p, 'x-hide-in-show')
+                    showUnlockedOverride = GetBoolField(p, 'x-show-unlocked-override')
+                    obscureInDump = GetBoolField(p, 'x-obscure-in-dump')
+                    hideInDump = GetBoolField(p, 'x-hide-in-dump')
+                    dumpUnlockedOverride = GetBoolField(p, 'x-dump-unlocked-override')
+                    showOnChange = GetBoolField(p, 'x-show-on-change')
+                    notifyIfUnchanged = GetBoolField(p, 'x-notify-if-unchanged')
+                    displayOptionsBitmask = 0
 
-                        # Optional fields have a default value
-                        self.arraySize.append(GetNumberField(value, 'x-array-size'))
-                        obscureInShow = GetBoolField(value, 'x-obscure-in-show')
-                        hideInShow = GetBoolField(value, 'x-hide-in-show')
-                        showUnlockedOverride = GetBoolField(value, 'x-show-unlocked-override')
-                        obscureInDump = GetBoolField(value, 'x-obscure-in-dump')
-                        hideInDump = GetBoolField(value, 'x-hide-in-dump')
-                        dumpUnlockedOverride = GetBoolField(value, 'x-dump-unlocked-override')
-                        showOnChange = GetBoolField(value, 'x-show-on-change')
-                        notifyIfUnchanged = GetBoolField(value, 'x-notify-if-unchanged')
-                        displayOptionsBitmask = 0
+                    if (hideInShow == 1 and obscureInShow == 1):
+                        raise Exception("Cannot both hide and obscure attribute " +
+                                        p['name'] + " (in show)")
 
-                        if (hideInShow == 1 and obscureInShow == 1):
-                            raise Exception("Cannot both hide and obscure attribute " +
-                                            p['name'] + " (in show)")
+                    if (hideInDump == 1 and obscureInDump == 1):
+                        raise Exception("Cannot both hide and obscure attribute " +
+                                        p['name'] + " (in dump)")
 
-                        if (hideInDump == 1 and obscureInDump == 1):
-                            raise Exception("Cannot both hide and obscure attribute " +
-                                            p['name'] + " (in dump)")
+                    if (hideInShow == 0 and obscureInShow == 0 and showUnlockedOverride == 1):
+                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
+                                        p['name'] + " (in show)")
 
-                        if (hideInShow == 0 and obscureInShow == 0 and showUnlockedOverride == 1):
-                            raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
-                                            p['name'] + " (in show)")
+                    if (hideInDump == 0 and obscureInDump == 0 and dumpUnlockedOverride == 1):
+                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
+                                        p['name'] + " (in dump)")
 
-                        if (hideInDump == 0 and obscureInDump == 0 and dumpUnlockedOverride == 1):
-                            raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
-                                            p['name'] + " (in dump)")
+                    if (hideInShow == 0 and obscureInShow == 0 and showOnChange == 1):
+                        raise Exception("Cannot show on change if obscure/hide is disabled on attribute " +
+                                        p['name'])
 
-                        if (hideInShow == 0 and obscureInShow == 0 and showOnChange == 1):
-                            raise Exception("Cannot show on change if obscure/hide is disabled on attribute " +
-                                            p['name'])
+                    if (obscureInShow == 1):
+                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_SHOW_FLAG
 
-                        if (obscureInShow == 1):
-                            displayOptionsBitmask |= DISPLAY_OBSCURE_IN_SHOW_FLAG
+                    if (hideInShow == 1):
+                        displayOptionsBitmask |= DISPLAY_HIDE_IN_SHOW_FLAG
 
-                        if (hideInShow == 1):
-                            displayOptionsBitmask |= DISPLAY_HIDE_IN_SHOW_FLAG
+                    if (showUnlockedOverride == 1):
+                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG
 
-                        if (showUnlockedOverride == 1):
-                            displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG
+                    if (obscureInDump == 1):
+                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_DUMP_FLAG
 
-                        if (obscureInDump == 1):
-                            displayOptionsBitmask |= DISPLAY_OBSCURE_IN_DUMP_FLAG
+                    if (hideInDump == 1):
+                        displayOptionsBitmask |= DISPLAY_HIDE_IN_DUMP_FLAG
 
-                        if (hideInDump == 1):
-                            displayOptionsBitmask |= DISPLAY_HIDE_IN_DUMP_FLAG
+                    if (dumpUnlockedOverride == 1):
+                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG
 
-                        if (dumpUnlockedOverride == 1):
-                            displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG
+                    if (showOnChange == 1):
+                        displayOptionsBitmask |= DISPLAY_SHOW_ON_CHANGE_FLAG
 
-                        if (showOnChange == 1):
-                            displayOptionsBitmask |= DISPLAY_SHOW_ON_CHANGE_FLAG
+                    if (notifyIfUnchanged == 1):
+                        displayOptionsBitmask |= NOTIFY_IF_VALUE_UNCHANGED
 
-                        if (notifyIfUnchanged == 1):
-                            displayOptionsBitmask |= NOTIFY_IF_VALUE_UNCHANGED
+                    self.displayOptions.append(displayOptionsBitmask)
+                    self.validator.append(GetStringField(p, 'x-validator'))
+                    self.prepare.append(GetBoolField(p, 'x-prepare'))
 
-                        self.displayOptions.append(displayOptionsBitmask)
-                        self.validator.append(GetStringField(value, 'x-validator'))
-                        self.prepare.append(GetBoolField(value, 'x-prepare'))
-
-                        self.enum_include_errno.append(
-                            GetBoolField(value, 'x-enum-include-errno'))
+                    self.enum_include_errno.append(
+                        GetBoolField(p, 'x-enum-include-errno'))
 
             self.projectAttributeCount = len(self.name)
             print(f"API Total Attribute Files {self.number_attribute_files}")
@@ -1185,5 +1182,5 @@ if __name__ == "__main__":
 
     # Parse attributes
     a = attributes(os.path.join(attr_combine_path, COMBINE_FILE_NAME))
-    
+
     a.UpdateFiles(complete_attr_header_path, complete_attr_source_path)
