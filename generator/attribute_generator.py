@@ -118,8 +118,11 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     except:
         pass
 
-    # Remove the other compenent refrence links
-    del ref['components']['contentDescriptors']['aux_components']
+    # Remove the other component reference links
+    try:
+        del ref['components']['contentDescriptors']['aux_components']
+    except:
+        pass
 
     # Combine all the selected project parameters
     device_params = ref['components']['contentDescriptors']['device_params']
@@ -129,7 +132,7 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
         if f"x-{key_names[i]}" in device_params:
             base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', f'x-{key_names[i]}'))
 
-    # Orginize the methods
+    # Organize the methods
     methods_used = []
     methods_list = ref['methods']
     for i in range(len(methods_list)):
@@ -139,7 +142,7 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
     for k, value in enumerate(device_params):
-        if (("name") or ("schema") or ("x-device-parameters")) not in value:
+        if "name" not in value and "schema" not in value and "x-device-parameters" not in value:
            remove_items.append(value)
     for r in range(len(remove_items)):
         del ref['components']['contentDescriptors']['device_params'][remove_items[r]]
