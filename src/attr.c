@@ -2310,7 +2310,7 @@ static int attr_init(const struct device *device)
 		LOG_INF("Parameter file doesn't exist");
 	} else {
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
-		r = load_attributes(ATTR_ABS_PATH, NULL, false, true, false);
+		r = load_attributes(ATTR_ABS_PATH, NULL, true, true, false);
 	}
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
