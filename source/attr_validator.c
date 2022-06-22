@@ -391,3 +391,21 @@ int av_cpb(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	}
 	return r;
 }
+
+int av_cps(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
+{
+	CHECK_ENTRY();
+	__ASSERT((entry->size == entry->max.ux + 1), "Unexpected string size");
+	int r = -EPERM;
+
+	/* -1 to account for NULL */
+	if (entry->size > vlen) {
+		if (do_write && (vlen >= entry->min.ux)) {
+			atomic_set_bit(attr_modified, attr_table_index(entry));
+			memset(entry->pData, 0, entry->size);
+			strncpy(entry->pData, pv, vlen);
+		}
+		r = 0;
+	}
+	return r;
+}
