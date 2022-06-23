@@ -9,7 +9,6 @@
 #
 import yaml
 import json
-from tkinter import E
 import jsonref
 import collections
 import os
