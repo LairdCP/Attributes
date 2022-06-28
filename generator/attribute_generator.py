@@ -123,14 +123,6 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     except:
         pass
 
-    # Combine all the selected project parameters
-    device_params = ref['components']['contentDescriptors']['device_params']
-    base_params = []
-    base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', 'x-device-parameters'))
-    for i in range(len(key_names)):
-        if f"x-{key_names[i]}" in device_params:
-            base_params.extend(dollar_ref.pluck(ref, 'components', 'contentDescriptors', 'device_params', f'x-{key_names[i]}'))
-
     # Organize the methods
     methods_used = []
     methods_list = ref['methods']
@@ -143,7 +135,13 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     attributes_list = ref['components']['contentDescriptors']['device_params']['x-device-parameters']
     for i in range(len(attributes_list)):
         attributes_used.extend(dollar_ref.pluck(attributes_list[i], 'attributes'))
-    base_params = attributes_used
+    # Combine all the selected project parameters
+    device_params = ref['components']['contentDescriptors']['device_params']
+    for i in range(len(key_names)):
+        if f"x-{key_names[i]}" in device_params:
+            project_list = ref['components']['contentDescriptors']['device_params'][f'x-{key_names[i]}']
+            for i in range(len(project_list)):
+                attributes_used.extend(dollar_ref.pluck(project_list[i], 'attributes'))
 
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
@@ -154,7 +152,7 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
         del ref['components']['contentDescriptors']['device_params'][remove_items[r]]
 
     # Update with the modified keys
-    device_params.update({'x-device-parameters': base_params})
+    device_params.update({'x-device-parameters': attributes_used})
     # Generate the attribute files for both ymal and json
     with open(os.path.join(attr_combine_path, yaml_file_name), 'w') as f:
         yaml.dump(ref, f, indent=2, sort_keys = False)
