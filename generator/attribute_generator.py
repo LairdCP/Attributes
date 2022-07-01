@@ -118,10 +118,13 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
         pass
 
     # Remove the other component reference links
-    try:
-        del ref['components']['contentDescriptors']['aux_components']
-    except:
-        pass
+    content_descriptors = ref['components']['contentDescriptors']
+    remove_device = []
+    for k, value in enumerate(content_descriptors):
+        if "device_params" not in value:
+           remove_device.append(value)
+    for r in range(len(remove_device)):
+        del ref['components']['contentDescriptors'][remove_device[r]]
 
     # Organize the methods
     methods_used = []
