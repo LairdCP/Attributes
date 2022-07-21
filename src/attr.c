@@ -1318,8 +1318,13 @@ static int save_attributes(void)
 			/* Checksums mismatch, data has changed, write the
 			 * file
 			 */
+#if defined(CONFIG_ATTR_ENCRYPTED)
+			r = (int)lcz_param_file_enc_write(CONFIG_ATTR_FILE_NAME,
+						      fstr, fstrlen);
+#else
 			r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME,
 						      fstr, fstrlen);
+#endif
 			LOG_DBG("Wrote %d of %d bytes of parameters to file", r,
 				strlen(fstr));
 		}
@@ -1752,7 +1757,11 @@ static int load_attributes(const char *fname, const char *feedback_path,
 	uint16_t error_count = 0;
 
 	do {
+#if defined(CONFIG_ATTR_ENCRYPTED)
+		r = lcz_param_file_enc_parse_from_file(fname, &fsize, &fstr, &kvp);
+#else
 		r = lcz_param_file_parse_from_file(fname, &fsize, &fstr, &kvp);
+#endif
 		LOG_INF("pairs: %d fsize: %d file: %s", r, fsize,
 			log_strdup(fname));
 		BREAK_ON_ERROR(r);

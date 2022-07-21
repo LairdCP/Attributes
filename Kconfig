@@ -260,6 +260,13 @@ config ATTR_SHELL_FEEDBACK_FILE
 
 endif # ATTR_LOAD_FEEDBACK
 
+config ATTR_ENCRYPTED
+	bool "Encrypt attribute files"
+	depends on LCZ_PARAM_FILE_ENCRYPTED
+	help
+	  When enabled, attribute and attribute load files will be
+	  encrypted.
+
 # Include logging configuration
 module = ATTR
 module-str = ATTR
