@@ -673,7 +673,7 @@ static int ats_factory_reset_cmd(const struct shell *shell, size_t argc,
 
 #ifdef CONFIG_ATTR_SHELL_FACTORY_RESET_MSG
 	shell_print(shell, "Requesting factory reset");
-	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED, FMC_FACTORY_RESET);
+	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED, FMC_ATTR_FACTORY_RESET);
 #else
 	shell_error(shell, "Unsupported command (Framework required)");
 #endif
