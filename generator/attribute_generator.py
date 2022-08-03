@@ -389,6 +389,9 @@ class attributes:
         elif kind == "uint16_t":
             s += "U16"
             numberSize = 2
+        elif kind == "atomic_t":
+            s += "ATOMIC"
+            numberSize = 4
         elif kind == "uint32_t":
             s += "U32"
             numberSize = 4
@@ -608,6 +611,8 @@ class attributes:
         elif ctype == "uint32_t":
             pass
         elif ctype == "uint64_t":
+            pass
+        elif ctype == "atomic_t":
             pass
         else:
             raise TypeError(f"Type {ctype} not expected in c-type for {name} parameter")
