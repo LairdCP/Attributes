@@ -10,6 +10,9 @@
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
+#include <logging/log.h>
+LOG_MODULE_REGISTER(attr_mgmt, CONFIG_ATTR_LOG_LEVEL);
+
 #include <zephyr.h>
 #include <init.h>
 #include <limits.h>
@@ -724,16 +727,17 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 
 	if (r == 0) {
 		/* The input file is an optional parameter. */
-		r = attr_load(
-			(user_params._load_parameter_file_p1_present == true ?
-				 user_params._load_parameter_file_p1
-					 ._load_parameter_file_p1.value : (void *)load_path),
+		r = attr_load((user_params._load_parameter_file_p1_present ==
+					       true ?
+				       user_params._load_parameter_file_p1
+					       ._load_parameter_file_p1.value :
+				       (void *)load_path),
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
-			CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
+			      CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
 #else
-			NULL,
+			      NULL,
 #endif
-			&modified);
+			      &modified);
 	}
 
 	load_parameter_file_data._load_parameter_file_result_r = r;
@@ -775,7 +779,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 	uint32_t rsp_len = 0;
 	struct dump_parameter_file user_params;
 	struct dump_parameter_file_result dump_parameter_file_data = { 0 };
-	int r = -EPERM;
+	int r = MGMT_ERR_EOK;
 	char *fstr = NULL;
 	const char *file_name;
 	zcbor_state_t *zse = ctxt->cnbe->zs;

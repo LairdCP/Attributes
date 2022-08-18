@@ -187,7 +187,7 @@ methods:
           maximum: 2
       - name: p2
         summary: File name
-        description: Output file is an optional parameter
+        description: Output file is an optional parameter. This is only used if CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME is set, otherwise it will be ignored.
         required: false
         x-ctype: string
         x-default: 0
