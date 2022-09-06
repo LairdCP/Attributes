@@ -503,7 +503,7 @@ const char *const attr_get_string_set_error(int value);
  * @param type the type of dump to perform
  *
  * @retval negative error code, number of parameters on success
- * If result is positive, then caller is responsbile for freeing fstr.
+ * If result is positive, then caller is responsible for freeing fstr.
  */
 int attr_prepare_then_dump(char **fstr, enum attr_dump type);
 

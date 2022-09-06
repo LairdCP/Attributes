@@ -32,12 +32,12 @@ TYPE_WIDTH = 24
 MIN_MAX_WIDTH = 20
 OPTION_BITMASK_WIDTH = 6
 
-TEMPLATE_FILE_PATH = "%COMPONENTS%/app_source_file_template/templates/"
-ATTR_HEADER_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/include/"
-ATTR_SOURCE_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/src/"
-ATTR_COMBINE_FILE_PATH = "%INDEX%/components/attributes/%KEY_NAME%/attributes/"
+template_file_path = "%COMPONENTS%/app_source_file_template/templates/"
+attr_header_file_path = "%INDEX%/components/attributes/%KEY_NAME%/include/"
+attr_source_file_path = "%INDEX%/components/attributes/%KEY_NAME%/src/"
+attr_combine_file_path = "%INDEX%/components/attributes/%KEY_NAME%/attributes/"
 TABLE_FILE_NAME = "attr_table"
-COMBINE_FILE_NAME = "attributes"
+DEFAULT_FILE_NAME = "attributes"
 
 WRITABLE_FLAG = 0x1
 READABLE_FLAG = 0x2
@@ -54,8 +54,10 @@ DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG = 0x800
 DISPLAY_SHOW_ON_CHANGE_FLAG = 0x1000
 NOTIFY_IF_VALUE_UNCHANGED = 0x2000
 
+
 def ToInt(b) -> str:
     return math.trunc(b)
+
 
 def GetNumberField(d: dict, item: str):
     """ Handles items not being present (lazy get) """
@@ -65,6 +67,7 @@ def GetNumberField(d: dict, item: str):
     except:
         return 0.0
 
+
 def GetBoolField(d: dict, item: str):
     try:
         r = d[item]
@@ -72,12 +75,14 @@ def GetBoolField(d: dict, item: str):
     except:
         return False
 
+
 def GetStringField(d: dict, item: str):
     try:
         r = d[item]
         return r
     except:
         return ""
+
 
 def GetDictionaryField(d: dict, item):
     r = {}
@@ -87,10 +92,12 @@ def GetDictionaryField(d: dict, item):
     except:
         return r
 
+
 def PrintDuplicate(lst):
     for item, count in collections.Counter(lst).items():
         if count > 1:
             print(item)
+
 
 def GenEnums(lst, enums, names, errno):
     for i, name, include_errno in zip(enums, names, errno):
@@ -106,9 +113,10 @@ def GenEnums(lst, enums, names, errno):
             s += "};\n\n"
             lst.append(s)
 
-def create_complete_attribute_file(location: str, attr_combine_path: str, key_names: list):
-    json_file_name = COMBINE_FILE_NAME + ".json"
-    yaml_file_name = COMBINE_FILE_NAME + ".yml"
+
+def CreateCompleteAttributeFile(location: str, attr_combine_path: str, key_names: list):
+    json_file_name = DEFAULT_FILE_NAME + ".json"
+    yaml_file_name = DEFAULT_FILE_NAME + ".yml"
     ref = dollar_ref.resolve_file(location, '')
 
     try:
@@ -122,7 +130,7 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     remove_device = []
     for k, value in enumerate(content_descriptors):
         if "device_params" not in value:
-           remove_device.append(value)
+            remove_device.append(value)
     for r in range(len(remove_device)):
         del ref['components']['contentDescriptors'][remove_device[r]]
 
@@ -137,31 +145,35 @@ def create_complete_attribute_file(location: str, attr_combine_path: str, key_na
     attributes_used = []
     attributes_list = ref['components']['contentDescriptors']['device_params']['x-device-parameters']
     for i in range(len(attributes_list)):
-        attributes_used.extend(dollar_ref.pluck(attributes_list[i], 'attributes'))
+        attributes_used.extend(dollar_ref.pluck(
+            attributes_list[i], 'attributes'))
     # Combine all the selected project parameters
     device_params = ref['components']['contentDescriptors']['device_params']
     for i in range(len(key_names)):
         if f"x-{key_names[i]}" in device_params:
-            project_list = ref['components']['contentDescriptors']['device_params'][f'x-{key_names[i]}']
+            project_list = ref['components']['contentDescriptors'][
+                'device_params'][f'x-{key_names[i]}']
             for i in range(len(project_list)):
-                attributes_used.extend(dollar_ref.pluck(project_list[i], 'attributes'))
+                attributes_used.extend(dollar_ref.pluck(
+                    project_list[i], 'attributes'))
 
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
     for k, value in enumerate(device_params):
         if "name" not in value and "schema" not in value and "x-device-parameters" not in value:
-           remove_items.append(value)
+            remove_items.append(value)
     for r in range(len(remove_items)):
         del ref['components']['contentDescriptors']['device_params'][remove_items[r]]
 
     # Update with the modified keys
     device_params.update({'x-device-parameters': attributes_used})
-    # Generate the attribute files for both ymal and json
+    # Generate the attribute files for both yaml and json
     with open(os.path.join(attr_combine_path, yaml_file_name), 'w') as f:
-        yaml.dump(ref, f, indent=2, sort_keys = False)
+        yaml.dump(ref, f, indent=2, sort_keys=False)
 
     with open(os.path.join(attr_combine_path, json_file_name), 'w') as f:
-        json.dump(ref, f, indent=JSON_INDENT, sort_keys = False)
+        json.dump(ref, f, indent=JSON_INDENT, sort_keys=False)
+
 
 class attributes:
     def __init__(self, fname: str):
@@ -169,7 +181,7 @@ class attributes:
         # The following items are loaded from the configuration file
         self.parameter_list = 0
         self.projectAttributeCount = 0
-        self.number_attribute_files= 0
+        self.number_attribute_files = 0
         self.maxNameLength = 0
         self.largestNumberSize = 0
 
@@ -199,12 +211,12 @@ class attributes:
         self.methodEnumIncludeErrno = []
 
         # Call the function twice for both yaml and json
-        self.modify_version_add_id(fname, ".yml")
-        self.modify_version_add_id(fname, ".json")
-        # Proccess the yaml version of the file
+        self.ModifyVersionAddId(fname, ".yml")
+        self.ModifyVersionAddId(fname, ".json")
+        # Process the yaml version of the file
         self.LoadConfig(fname + ".yml")
 
-    def modify_version_add_id(self, fname: str, file_type: str) -> None:
+    def ModifyVersionAddId(self, fname: str, file_type: str) -> None:
         """
         Increment version of the form x.y.z and write it back to the file.
         Also add an id number to every parameter
@@ -230,15 +242,16 @@ class attributes:
                     p['x-default'] = new_version
                     param_version_found = True
 
-            if (param_version_found == False):
-                raise Exception("Unable to set API version. An api_version attribute is required.")
+            if (not param_version_found):
+                raise Exception(
+                    "Unable to set API version. An api_version attribute is required.")
             else:
                 data['info']['version'] = new_version
                 print(fname + file_type, f"Version = {new_version}")
 
         with open(fname + file_type, 'w') as f:
             if(file_type == ".yml"):
-                yaml.dump(data, f, indent=2, sort_keys = False)
+                yaml.dump(data, f, indent=2, sort_keys=False)
             else:
                 json.dump(data, f, indent=JSON_INDENT)
 
@@ -246,13 +259,12 @@ class attributes:
         with open(fname, 'r') as f:
             data = yaml.load(f, Loader=yaml.FullLoader)
             self.parameter_list = data['components']['contentDescriptors']['device_params']['x-device-parameters']
-            self.number_attribute_files = len(self.parameter_list)
 
             # Extract the properties for each parameter
             for p in self.parameter_list:
                 # These fields should be in every parameter
                 name_check = p['name']
-                if self.check_for_duplicates(name_check) == False:
+                if self.CheckForDuplicates(name_check) == False:
                     print(f"Duplicate Attribute {name_check}")
                     print("Skipping attribute")
                 else:
@@ -267,7 +279,7 @@ class attributes:
                     self.deprecated.append(GetBoolField(p, 'x-deprecated'))
                     # Required schema fields
                     a = p['schema']
-                    self.check_valid_type(a['type'], p['x-ctype'], name_check)
+                    self.CheckValidType(a['type'], p['x-ctype'], name_check)
                     self.type.append(a['type'])
                     self.ctype.append(p['x-ctype'])
 
@@ -291,12 +303,15 @@ class attributes:
                     self.arraySize.append(GetNumberField(p, 'x-array-size'))
                     obscureInShow = GetBoolField(p, 'x-obscure-in-show')
                     hideInShow = GetBoolField(p, 'x-hide-in-show')
-                    showUnlockedOverride = GetBoolField(p, 'x-show-unlocked-override')
+                    showUnlockedOverride = GetBoolField(
+                        p, 'x-show-unlocked-override')
                     obscureInDump = GetBoolField(p, 'x-obscure-in-dump')
                     hideInDump = GetBoolField(p, 'x-hide-in-dump')
-                    dumpUnlockedOverride = GetBoolField(p, 'x-dump-unlocked-override')
+                    dumpUnlockedOverride = GetBoolField(
+                        p, 'x-dump-unlocked-override')
                     showOnChange = GetBoolField(p, 'x-show-on-change')
-                    notifyIfUnchanged = GetBoolField(p, 'x-notify-if-unchanged')
+                    notifyIfUnchanged = GetBoolField(
+                        p, 'x-notify-if-unchanged')
                     displayOptionsBitmask = 0
 
                     if (hideInShow == 1 and obscureInShow == 1):
@@ -389,15 +404,15 @@ class attributes:
         elif kind == "uint16_t":
             s += "U16"
             numberSize = 2
-        elif kind == "atomic_t":
-            s += "ATOMIC"
-            numberSize = 4
         elif kind == "uint32_t":
             s += "U32"
             numberSize = 4
         elif kind == "uint64_t":
             s += "U64"
             numberSize = 8
+        elif kind == "atomic_t":
+            s += "ATOMIC"
+            numberSize = 4
         else:
             s += "UNKNOWN"
             raise TypeError(f"Type {kind} not expected")
@@ -490,9 +505,12 @@ class attributes:
         """
         attributeTable = []
         attributeTable.append("/* pystart - table */\n")
-        attributeTable.append("/* If min == max then range isn't checked. */\n\n")
-        attributeTable.append("/* index....name.....................type.flags.validator..prepare..min.max. */\n")
-        attributeTable.append("const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {\n")
+        attributeTable.append(
+            "/* If min == max then range isn't checked. */\n\n")
+        attributeTable.append(
+            "/* index....name.....................type.flags.validator..prepare..min.max. */\n")
+        attributeTable.append(
+            "const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE] = {\n")
         for i in range(self.projectAttributeCount):
             opts = ToInt(self.displayOptions[i])
             if (self.writable[i]):
@@ -559,7 +577,7 @@ class attributes:
 
         return s.ljust(AP_WIDTH)
 
-    def check_for_duplicates(self, name_compare: str) -> bool:
+    def CheckForDuplicates(self, name_compare: str) -> bool:
         """
         Check for duplicate parameter names.
         """
@@ -567,7 +585,7 @@ class attributes:
             return False
         return True
 
-    def check_valid_type(self, type: str, ctype: str, name: str):
+    def CheckValidType(self, type: str, ctype: str, name: str):
         """
         This will check the type and c-type field in the schema and will stop the generator if they don't match.
         """
@@ -587,7 +605,8 @@ class attributes:
         elif type == "integer":
             pass
         else:
-            raise TypeError(f"Type {type} not expected in type in the schema for {name} parameter")
+            raise TypeError(
+                f"Type {type} not expected in type in the schema for {name} parameter")
 
         # Check c-type
         if ctype == "string":
@@ -615,16 +634,17 @@ class attributes:
         elif ctype == "atomic_t":
             pass
         else:
-            raise TypeError(f"Type {ctype} not expected in c-type for {name} parameter")
+            raise TypeError(
+                f"Type {ctype} not expected in c-type for {name} parameter")
 
     def UpdateFiles(self, header_file_path: str, source_file_path: str) -> None:
         """
         Update the attribute c/h files.
         """
         self.CreateSourceFile(source_file_path,
-            self.CreateInsertionList(source_file_path))
-        self._CreateAttributeHeaderFile(header_file_path,
-            self.CreateInsertionList(header_file_path))
+                              self.CreateInsertionList(source_file_path))
+        self.CreateAttributeHeaderFile(header_file_path,
+                                       self.CreateInsertionList(header_file_path))
 
     def CreateInsertionList(self, name: str) -> list:
         """
@@ -641,7 +661,7 @@ class attributes:
                     copying = False
                 elif "pyend" in line:
                     copying = True
-                elif (("\n" == line) and (new_line_skip_flag == True)):
+                elif (("\n" == line) and new_line_skip_flag):
                     # Don't copy blank new line, skip over this
                     pass
                 elif copying:
@@ -651,9 +671,9 @@ class attributes:
 
         return lst
 
-    def create_local_constants(self) -> str:
+    def CreateLocalConstants(self) -> str:
         """
-        Creates the defines needed within the souce file
+        Creates the defines needed within the source file
         """
         constant_names = []
         constant_names.append("/* pystart - RW/RO short defines */\n")
@@ -664,9 +684,9 @@ class attributes:
         constant_names.append("/* pyend */\n\n")
         return ''.join(constant_names)
 
-    def create_local_define(self) -> str:
+    def CreateLocalDefines(self) -> str:
         """
-        Creates the static variables needed within the souce file
+        Creates the static variables needed within the source file
         """
         define_names = []
         define_names.append("/* pystart - static define */\n")
@@ -730,31 +750,45 @@ class attributes:
         string = ''.join(struct)
         return string
 
-    def create_global_constants(self) -> str:
+    def CreateGlobalConstants(self) -> str:
         """
-        Creates the global defines needed within the souce file that have calls outside the file
+        Creates the global defines needed within the source file that have calls outside the file
         """
         global_names = []
         global_names.append("/* pystart - table */\n")
         global_names.append("/**\n * @brief Table shorthand\n")
         global_names.append(" *\n * @ref CreateStruct (Python script)\n")
-        global_names.append(" * Writable but non-savable values are populated using RO macro.\n")
-        global_names.append(" *\n *.........name...value...default....size...writable..readable..get enum str\n")
+        global_names.append(
+            " * Writable but non-savable values are populated using RO macro.\n")
+        global_names.append(
+            " *\n *.........name...value...default....size...writable..readable..get enum str\n")
         global_names.append(" */\n")
         global_names.append("#ifdef CONFIG_ATTR_STRING_NAME\n")
-        global_names.append("#define RW_ATTRS(n) STRINGIFY(n), rw.n, DRW.n, sizeof(rw.n), NULL\n")
-        global_names.append("#define RW_ATTRX(n) STRINGIFY(n), &rw.n, &DRW.n, sizeof(rw.n), NULL\n")
-        global_names.append("#define RW_ATTRE(n) STRINGIFY(n), &rw.n, &DRW.n, sizeof(rw.n), attr_get_string_ ## n\n")
-        global_names.append("#define RO_ATTRS(n) STRINGIFY(n), ro.n, DRO.n, sizeof(ro.n), NULL\n")
-        global_names.append("#define RO_ATTRX(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), NULL\n")
-        global_names.append("#define RO_ATTRE(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n")
+        global_names.append(
+            "#define RW_ATTRS(n) STRINGIFY(n), rw.n, DRW.n, sizeof(rw.n), NULL\n")
+        global_names.append(
+            "#define RW_ATTRX(n) STRINGIFY(n), &rw.n, &DRW.n, sizeof(rw.n), NULL\n")
+        global_names.append(
+            "#define RW_ATTRE(n) STRINGIFY(n), &rw.n, &DRW.n, sizeof(rw.n), attr_get_string_ ## n\n")
+        global_names.append(
+            "#define RO_ATTRS(n) STRINGIFY(n), ro.n, DRO.n, sizeof(ro.n), NULL\n")
+        global_names.append(
+            "#define RO_ATTRX(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), NULL\n")
+        global_names.append(
+            "#define RO_ATTRE(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n")
         global_names.append("#else\n")
-        global_names.append('#define RW_ATTRS(n) "", rw.n, DRW.n, sizeof(rw.n), NULL\n')
-        global_names.append('#define RW_ATTRX(n) "", &rw.n, &DRW.n, sizeof(rw.n), NULL\n')
-        global_names.append('#define RW_ATTRE(n) "", &rw.n, &DRW.n, sizeof(rw.n), attr_get_string_ ## n\n')
-        global_names.append('#define RO_ATTRS(n) "", ro.n, DRO.n, sizeof(ro.n), NULL\n')
-        global_names.append('#define RO_ATTRX(n) "", &ro.n, &DRO.n, sizeof(ro.n), NULL\n')
-        global_names.append('#define RO_ATTRE(n) "", &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n')
+        global_names.append(
+            '#define RW_ATTRS(n) "", rw.n, DRW.n, sizeof(rw.n), NULL\n')
+        global_names.append(
+            '#define RW_ATTRX(n) "", &rw.n, &DRW.n, sizeof(rw.n), NULL\n')
+        global_names.append(
+            '#define RW_ATTRE(n) "", &rw.n, &DRW.n, sizeof(rw.n), attr_get_string_ ## n\n')
+        global_names.append(
+            '#define RO_ATTRS(n) "", ro.n, DRO.n, sizeof(ro.n), NULL\n')
+        global_names.append(
+            '#define RO_ATTRX(n) "", &ro.n, &DRO.n, sizeof(ro.n), NULL\n')
+        global_names.append(
+            '#define RO_ATTRE(n) "", &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n')
         global_names.append("#endif\n")
         global_names.append("/* pyend */\n\n")
         return ''.join(global_names)
@@ -768,10 +802,10 @@ class attributes:
                 next_line = index + 1
                 if "Includes" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line,  self.header_call_incudes(True))
+                    lst.insert(next_line,  self.AddIncludes(True))
                 elif "Local Constant" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line, self.create_local_constants())
+                    lst.insert(next_line, self.CreateLocalConstants())
                     next_line = next_line + 1
                     lst.insert(
                         next_line, self.CreateStruct("rw", False))
@@ -784,12 +818,12 @@ class attributes:
                     lst.insert(next_line, self.CreateStruct("ro", True))
                 elif "Global Data" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line, self.create_global_constants())
+                    lst.insert(next_line, self.CreateGlobalConstants())
                     next_line = next_line + 1
                     lst.insert(next_line, self.CreateAttrTable())
                 elif "Local Data" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line, self.create_local_define())
+                    lst.insert(next_line, self.CreateLocalDefines())
                 elif "Local Function Prototypes" in line:
                     # Remove the unused header in the file
                     remove_list.append(index - 1)
@@ -797,7 +831,7 @@ class attributes:
                     remove_list.append(index + 1)
                 elif "Global Function Definitions" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line, self.create_table_functions())
+                    lst.insert(next_line, self.CreateTableFunctions())
                 elif "Local Function Definitions" in line:
                     next_line = next_line + 1
                     lst.insert(next_line, self.CreateGetStringFunctions())
@@ -817,12 +851,13 @@ class attributes:
         number_ids = len(self.name)
         ids.append("/* pystart - attribute ids */\n")
         for id in range(number_ids):
-            result = f"#define ATTR_ID_{self.name[id]}".ljust(ID_WIDTH) + str(id) + "\n"
+            result = f"#define ATTR_ID_{self.name[id]}".ljust(
+                ID_WIDTH) + str(id) + "\n"
             ids.append(result)
         ids.append("/* pyend */\n\n")
         return ''.join(ids)
 
-    def header_call_incudes(self, source_file: bool) -> str:
+    def AddIncludes(self, source_file: bool) -> str:
         """
         Add the other header files need for the project to compile
         """
@@ -871,7 +906,7 @@ class attributes:
         return ''.join(defs)
 
     def JustifyDefine(self, key: str, suffix: str, value: int) -> str:
-        width = self.maxNameLength+ DEFINE_WIDTH
+        width = self.maxNameLength + DEFINE_WIDTH
         if len(suffix) != 0:
             name = key + "_" + suffix
         else:
@@ -906,7 +941,7 @@ class attributes:
                 name = inflection.underscore(name).upper()
                 lst.append(self.JustifyDefine(name, "SIZE", size))
                 array_found = True
-        if (array_found == False):
+        if (not array_found):
             # Remove the comment about array lengths since no arrays were found
             lst.pop()
             lst.pop()
@@ -954,7 +989,7 @@ class attributes:
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
 
-    def CreateGetStringProtypes(self) -> str:
+    def CreateGetStringPrototypes(self) -> str:
         """
         Get string function uses integer type so that signature is generic.
         """
@@ -968,7 +1003,7 @@ class attributes:
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
 
-    def create_table_functions(self) -> str:
+    def CreateTableFunctions(self) -> str:
         """
         The global functions used to verify and setup up attribute table.
         """
@@ -985,15 +1020,18 @@ class attributes:
         lst.append("\t\t\t   ATTR_TABLE[i].size);\n")
         lst.append("\t\t}\n}\n\n")
 
-        lst.append("const struct attr_table_entry *const attr_map(attr_id_t id)\n")
+        lst.append(
+            "const struct attr_table_entry *const attr_map(attr_id_t id)\n")
         lst.append("{\n\tif (id > ATTR_TABLE_MAX_ID) {\n")
         lst.append("\t\treturn NULL;\n")
         lst.append("\t} else {\n")
         lst.append("\t\treturn &ATTR_TABLE[id];\n")
         lst.append("\t}\n}\n\n")
 
-        lst.append("attr_index_t attr_table_index(const struct attr_table_entry *const entry)\n")
-        lst.append('{\n\t__ASSERT(PART_OF_ARRAY(ATTR_TABLE, entry), "Invalid entry");\n')
+        lst.append(
+            "attr_index_t attr_table_index(const struct attr_table_entry *const entry)\n")
+        lst.append(
+            '{\n\t__ASSERT(PART_OF_ARRAY(ATTR_TABLE, entry), "Invalid entry");\n')
         lst.append("\treturn (entry - &ATTR_TABLE[0]);\n")
         lst.append("}\n")
         lst.append("/* pyend */\n\n")
@@ -1041,7 +1079,7 @@ class attributes:
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
 
-    def _CreateAttributeHeaderFile(self, header_file_path: str, lst: list) -> None:
+    def CreateAttributeHeaderFile(self, header_file_path: str, lst: list) -> None:
         """Create the attribute header file"""
         print("Writing " + header_file_path)
         with open(header_file_path, 'w') as fout:
@@ -1049,7 +1087,7 @@ class attributes:
                 next_line = index + 1
                 if "Includes" in line:
                     next_line = next_line + 1
-                    lst.insert(next_line,  self.header_call_incudes(False))
+                    lst.insert(next_line,  self.AddIncludes(False))
                 elif "Global Data" in line:
                     next_line = next_line + 1
                     lst.insert(next_line, self.CreateIds())
@@ -1061,7 +1099,7 @@ class attributes:
                         next_line, self.CreatePrepare())
                     next_line = next_line + 1
                     lst.insert(
-                        next_line, self.CreateGetStringProtypes())
+                        next_line, self.CreateGetStringPrototypes())
                 elif "Global Constants" in line:
                     next_line = next_line + 1
                     lst.insert(
@@ -1077,7 +1115,8 @@ if __name__ == "__main__":
     template_file_name = "template"
     key_names = []
     if (len(sys.argv)-1) < 1:
-        raise ValueError('No location entered for the yaml file listing the attribute parameters')
+        raise ValueError(
+            'No location entered for the yaml file listing the attribute parameters')
     else:
         for i, arg in enumerate(sys.argv):
             if i == 1:
@@ -1091,10 +1130,14 @@ if __name__ == "__main__":
     # Add index location name to paths
     script_dir = Path(os.path.dirname(__file__))
     component_dir = str(script_dir.parent.parent)
-    ATTR_HEADER_FILE_PATH = os.path.normpath(ATTR_HEADER_FILE_PATH.replace("%INDEX%", location))
-    ATTR_SOURCE_FILE_PATH = os.path.normpath(ATTR_SOURCE_FILE_PATH.replace("%INDEX%", location))
-    ATTR_COMBINE_FILE_PATH = os.path.normpath(ATTR_COMBINE_FILE_PATH.replace("%INDEX%", location))
-    TEMPLATE_FILE_PATH = os.path.normpath(TEMPLATE_FILE_PATH.replace("%COMPONENTS%", component_dir))
+    attr_header_file_path = os.path.normpath(
+        attr_header_file_path.replace("%INDEX%", location))
+    attr_source_file_path = os.path.normpath(
+        attr_source_file_path.replace("%INDEX%", location))
+    attr_combine_file_path = os.path.normpath(
+        attr_combine_file_path.replace("%INDEX%", location))
+    template_file_path = os.path.normpath(
+        template_file_path.replace("%COMPONENTS%", component_dir))
 
     complete_yml_file_name = os.path.join(location, file_name_in)
 
@@ -1106,16 +1149,21 @@ if __name__ == "__main__":
     # Change the file path names if key name is used
     while(number_key_names > 0):
         key_file_name = (f"{key_file_name}{key_names[index]}")
-        number_key_names = number_key_names -1
+        number_key_names = number_key_names - 1
         if(number_key_names > 0):
             index = index + 1
             key_file_name = (f"{key_file_name}_")
 
-    header_path = os.path.normpath(ATTR_HEADER_FILE_PATH.replace("%KEY_NAME%", key_file_name))
-    source_path = os.path.normpath(ATTR_SOURCE_FILE_PATH.replace("%KEY_NAME%", key_file_name))
-    attr_combine_path = os.path.normpath(ATTR_COMBINE_FILE_PATH.replace("%KEY_NAME%", key_file_name))
-    complete_attr_header_path = os.path.join(header_path, TABLE_FILE_NAME + ".h")
-    complete_attr_source_path = os.path.join(source_path, TABLE_FILE_NAME + ".c")
+    header_path = os.path.normpath(
+        attr_header_file_path.replace("%KEY_NAME%", key_file_name))
+    source_path = os.path.normpath(
+        attr_source_file_path.replace("%KEY_NAME%", key_file_name))
+    attr_combine_path = os.path.normpath(
+        attr_combine_file_path.replace("%KEY_NAME%", key_file_name))
+    complete_attr_header_path = os.path.join(
+        header_path, TABLE_FILE_NAME + ".h")
+    complete_attr_source_path = os.path.join(
+        source_path, TABLE_FILE_NAME + ".c")
 
     # Ensure .h and .c file exist
     if (not os.path.exists(complete_attr_header_path)):
@@ -1126,7 +1174,8 @@ if __name__ == "__main__":
             pass
 
         # Copy the file to destination dir
-        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".h"), complete_attr_header_path)
+        shutil.copy(os.path.join(template_file_path,
+                                 template_file_name + ".h"), complete_attr_header_path)
 
         copying = True
         dummy_file = complete_attr_header_path + ".bak"
@@ -1137,18 +1186,19 @@ if __name__ == "__main__":
                 # Need to remove the function prototype comment at the bottom of template file
                 if (("/**\n" == line) and (line_number > 0)):
                     copying = False
-                elif ( (" */\n" == line) and (copying == False)):
+                elif ((" */\n" == line) and (not copying)):
                     copy_next_line = line_number + 1
                 elif (copy_next_line == line_number):
                     copying = True
 
                 if "Remove Empty" in line:
                     # Comment from template header file to be removed
-                    line= line.strip(line)
+                    line = line.strip(line)
                 if "template.h" in line:
                     line = line.replace(template_file_name, TABLE_FILE_NAME)
                 if "TEMPLATE" in line:
-                    line = line.replace(template_file_name.upper(), TABLE_FILE_NAME.upper())
+                    line = line.replace(
+                        template_file_name.upper(), TABLE_FILE_NAME.upper())
                 if copying:
                     write_obj.write(line)
                 line_number = line_number + 1
@@ -1164,7 +1214,8 @@ if __name__ == "__main__":
             pass
 
         # Copy the file to destination dir
-        shutil.copy(os.path.join(TEMPLATE_FILE_PATH, template_file_name + ".c"), complete_attr_source_path)
+        shutil.copy(os.path.join(template_file_path,
+                                 template_file_name + ".c"), complete_attr_source_path)
         with open(complete_attr_source_path, "r") as f:
             source_lines = f.readlines()
             for i, line in enumerate(source_lines):
@@ -1175,17 +1226,19 @@ if __name__ == "__main__":
                     # Delete logging from the copied template file
                     source_lines[i] = source_lines[i].strip(line)
                 if "template" in line:
-                    source_lines[i] = source_lines[i].replace(template_file_name, TABLE_FILE_NAME)
+                    source_lines[i] = source_lines[i].replace(
+                        template_file_name, TABLE_FILE_NAME)
                 if "TEMPLATE" in line:
-                    source_lines[i] = source_lines[i].replace(template_file_name.upper(), TABLE_FILE_NAME.upper())
+                    source_lines[i] = source_lines[i].replace(
+                        template_file_name.upper(), TABLE_FILE_NAME.upper())
             f.seek(0)
         with open(complete_attr_source_path, "w") as f:
             f.writelines(source_lines)
 
-    # Read index
-    create_complete_attribute_file(complete_yml_file_name, attr_combine_path, key_names)
+    CreateCompleteAttributeFile(
+        complete_yml_file_name, attr_combine_path, key_names)
 
     # Parse attributes
-    a = attributes(os.path.join(attr_combine_path, COMBINE_FILE_NAME))
+    a = attributes(os.path.join(attr_combine_path, DEFAULT_FILE_NAME))
 
     a.UpdateFiles(complete_attr_header_path, complete_attr_source_path)
