@@ -9,7 +9,6 @@
 #
 import yaml
 import json
-import jsonref
 import collections
 import os
 import inflection
@@ -116,12 +115,42 @@ def GenEnums(lst, enums, names, errno):
 
 def CountStr(N=12, chars=string.digits):
     """
-    Return a string with that counts number of characters for string representation
+    Return a string that counts the maximum number of characters of the
+    string representation of value
     """
     return ''.join(string.digits[x % 10]for x in range(1, N + 1))
 
 
+def UpdateVersion(yml_file: str, parameters: list) -> None:
+    """
+    Read version (app.yaml file) of the form x.y.z
+    Update version in parameter list (and api file) using top level document
+    """
+    version = "0.0.0"
+    try:
+        with open(yml_file, 'r') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+        version = data['info']['version']
+        print(yml_file, f"Version = {version}")
+    except:
+        raise Exception("Unable to read API version")
+
+    for value in parameters:
+        if value['name'] == "api_version":
+            value['x-default'] = version
+            return
+
+    raise Exception("Unable to find api_version attribute")
+
+
 def CreateCompleteAttributeFile(location: str, attr_combine_path: str, key_names: list):
+    """Aggregate individual files into one
+
+    Args:
+        location (str): top level yml file
+        attr_combine_path (str): destination
+        key_names (list): project key names (e.g., mg100, bt610)
+    """
     json_file_name = DEFAULT_FILE_NAME + ".json"
     yaml_file_name = DEFAULT_FILE_NAME + ".yml"
     ref = dollar_ref.resolve_file(location, '')
@@ -138,46 +167,52 @@ def CreateCompleteAttributeFile(location: str, attr_combine_path: str, key_names
     for k, value in enumerate(content_descriptors):
         if "device_params" not in value:
             remove_device.append(value)
-    for r in range(len(remove_device)):
-        del ref['components']['contentDescriptors'][remove_device[r]]
+    for r in remove_device:
+        del ref['components']['contentDescriptors'][r]
 
     # Organize the methods
     methods_used = []
-    methods_list = ref['methods']
-    for i in range(len(methods_list)):
-        methods_used.extend(dollar_ref.pluck(methods_list[i], 'methods'))
+    for method in ref['methods']:
+        methods_used.extend(dollar_ref.pluck(method, 'methods'))
     ref.update({'methods': methods_used})
 
     # Organize the attributes
     attributes_used = []
     attributes_list = ref['components']['contentDescriptors']['device_params']['x-device-parameters']
-    for i in range(len(attributes_list)):
-        attributes_used.extend(dollar_ref.pluck(
-            attributes_list[i], 'attributes'))
+    for attr in attributes_list:
+        attributes_used.extend(dollar_ref.pluck(attr, 'attributes'))
+
     # Combine all the selected project parameters
+    project_list = []
     device_params = ref['components']['contentDescriptors']['device_params']
-    for i in range(len(key_names)):
-        if f"x-{key_names[i]}" in device_params:
+    for key in key_names:
+        if f"x-{key}" in device_params:
             project_list = ref['components']['contentDescriptors'][
-                'device_params'][f'x-{key_names[i]}']
-            for i in range(len(project_list)):
-                attributes_used.extend(dollar_ref.pluck(
-                    project_list[i], 'attributes'))
+                'device_params'][f'x-{key}']
+    for project in project_list:
+        attributes_used.extend(dollar_ref.pluck(project, 'attributes'))
 
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
-    for k, value in enumerate(device_params):
+    for value in device_params:
         if "name" not in value and "schema" not in value and "x-device-parameters" not in value:
             remove_items.append(value)
-    for r in range(len(remove_items)):
-        del ref['components']['contentDescriptors']['device_params'][remove_items[r]]
+    for r in remove_items:
+        del ref['components']['contentDescriptors']['device_params'][r]
 
     # Update with the modified keys
     device_params.update({'x-device-parameters': attributes_used})
+
+    # Enumerate IDs
+    # (IDs are not constant and are the deprecated method of referencing attributes)
+    for k, value in enumerate(device_params['x-device-parameters']):
+        value['x-id'] = k
+
+    UpdateVersion(location, device_params['x-device-parameters'])
+
     # Generate the attribute files for both yaml and json
     with open(os.path.join(attr_combine_path, yaml_file_name), 'w') as f:
         yaml.dump(ref, f, indent=2, sort_keys=False)
-
     with open(os.path.join(attr_combine_path, json_file_name), 'w') as f:
         json.dump(ref, f, indent=JSON_INDENT, sort_keys=False)
 
@@ -215,50 +250,8 @@ class attributes:
         self.methodEnumNames = []
         self.methodEnumIncludeErrno = []
 
-        # Call the function twice for both yaml and json
-        self.ModifyVersionAddId(fname, ".yml")
-        self.ModifyVersionAddId(fname, ".json")
         # Process the yaml version of the file
         self.LoadConfig(fname + ".yml")
-
-    def ModifyVersionAddId(self, fname: str, file_type: str) -> None:
-        """
-        Increment version of the form x.y.z and write it back to the file.
-        Also add an id number to every parameter
-        """
-        # Update both the json and yaml files
-        with open(fname + file_type, 'r') as f:
-            if(file_type == ".yml"):
-                data = yaml.load(f, Loader=yaml.FullLoader)
-            else:
-                data = json.load(f)
-            param_version_found = False
-            parameter_list = data['components']['contentDescriptors']['device_params']['x-device-parameters']
-
-            id_num = 0
-            for p in parameter_list:
-                name = p['name']
-                p['x-id'] = id_num
-                id_num = id_num + 1
-                if (name == 'api_version'):
-                    major, minor, build = p['x-default'].split('.')
-                    build = int(build) + 1
-                    new_version = f'{major}.{minor}.{build}'
-                    p['x-default'] = new_version
-                    param_version_found = True
-
-            if (not param_version_found):
-                raise Exception(
-                    "Unable to set API version. An api_version attribute is required.")
-            else:
-                data['info']['version'] = new_version
-                print(fname + file_type, f"Version = {new_version}")
-
-        with open(fname + file_type, 'w') as f:
-            if(file_type == ".yml"):
-                yaml.dump(data, f, indent=2, sort_keys=False)
-            else:
-                json.dump(data, f, indent=JSON_INDENT)
 
     def LoadConfig(self, fname: str) -> None:
         with open(fname, 'r') as f:
