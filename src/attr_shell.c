@@ -11,7 +11,6 @@
 /* Includes                                                                   */
 /******************************************************************************/
 #include <shell/shell.h>
-#include <init.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -43,8 +42,6 @@ static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv);
 
-static int attr_shell_init(const struct device *device);
-
 #if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
 	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
 	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
@@ -66,8 +63,9 @@ static int ats_mod_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_query_cmd(const struct shell *shell, size_t argc, char **argv);
 #endif
 
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 static int ats_quiet_cmd(const struct shell *shell, size_t argc, char **argv);
+
+#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_disable_notify_cmd(const struct shell *shell, size_t argc,
 				  char **argv);
@@ -109,11 +107,11 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD(size, NULL, "Get size of attribute <number or name>\n",
 		  ats_size_cmd),
 	SHELL_CMD(show, NULL, "Display all parameters", ats_show_cmd),
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 	SHELL_CMD(quiet, NULL,
 		  "Disable printing for a parameter\n"
 		  "<id> <0 = verbose, 1 = quiet>",
 		  ats_quiet_cmd),
+#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 	SHELL_CMD(notify, NULL,
 		  "Enable/Disable BLE notifications\n"
 		  "<id> <0 = disable, 1 = enable>",
@@ -152,8 +150,6 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(attr, &sub_attr, "Attribute/Parameter Utilities", NULL);
-
-SYS_INIT(attr_shell_init, APPLICATION, 99);
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -267,12 +263,13 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
-/* is_string doesn't handle file names that beging with a number */
+/* is_string doesn't handle file names that begin with a number */
 static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 			      char **argv)
 {
@@ -287,9 +284,10 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 			    attr_get_string_set_error(r));
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 #ifdef CONFIG_ATTR_SHELL_DATA_MANIPULATION
@@ -371,9 +369,10 @@ static int ats_mod_cmd(const struct shell *shell, size_t argc, char **argv)
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 static int ats_query_cmd(const struct shell *shell, size_t argc, char **argv)
@@ -427,20 +426,24 @@ static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv)
 		shell_print(shell, "size status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	attr_show_all(shell);
-	return 0;
+	int r;
+
+	r = attr_show_all(shell);
+	shell_print(shell, "show all: %d", r);
+
+	return r;
 }
 
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 static int ats_quiet_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	attr_id_t id = 0;
@@ -451,16 +454,16 @@ static int ats_quiet_cmd(const struct shell *shell, size_t argc, char **argv)
 		id = get_id(argv[1]);
 		quiet = MAX((int)strtol(argv[2], NULL, 0), 0);
 		r = attr_set_quiet(id, quiet);
-		if (r < 0) {
-			shell_error(shell, "Unable to set quiet");
-		}
+		shell_print(shell, "status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
+#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
 static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	attr_id_t id = 0;
@@ -471,14 +474,13 @@ static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv)
 		id = get_id(argv[1]);
 		notify = MAX((int)strtol(argv[2], NULL, 0), 0);
 		r = attr_set_notify(id, notify);
-		if (r < 0) {
-			shell_error(shell, "Unable to set notify");
-		}
+		shell_print(shell, "status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 static int ats_disable_notify_cmd(const struct shell *shell, size_t argc,
@@ -487,10 +489,9 @@ static int ats_disable_notify_cmd(const struct shell *shell, size_t argc,
 	int r = -EPERM;
 
 	r = attr_disable_notify();
-	if (r < 0) {
-		shell_error(shell, "Unable to disable notifications");
-	}
-	return 0;
+	shell_print(shell, "status: %d", r);
+
+	return r;
 }
 #endif
 
@@ -505,14 +506,13 @@ static int ats_qrtc_cmd(const struct shell *shell, size_t argc, char **argv)
 		qrtc = MAX((int)strtol(argv[1], NULL, 0), 0);
 		result = lcz_qrtc_set_epoch(qrtc);
 		r = attr_set_uint32(ATTR_ID_qrtc_last_set, qrtc);
-		if (qrtc != result || r < 0) {
-			shell_error(shell, "Unable to set qrtc");
-		}
+		shell_print(shell, "status: ", (qrtc != result) ? -1 : r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 #endif
 
@@ -561,9 +561,10 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return r;
 }
 
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
@@ -615,15 +616,17 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
-	return 0;
+
+	return (r < 0) ? r : 0;
 }
 
 #if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
 	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
 {
+	int r = 0;
 	uint8_t *buf;
 	ssize_t size;
 
@@ -639,7 +642,7 @@ static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
 		if (size > 0) {
 			buf = k_calloc(size + 1, sizeof(uint8_t));
 			if (buf != NULL) {
-				fsu_read_abs(argv[1], buf, size);
+				r = fsu_read_abs(argv[1], buf, size);
 				if (argc > 2) {
 					shell_hexdump(shell, buf, size);
 				} else {
@@ -652,10 +655,10 @@ static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
-		return -EINVAL;
+		r = -EINVAL;
 	}
 
-	return 0;
+	return (r < 0) ? r : 0;
 }
 
 static int ats_factory_reset_cmd(const struct shell *shell, size_t argc,
@@ -699,10 +702,3 @@ static int ats_delete_cmd(const struct shell *shell, size_t argc, char **argv)
 }
 #endif
 #endif
-
-static int attr_shell_init(const struct device *device)
-{
-	ARG_UNUSED(device);
-
-	return 0;
-}
