@@ -37,6 +37,8 @@ typedef struct attr_broadcast_msg {
 } attr_changed_msg_t;
 BUILD_ASSERT(ATTR_TABLE_MAX_ID < (1 << (8 * sizeof(attr_id_t))),
 	     "List element size too small");
+BUILD_ASSERT(sizeof(attr_changed_msg_t) < CONFIG_BUFFER_POOL_SIZE,
+	     "Buffer pool too small for attribute changed broadcast");
 #endif
 
 enum attr_dump {
