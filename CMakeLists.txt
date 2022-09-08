@@ -28,13 +28,6 @@ zephyr_sources(
     ${ATTR_CUSTOM_PATH_BASE}/src/attr_table.c
 )
 
-if(EXISTS ${ATTR_CUSTOM_PATH_BASE}/src/attr_custom_validator.c)
-zephyr_sources(
-    ${ATTR_CUSTOM_PATH_BASE}/src/attr_custom_validator.c
-)
-endif()
-
-
 if(CONFIG_ATTR_SETTINGS_LOCK)
 zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK src/shell_lock.c)
 endif()
