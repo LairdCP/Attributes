@@ -18,6 +18,7 @@ import sys
 import math
 import dollar_ref
 from pathlib import Path
+import string
 
 JSON_INDENT = '  '
 
@@ -37,22 +38,21 @@ attr_header_file_path = "%INDEX%/components/attributes/%KEY_NAME%/include/"
 attr_source_file_path = "%INDEX%/components/attributes/%KEY_NAME%/src/"
 attr_combine_file_path = "%INDEX%/components/attributes/%KEY_NAME%/attributes/"
 TABLE_FILE_NAME = "attr_table"
-DEFAULT_FILE_NAME = "attributes"
+DEFAULT_FILE_NAME = "api"
 
 WRITABLE_FLAG = 0x1
 READABLE_FLAG = 0x2
-LOCKABLE_FLAG = 0x4
 BROADCAST_FLAG = 0x8
 SAVABLE_FLAG = 0x10
 DEPRECATED_FLAG = 0x20
 DISPLAY_OBSCURE_IN_SHOW_FLAG = 0x40
 DISPLAY_HIDE_IN_SHOW_FLAG = 0x80
-DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG = 0x100
-DISPLAY_OBSCURE_IN_DUMP_FLAG = 0x200
-DISPLAY_HIDE_IN_DUMP_FLAG = 0x400
-DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG = 0x800
-DISPLAY_SHOW_ON_CHANGE_FLAG = 0x1000
 NOTIFY_IF_VALUE_UNCHANGED = 0x2000
+
+# 64-bit number requires 20 characters
+MAX_NUMBER_SIZE = 21
+
+EMPTY_VALUE_STRING = '""'
 
 
 def ToInt(b) -> str:
@@ -112,6 +112,13 @@ def GenEnums(lst, enums, names, errno):
                     + key + " = " + str(value).lower() + ",\n"
             s += "};\n\n"
             lst.append(s)
+
+
+def CountStr(N=12, chars=string.digits):
+    """
+    Return a string with that counts number of characters for string representation
+    """
+    return ''.join(string.digits[x % 10]for x in range(1, N + 1))
 
 
 def CreateCompleteAttributeFile(location: str, attr_combine_path: str, key_names: list):
@@ -181,7 +188,6 @@ class attributes:
         # The following items are loaded from the configuration file
         self.parameter_list = 0
         self.projectAttributeCount = 0
-        self.number_attribute_files = 0
         self.maxNameLength = 0
         self.largestNumberSize = 0
 
@@ -189,7 +195,6 @@ class attributes:
         self.max = []
         self.min = []
         self.name = []
-        self.apiName = []
         self.type = []
         self.ctype = []
         self.lockable = []
@@ -262,113 +267,92 @@ class attributes:
 
             # Extract the properties for each parameter
             for p in self.parameter_list:
-                # These fields should be in every parameter
-                name_check = p['name']
-                if self.CheckForDuplicates(name_check) == False:
-                    print(f"Duplicate Attribute {name_check}")
-                    print("Skipping attribute")
+                self.name.append(p['name'])
+                self.id.append(p['x-id'])
+                self.default.append(p['x-default'])
+                self.lockable.append(GetBoolField(p, 'x-lockable'))
+                self.broadcast.append(GetBoolField(p, 'x-broadcast'))
+                self.readable.append(GetBoolField(p, 'x-readable'))
+                self.writable.append(GetBoolField(p, 'x-writable'))
+                self.savable.append(GetBoolField(p, 'x-savable'))
+                self.deprecated.append(GetBoolField(p, 'x-deprecated'))
+                # Required schema fields
+                a = p['schema']
+                self.CheckValidType(a['type'], p['x-ctype'], p['name'])
+                self.type.append(a['type'])
+                self.ctype.append(p['x-ctype'])
+
+                # Min and max are lengths
+                if a['type'] == "string":
+                    # stringMax string size is only required for strings.
+                    self.stringMax.append(GetNumberField(a, 'maxLength'))
+                    self.max.append(GetNumberField(a, 'maxLength'))
+                    self.min.append(GetNumberField(a, 'minLength'))
+                elif a['type'] == "array":
+                    self.max.append(GetNumberField(a, 'maxItems'))
+                    self.min.append(GetNumberField(a, 'minItems'))
                 else:
-                    self.name.append(p['name'])
-                    self.id.append(p['x-id'])
-                    self.default.append(p['x-default'])
-                    self.lockable.append(GetBoolField(p, 'x-lockable'))
-                    self.broadcast.append(GetBoolField(p, 'x-broadcast'))
-                    self.readable.append(GetBoolField(p, 'x-readable'))
-                    self.writable.append(GetBoolField(p, 'x-writable'))
-                    self.savable.append(GetBoolField(p, 'x-savable'))
-                    self.deprecated.append(GetBoolField(p, 'x-deprecated'))
-                    # Required schema fields
-                    a = p['schema']
-                    self.CheckValidType(a['type'], p['x-ctype'], name_check)
-                    self.type.append(a['type'])
-                    self.ctype.append(p['x-ctype'])
+                    self.max.append(GetNumberField(a, 'maximum'))
+                    self.min.append(GetNumberField(a, 'minimum'))
 
-                    # Min and max are lengths
-                    if a['type'] == "string":
-                        # stringMax string size is only required for strings.
-                        self.stringMax.append(GetNumberField(a, 'maxLength'))
-                        self.max.append(GetNumberField(a, 'maxLength'))
-                        self.min.append(GetNumberField(a, 'minLength'))
-                    elif a['type'] == "array":
-                        self.max.append(GetNumberField(a, 'maxItems'))
-                        self.min.append(GetNumberField(a, 'minItems'))
-                    else:
-                        self.max.append(GetNumberField(a, 'maximum'))
-                        self.min.append(GetNumberField(a, 'minimum'))
+                # Optional schema
+                self.enum.append(GetDictionaryField(a, 'enum'))
 
-                    # Optional schema
-                    self.enum.append(GetDictionaryField(a, 'enum'))
+                # Optional fields have a default value
+                self.arraySize.append(GetNumberField(p, 'x-array-size'))
+                self.validator.append(GetStringField(p, 'x-validator'))
+                self.prepare.append(GetBoolField(p, 'x-prepare'))
 
-                    # Optional fields have a default value
-                    self.arraySize.append(GetNumberField(p, 'x-array-size'))
-                    obscureInShow = GetBoolField(p, 'x-obscure-in-show')
-                    hideInShow = GetBoolField(p, 'x-hide-in-show')
-                    showUnlockedOverride = GetBoolField(
-                        p, 'x-show-unlocked-override')
-                    obscureInDump = GetBoolField(p, 'x-obscure-in-dump')
-                    hideInDump = GetBoolField(p, 'x-hide-in-dump')
-                    dumpUnlockedOverride = GetBoolField(
-                        p, 'x-dump-unlocked-override')
-                    showOnChange = GetBoolField(p, 'x-show-on-change')
-                    notifyIfUnchanged = GetBoolField(
-                        p, 'x-notify-if-unchanged')
-                    displayOptionsBitmask = 0
+                self.ProcessDisplayOptions(p)
 
-                    if (hideInShow == 1 and obscureInShow == 1):
-                        raise Exception("Cannot both hide and obscure attribute " +
-                                        p['name'] + " (in show)")
-
-                    if (hideInDump == 1 and obscureInDump == 1):
-                        raise Exception("Cannot both hide and obscure attribute " +
-                                        p['name'] + " (in dump)")
-
-                    if (hideInShow == 0 and obscureInShow == 0 and showUnlockedOverride == 1):
-                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
-                                        p['name'] + " (in show)")
-
-                    if (hideInDump == 0 and obscureInDump == 0 and dumpUnlockedOverride == 1):
-                        raise Exception("Cannot override obscure/hide if obscure/hide is disabled on attribute " +
-                                        p['name'] + " (in dump)")
-
-                    if (hideInShow == 0 and obscureInShow == 0 and showOnChange == 1):
-                        raise Exception("Cannot show on change if obscure/hide is disabled on attribute " +
-                                        p['name'])
-
-                    if (obscureInShow == 1):
-                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_SHOW_FLAG
-
-                    if (hideInShow == 1):
-                        displayOptionsBitmask |= DISPLAY_HIDE_IN_SHOW_FLAG
-
-                    if (showUnlockedOverride == 1):
-                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED_FLAG
-
-                    if (obscureInDump == 1):
-                        displayOptionsBitmask |= DISPLAY_OBSCURE_IN_DUMP_FLAG
-
-                    if (hideInDump == 1):
-                        displayOptionsBitmask |= DISPLAY_HIDE_IN_DUMP_FLAG
-
-                    if (dumpUnlockedOverride == 1):
-                        displayOptionsBitmask |= DISPLAY_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED_FLAG
-
-                    if (showOnChange == 1):
-                        displayOptionsBitmask |= DISPLAY_SHOW_ON_CHANGE_FLAG
-
-                    if (notifyIfUnchanged == 1):
-                        displayOptionsBitmask |= NOTIFY_IF_VALUE_UNCHANGED
-
-                    self.displayOptions.append(displayOptionsBitmask)
-                    self.validator.append(GetStringField(p, 'x-validator'))
-                    self.prepare.append(GetBoolField(p, 'x-prepare'))
-
-                    self.enum_include_errno.append(
-                        GetBoolField(p, 'x-enum-include-errno'))
+                self.enum_include_errno.append(
+                    GetBoolField(p, 'x-enum-include-errno'))
 
             self.projectAttributeCount = len(self.name)
-            print(f"API Total Attribute Files {self.number_attribute_files}")
             print(f"Total Attributes = {self.projectAttributeCount}")
             pass
+
+    def ProcessDisplayOptions(self, p: any):
+        obscureInShow = GetBoolField(p, 'x-obscure-in-show')
+        hideInShow = GetBoolField(p, 'x-hide-in-show')
+        showUnlockedOverride = GetBoolField(p, 'x-show-unlocked-override')
+        obscureInDump = GetBoolField(p, 'x-obscure-in-dump')
+        hideInDump = GetBoolField(p, 'x-hide-in-dump')
+        dumpUnlockedOverride = GetBoolField(p, 'x-dump-unlocked-override')
+        showOnChange = GetBoolField(p, 'x-show-on-change')
+        notifyIfUnchanged = GetBoolField(p, 'x-notify-if-unchanged')
+        displayOptionsBitmask = 0
+        name = p['name']
+
+        if (hideInShow == 1 and obscureInShow == 1):
+            raise Exception("Cannot both hide and obscure attribute " +
+                            name + " (in show)")
+
+        if (obscureInShow == 1):
+            displayOptionsBitmask |= DISPLAY_OBSCURE_IN_SHOW_FLAG
+
+        if (hideInShow == 1):
+            displayOptionsBitmask |= DISPLAY_HIDE_IN_SHOW_FLAG
+
+        if (showUnlockedOverride == 1):
+            print("deprecated - show unlocked override - " + name)
+
+        if (obscureInDump == 1):
+            print("deprecated - obscure in dump - " + name)
+
+        if (hideInDump == 1):
+            print("deprecated - hide in dump - " + name)
+
+        if (dumpUnlockedOverride == 1):
+            print("deprecated - dump unlocked override - " + name)
+
+        if (showOnChange == 1):
+            print("deprecated - show on change - " + name)
+
+        if (notifyIfUnchanged == 1):
+            displayOptionsBitmask |= NOTIFY_IF_VALUE_UNCHANGED
+
+        self.displayOptions.append(displayOptionsBitmask)
 
     def GetType(self, index: int) -> str:
         kind = self.ctype[index]
@@ -421,6 +405,43 @@ class attributes:
             self.largestNumberSize = numberSize
 
         return s
+
+    def GetMaxChars(self, index: int) -> int:
+        """Maximum number of characters to represent value as a string with sign
+        """
+        kind = self.ctype[index]
+        array_size = self.arraySize[index]
+        size = 0
+        if kind == "string":
+            size = self.max[index]
+        elif array_size != 0:
+            size = array_size * 2
+        elif kind == "float":
+            size = 30
+        elif kind == "int8_t":
+            size = len("-128")
+        elif kind == "int16_t":
+            size = len("-32768")
+        elif kind == "int32_t":
+            size = len("-2147483648")
+        elif kind == "int64_t":
+            size = len("-9223372036854775808")
+        elif kind == "bool":
+            size = 1
+        elif kind == "uint8_t":
+            size = len("255")
+        elif kind == "uint16_t":
+            size = len("65535")
+        elif kind == "uint32_t":
+            size = len("4294967295")
+        elif kind == "uint64_t":
+            size = len("18446744073709551615")
+        elif kind == "atomic_t":
+            size = len("4294967295")
+        else:
+            raise TypeError(f"Type {kind} not expected")
+
+        return size
 
     def GetAttributeMacro(self, index: int) -> str:
         """Get the c-macro for the RW or RO attribute (array vs non-array pointer)"""
@@ -518,7 +539,7 @@ class attributes:
             if (self.readable[i]):
                 opts |= READABLE_FLAG
             if (self.lockable[i]):
-                opts |= LOCKABLE_FLAG
+                print(f"deprecated - lockable - {self.name[i]}")
             if (self.broadcast[i]):
                 opts |= BROADCAST_FLAG
             if (self.savable[i]):
@@ -577,14 +598,6 @@ class attributes:
 
         return s.ljust(AP_WIDTH)
 
-    def CheckForDuplicates(self, name_compare: str) -> bool:
-        """
-        Check for duplicate parameter names.
-        """
-        if name_compare in self.name:
-            return False
-        return True
-
     def CheckValidType(self, type: str, ctype: str, name: str):
         """
         This will check the type and c-type field in the schema and will stop the generator if they don't match.
@@ -637,14 +650,32 @@ class attributes:
             raise TypeError(
                 f"Type {ctype} not expected in c-type for {name} parameter")
 
+    def CheckForDuplicates(self) -> None:
+        """
+        Check for duplicate parameter IDs or names.
+        """
+        if len(set(self.id)) != len(self.id):
+            # This indicates a problem in the generation script
+            PrintDuplicate(self.name)
+            raise Exception("Duplicate attribute ID in project")
+
+        if len(set(self.name)) != len(self.name):
+            # This indicates duplicates in the yml input files
+            PrintDuplicate(self.name)
+            raise Exception("Duplicate attribute name in project")
+
     def UpdateFiles(self, header_file_path: str, source_file_path: str) -> None:
         """
         Update the attribute c/h files.
         """
+        self.CheckForDuplicates()
+
         self.CreateSourceFile(source_file_path,
                               self.CreateInsertionList(source_file_path))
         self.CreateAttributeHeaderFile(header_file_path,
                                        self.CreateInsertionList(header_file_path))
+        self.MakeDefaultFile()
+        self.MakeWritableFile()
 
     def CreateInsertionList(self, name: str) -> list:
         """
@@ -763,7 +794,6 @@ class attributes:
         global_names.append(
             " *\n *.........name...value...default....size...writable..readable..get enum str\n")
         global_names.append(" */\n")
-        global_names.append("#ifdef CONFIG_ATTR_STRING_NAME\n")
         global_names.append(
             "#define RW_ATTRS(n) STRINGIFY(n), rw.n, DRW.n, sizeof(rw.n), NULL\n")
         global_names.append(
@@ -776,20 +806,6 @@ class attributes:
             "#define RO_ATTRX(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), NULL\n")
         global_names.append(
             "#define RO_ATTRE(n) STRINGIFY(n), &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n")
-        global_names.append("#else\n")
-        global_names.append(
-            '#define RW_ATTRS(n) "", rw.n, DRW.n, sizeof(rw.n), NULL\n')
-        global_names.append(
-            '#define RW_ATTRX(n) "", &rw.n, &DRW.n, sizeof(rw.n), NULL\n')
-        global_names.append(
-            '#define RW_ATTRE(n) "", &rw.n, &DRW.n, sizeof(rw.n), attr_get_string_ ## n\n')
-        global_names.append(
-            '#define RO_ATTRS(n) "", ro.n, DRO.n, sizeof(ro.n), NULL\n')
-        global_names.append(
-            '#define RO_ATTRX(n) "", &ro.n, &DRO.n, sizeof(ro.n), NULL\n')
-        global_names.append(
-            '#define RO_ATTRE(n) "", &ro.n, &DRO.n, sizeof(ro.n), attr_get_string_ ## n\n')
-        global_names.append("#endif\n")
         global_names.append("/* pyend */\n\n")
         return ''.join(global_names)
 
@@ -899,6 +915,12 @@ class attributes:
                                        maxBinSize))
         defs.append(self.JustifyDefine("MAX_INT_SIZE", "",
                                        self.largestNumberSize))
+        defs.append(self.JustifyDefine("MAX_KEY_NAME_SIZE", "",
+                                       self.maxNameLength + 1))
+        defs.append(self.JustifyDefine("MAX_VALUE_SIZE", "",
+                                       max(max(self.stringMax), (2 * maxBinSize), MAX_NUMBER_SIZE) + 1))
+        defs.append(self.JustifyDefine("MAX_FILE_SIZE", "",
+                                       self.EstimateMaxFileSize()))
 
         self.CreateMaxStringSizes(defs)
         self.CreateArraySizes(defs)
@@ -927,6 +949,59 @@ class attributes:
                     snake, "MAX_STR_SIZE", length + 1))
 
         return ''.join(lst)
+
+    def EstimateMaxFileSize(self) -> str:
+        """
+        Return max size of file (without comments)
+        Print file with name=<count of max size in chars>\n
+        """
+        global attr_combine_path
+        size = 0
+        delimiter_chars = 2
+        path = os.path.join(
+            attr_combine_path, "max.txt")
+        try:
+            with open(path, 'w') as f:
+                f.write("# Maximum File Size (without comments) for Attributes \n")
+                for i in range(self.projectAttributeCount):
+                    chars = self.GetMaxChars(i)
+                    size += delimiter_chars + len(self.name[i]) + chars
+                    f.write(f"{self.name[i]}={CountStr(chars)}\n")
+        except:
+            print("Unable to open max length file for writing")
+
+        return size
+
+    def MakeDefaultFile(self):
+        global attr_combine_path
+        path = os.path.join(
+            attr_combine_path, "defaults.txt")
+        try:
+            with open(path, 'w') as f:
+                f.write("# Default Values for Attributes \n")
+                for i in range(self.projectAttributeCount):
+                    default = str(self.default[i])
+                    if len(default) == 0:
+                        default = EMPTY_VALUE_STRING
+                    f.write(f"{self.name[i]}={default}\n")
+        except:
+            print("Error writing to default attributes file")
+
+    def MakeWritableFile(self):
+        global attr_combine_path
+        path = os.path.join(
+            attr_combine_path, "writable.txt")
+        try:
+            with open(path, 'w') as f:
+                f.write("# Writable Attributes\n")
+                for i in range(self.projectAttributeCount):
+                    if self.writable[i]:
+                        default = str(self.default[i])
+                        if len(default) == 0:
+                            default = EMPTY_VALUE_STRING
+                        f.write(f"{self.name[i]}={default}\n")
+        except:
+            print("Error writing to default attributes file")
 
     def CreateArraySizes(self, lst: list) -> str:
         """
@@ -1041,7 +1116,6 @@ class attributes:
         """Generate functions that return a string of each enum"""
         lst = []
         lst.append("/* pystart - get string */\n")
-        lst.append("#ifdef CONFIG_ATTR_STRING_NAME\n")
         for enum, camel, include_errno in zip(self.enum, self.name, self.enum_include_errno):
             if len(enum) != 0:
                 snake = inflection.underscore(camel)
@@ -1075,7 +1149,6 @@ class attributes:
                 s = s.replace("Rpk", "RPK")
                 s = s.replace("Usb", "USB")
                 lst.append(s)
-        lst.append("#endif\n")
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
 

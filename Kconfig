@@ -4,9 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 menuconfig ATTR
-	bool "Enable attribute/parameters module"
-	depends on FILE_SYSTEM_UTILITIES
-	depends on LCZ_PARAM_FILE
+	bool "Enable attributes module"
+	depends on LCZ_KVP
 
 if ATTR
 
@@ -19,9 +18,9 @@ config ATTR_BROADCAST
 config ATTR_INIT_PRIORITY
 	int "Init priority Application for attribute module"
 	range 2 99
-	default 2
+	default 70
 	help
-	  Can't be higher than LCZ_PARAM_FILE_INIT_PRIORITY.
+	  Can't be higher than LCZ_KVP_INIT_PRIORITY.
 	  Recommended to be higher than main thread init priority.
 
 config ATTR_FILE_NAME
@@ -30,13 +29,6 @@ config ATTR_FILE_NAME
 
 config ATTR_BREAK_ON_LOAD_FAILURE
 	bool "Stop loading on first failure"
-
-config ATTR_STRING_NAME
-	bool "Enable string name storage/retrieval"
-	default y
-	help
-	  Will allow storage and retrieval of attribute names, this will
-	  increase flash usage somewhat.
 
 config ATTR_SHELL
 	bool "Enable Attribute Shell"
@@ -49,14 +41,6 @@ config ATTR_SHELL_FACTORY_RESET_MSG
 	depends on FRAMEWORK
 	default y if ATTR_SHELL && FRAMEWORK
 
-config ATTR_SHELL_LOCK
-	bool "Enable settings lock shell manipulation"
-	depends on ATTR_SETTINGS_LOCK
-	default y if SHELL && ATTR_SETTINGS_LOCK
-	help
-	  Allows the configuration lock to be enabled, disabled, set,
-	  removed and checked via the 'lock' shell commands.
-
 config ATTR_SHELL_DATA_MANIPULATION
 	bool "Enable data manipilation functions"
 	help
@@ -66,19 +50,15 @@ config ATTR_SHELL_DATA_MANIPULATION
 	  Note: As this bypasses limitations placed on the attributes
 	        module, it should not be used for secure production code.
 
-config ATTR_SHELL_SETTINGS_MANIPULATION
-	bool "Enable settings manipulation functions"
+config ATTR_SHELL_NOTIFICATIONS
+	bool "Enable notification manipulation functions"
+	depends on CONFIG_MCUMGR_SMP_BT
 	help
-	  Allows shell functions that can be used to manipulate settings
-	  of attributes in the attribute module.
-
-	  Note: As this can bypass limitations placed on the attributes
-	        module, it should not be used for secure production code.
+	  Allows attributes notification to be turned on/off.
 
 choice ATTR_SHELL_CONFIG_MANIPULATION_MODE
 	prompt "Configuration manipulation"
-	default ATTR_SHELL_CONFIG_MANIPULATION_ALL if !ATTR_SHELL_LOCK
-	default ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK if ATTR_SHELL_LOCK
+	default ATTR_SHELL_CONFIG_MANIPULATION_ALL
 	help
 	  Allows shell functions that can be used to manipulate
 	  configuration in the attribute module.
@@ -92,27 +72,12 @@ config ATTR_SHELL_CONFIG_MANIPULATION_ALL
 	  Note: As this can bypass limitations placed on the attributes
 	        module, it should not be used for secure production code.
 
-config ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK
-	bool "All enabled (restricted with configuration lock)"
-	depends on ATTR_SHELL_LOCK
-	help
-	  Allows all attribute shell configuration manipulation
-	  functions, protected by the configuration lock.
-
 config ATTR_SHELL_CONFIG_MANIPULATION_LIMITED
 	bool "Limited functionality"
 	help
 	  Allows load and dump attribute shell configuration
 	  manipulation functions, other shell configuration functions
 	  are disabled.
-
-config ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK
-	bool "Limited functionality (restricted with configuration lock)"
-	depends on ATTR_SHELL_LOCK
-	help
-	  Allows load and dump attribute shell configuration
-	  manipulation functions, protected by the configuration lock,
-	  other shell configuration functions are disable.
 
 config ATTR_SHELL_CONFIG_MANIPULATION_NONE
 	bool "Disabled"
@@ -168,31 +133,7 @@ config ATTR_SAVE_DELAY_MS
 	  change will be written back to the storage device (which will
 	  also include any additional changes up to the point of save).
 
-config ATTR_SAVE_STATUS_CALLBACK
-	bool "Save status callbacks"
-	help
-	  This will allow the application to be notified when the
-	  attributes are modified but not yet saved to the storage
-	  device or when saving to the storage device has completed.
-	  From the user application, attr_save_status_notification()
-	  needs to be implemented.
-
 endif # ATTR_DEFERRED_SAVE
-
-config ATTR_SETTINGS_LOCK
-	bool "Enable settings lock"
-	help
-	  The settings lock can be used to restrict altering module
-	  configuration/settings by protecting it with a 6-digit
-	  passcode. Once set and enabled, the settings passcode must be
-	  entered prior to making changes to configuration.
-
-config ATTR_CONFIGURATION_VERSION
-	bool "Configuration version attribute support"
-	help
-	  Adds support for the configuration version attribute which is
-	  used as a volatile value to indicate the version of the
-	  running configuration (reset on power cycle or reboot).
 
 config MCUMGR_CMD_ATTRIBUTE_MGMT
 	bool "Enable the attribute MCUMGR interface"
@@ -223,11 +164,10 @@ config MGMT_GROUP_ID_ATTRIBUTE
 	default 65
 
 config ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-	bool "Increment config version from SMP set parameter"
-	depends on ATTR_CONFIGURATION_VERSION
+	bool "Increment config version from SMP set attribute"
 	help
 	  Will increment the configuration version attribute upon a
-	  successful SMP set parameter being executed, requires the
+	  successful SMP set attribute being executed, requires the
 	  config version attribute to be present.
 
 endif # MCUMGR_CMD_ATTRIBUTE_MGMT
@@ -239,33 +179,24 @@ config ATTR_LOAD_FEEDBACK
 	  load parameter commands are used which can then be retrieved
 	  to see if any attributes could not be set.
 
-if ATTR_LOAD_FEEDBACK
-
-config ATTRIBUTE_MGMT_FEEDBACK_FILE
-	string "File name used for feedback for SMP load function"
-	default "/ext/load_bt_feedback.txt"
-	depends on MCUMGR_CMD_ATTRIBUTE_MGMT
-	help
-	  This is the full path and file name for the feedback file
-	  which is output when the load parameter management command is
-	  used.
-
-config ATTR_SHELL_FEEDBACK_FILE
-	string "File name used for feedback for shell load function"
-	default "/ext/load_shell_feedback.txt"
-	depends on ATTR_SHELL
-	help
-	  This is the full path and file name for the feedback file
-	  which is output when the load parameter shell command is used.
-
-endif # ATTR_LOAD_FEEDBACK
+config ATTRIBUTE_FEEDBACK_FILE
+	string "File name used for feedback for load function"
+	depends on ATTR_LOAD_FEEDBACK
+	default "/lfs1/attr_feedback.txt"
 
 config ATTR_ENCRYPTED
 	bool "Encrypt attribute files"
-	depends on LCZ_PARAM_FILE_ENCRYPTED
+	depends on FSU_ENCRYPTED_FILES
 	help
 	  When enabled, attribute and attribute load files will be
 	  encrypted.
+
+config ATTR_FILE_ADDITIONAL_COMMENT_CHARS
+	int "Allow extra space in key-value pair file for comments"
+	default 320
+	help
+	  The attribute generator accounts generates the maximum file size
+	  based on the maximum length of each attribute.
 
 # Include logging configuration
 module = ATTR

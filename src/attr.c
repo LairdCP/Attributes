@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 #include <sys/util.h>
 #include <sys/crc.h>
 
-#include "lcz_param_file.h"
+#include "lcz_kvp.h"
 #include "file_system_utilities.h"
 
 #include "attr_table.h"
@@ -37,6 +37,9 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 /******************************************************************************/
 /* Global Constants, Macros and type Definitions                              */
 /******************************************************************************/
+BUILD_ASSERT(CONFIG_LCZ_KVP_INIT_PRIORITY < CONFIG_ATTR_INIT_PRIORITY,
+	     "Invalid init priority");
+
 #define BREAK_ON_ERROR(x)                                                      \
 	if (x < 0) {                                                           \
 		break;                                                         \
@@ -55,14 +58,9 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 #define ATTR_ENTRY_DECL(x)                                                     \
 	const struct attr_table_entry *const entry = attr_map(x);
 
-#define ATTR_ABS_PATH                                                          \
-	CONFIG_LCZ_PARAM_FILE_MOUNT_POINT "/" CONFIG_LCZ_PARAM_FILE_PATH       \
-					  "/" CONFIG_ATTR_FILE_NAME
+#define ATTR_ABS_PATH CONFIG_FSU_MOUNT_POINT "/" CONFIG_ATTR_FILE_NAME
 
 #define ATTR_QUIET_ABS_PATH CONFIG_FSU_MOUNT_POINT "/quiet.bin"
-
-BUILD_ASSERT(CONFIG_LCZ_PARAM_FILE_INIT_PRIORITY < CONFIG_ATTR_INIT_PRIORITY,
-	     "Invalid init priority");
 
 #define LOG_ALT_USED() LOG_DBG("Alt value used ID [%u]: %d", id, r)
 
@@ -73,14 +71,6 @@ BUILD_ASSERT(CONFIG_LCZ_PARAM_FILE_INIT_PRIORITY < CONFIG_ATTR_INIT_PRIORITY,
 enum { DISABLE_NOTIFICATIONS = 0, ENABLE_NOTIFICATIONS = 1 };
 
 static const char EMPTY_STRING[] = "";
-
-/* Each feedback file entry consists of a 2 character id, an equals to sign
- * character, a two character error code and a new line character.
- */
-#define ATTR_LOAD_FEEDBACK_ENTRY_SIZE 6
-
-/* Malloc always wants to align on a 4 byte boundary */
-#define ATTR_LOAD_FEEDBACK_ALIGN_SIZE 4
 
 /* Time (in ms) between checks if a save is currently in progress */
 #define ATTR_SAVE_EXECUTING_CHECK_TIME_MS 200
@@ -93,12 +83,12 @@ static const char EMPTY_STRING[] = "";
 #define ATTR_SAVE_LATER
 #endif
 
-struct dump {
-	bool hide;
-	bool prevent;
-	const void *data;
-	size_t size;
-	param_t type;
+static const lcz_kvp_cfg_t KVP_CFG = {
+	.max_file_size = (ATTR_MAX_FILE_SIZE +
+			  CONFIG_ATTR_FILE_ADDITIONAL_COMMENT_CHARS),
+	.max_key_len = (ATTR_MAX_KEY_NAME_SIZE - 1),
+	.max_val_len = (ATTR_MAX_VALUE_SIZE - 1),
+	.encrypted = IS_ENABLED(CONFIG_ATTR_ENCRYPTED) ? true : false,
 };
 
 /******************************************************************************/
@@ -124,8 +114,19 @@ static struct k_work_delayable attr_save_delayed_work;
 
 static volatile bool attr_initialized;
 
-static const char asterisk_data[] = "******";
-#define ASTERISK_DATA_SIZE (sizeof(asterisk_data) - 1)
+static struct {
+	attr_id_t id;
+	const struct attr_table_entry *entry;
+	char key[ATTR_MAX_KEY_NAME_SIZE];
+	char value[ATTR_MAX_VALUE_SIZE];
+	union {
+		uint8_t data[ATTR_MAX_VALUE_SIZE];
+		uint64_t u64;
+		int64_t s64;
+		double dbl;
+	} result;
+	size_t result_len;
+} conversion;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -145,13 +146,11 @@ static void change_single(const ate_t *const entry, bool send_notifications);
 static void change_handler(bool send_notifications);
 static void notification_handler(attr_id_t id);
 
-static int load_attributes(const char *fname, const char *feedback_path,
-			   bool validate_first, bool mask_modified,
-			   bool skip_non_writeable);
+static int load_attributes(const char *fname, bool validate_first,
+			   bool mask_modified, bool enforce_writable);
 
-static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified, uint16_t *error_count,
-		  bool skip_non_writeable);
+static int loader(lcz_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
+		  bool mask_modified, bool enforce_writable);
 
 static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 		    size_t vlen);
@@ -159,14 +158,10 @@ static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 		      size_t vlen);
 
-static int show(const ate_t *const entry, bool change_handler);
-
-static int allow_show(const ate_t *const entry, bool change_handler);
+static int show(const ate_t *const entry);
+static int allow_show(const ate_t *const entry);
 static int allow_get(const ate_t *const entry);
-static struct dump dump_display_option_handler(attr_index_t index, bool locked);
 
-static param_t convert_attr_type(attr_index_t index);
-static size_t get_attr_length(attr_index_t index);
 static bool is_dump_rw(attr_index_t index);
 static bool is_dump_w(attr_index_t index);
 static bool is_dump_ro(attr_index_t index);
@@ -179,20 +174,17 @@ static int64_t sign_extend64(const ate_t *const entry);
 
 static int initialize_quiet(void);
 
-static int attr_init(const struct device *device);
-
-extern void attr_table_initialize(void);
-extern void attr_table_factory_reset(void);
-
-static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp);
-
-static int build_empty_feedback_file(const char *feedback_path);
-static int build_feedback_file(const char *feedback_path, char *fstr,
-			       param_kvp_t *kvp, size_t pairs);
-
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
 static void save_attributes_work(struct k_work *item);
 #endif
+
+static const ate_t *kvp_find_entry(lcz_kvp_t *kvp);
+static int kvp_convert(lcz_kvp_t *kvp);
+static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry);
+
+static void start_feedback_file(void);
+static void append_feedback_file(lcz_kvp_t *kvp, int code);
+static void create_unable_to_parse_feedback_file(void);
 
 /******************************************************************************/
 /* Global Function Prototypes                                                 */
@@ -224,7 +216,7 @@ static int attr_init(const struct device *device)
 		LOG_INF("Attribute file doesn't exist");
 	} else {
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
-		r = load_attributes(ATTR_ABS_PATH, NULL, true, true, false);
+		r = load_attributes(ATTR_ABS_PATH, true, true, false);
 	}
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
@@ -765,13 +757,11 @@ float attr_get_float(attr_id_t id, float alt)
 const char *attr_get_name(attr_id_t id)
 {
 	const char *s = EMPTY_STRING;
-#ifdef CONFIG_ATTR_STRING_NAME
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
 		s = (const char *)entry->name;
 	}
-#endif
 
 	return s;
 }
@@ -787,16 +777,16 @@ size_t attr_get_size(attr_id_t id)
 	return size;
 }
 
-int attr_set_mask32(attr_id_t id, uint8_t Bit, uint8_t value)
+int attr_set_mask32(attr_id_t id, uint8_t bit, uint8_t value)
 {
 	ATTR_ENTRY_DECL(id);
 	uint32_t local;
 	int r = -EPERM;
 
-	if (entry != NULL && Bit < 32) {
+	if (entry != NULL && bit < 32) {
 		TAKE_MUTEX(attr_mutex);
 		local = *(uint32_t *)entry->pData;
-		WRITE_BIT(local, Bit, value);
+		WRITE_BIT(local, bit, value);
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
@@ -807,16 +797,16 @@ int attr_set_mask32(attr_id_t id, uint8_t Bit, uint8_t value)
 	return r;
 }
 
-int attr_set_mask64(attr_id_t id, uint8_t Bit, uint8_t value)
+int attr_set_mask64(attr_id_t id, uint8_t bit, uint8_t value)
 {
 	ATTR_ENTRY_DECL(id);
 	uint64_t local;
 	int r = -EPERM;
 
-	if (entry != NULL && Bit < 64) {
+	if (entry != NULL && bit < 64) {
 		TAKE_MUTEX(attr_mutex);
 		local = *(uint64_t *)entry->pData;
-		local = value ? (local | BIT64(Bit)) : (local & ~BIT64(Bit));
+		local = value ? (local | BIT64(bit)) : (local & ~BIT64(bit));
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
@@ -827,11 +817,8 @@ int attr_set_mask64(attr_id_t id, uint8_t Bit, uint8_t value)
 	return r;
 }
 
-#ifdef CONFIG_ATTR_SHELL
-
 attr_id_t attr_get_id(const char *name)
 {
-#ifdef CONFIG_ATTR_STRING_NAME
 	attr_index_t i;
 
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
@@ -839,13 +826,13 @@ attr_id_t attr_get_id(const char *name)
 			return i;
 		}
 	}
-#endif
 
 	return ATTR_INVALID_ID;
 }
 
-static int shell_show(const struct shell *shell, const ate_t *const entry,
-		      bool change_handler)
+#ifdef CONFIG_ATTR_SHELL
+
+static int shell_show(const struct shell *shell, const ate_t *const entry)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
@@ -853,7 +840,7 @@ static int shell_show(const struct shell *shell, const ate_t *const entry,
 	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
 
-	r = allow_show(entry, change_handler);
+	r = allow_show(entry);
 	if (r < 0) {
 		if (r == -EPERM) {
 			shell_print(shell, CONFIG_ATTR_SHOW_FMT "******",
@@ -942,8 +929,10 @@ int attr_show(const struct shell *shell, attr_id_t id)
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
-		if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
-			r = shell_show(shell, entry, false);
+		if (!attr_initialized) {
+			r = -EAGAIN;
+		} else if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+			r = shell_show(shell, entry);
 			GIVE_MUTEX(attr_mutex);
 		} else {
 			r = -EWOULDBLOCK;
@@ -958,9 +947,11 @@ int attr_show_all(const struct shell *shell)
 	int r = 0;
 	attr_index_t i;
 
-	if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+	if (!attr_initialized) {
+		r = -EAGAIN;
+	} else if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-			(void)shell_show(shell, &ATTR_TABLE[i], false);
+			(void)shell_show(shell, &ATTR_TABLE[i]);
 		}
 		GIVE_MUTEX(attr_mutex);
 	} else {
@@ -986,12 +977,15 @@ const char *const attr_get_string_set_error(int value)
 		return "too high";
 	case ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS:
 		return "too many characters";
-	case ATTR_WRITE_ERROR_PARAMETER_READ_ONLY:
-		return "read only value";
+	case ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE:
+		return "value not writable";
 	case ATTR_WRITE_ERROR_PARAMETER_UNKNOWN:
-		return "attribute ID unknown";
+		return "attribute name unknown";
 	case ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH:
 		return "invalid length";
+	case ATTR_WRITE_ERROR_UNABLE_TO_PARSE_FILE:
+		return "unable to parse file";
+	case ATTR_WRITE_ERROR_UNKNOWN:
 	default:
 		return "unknown error";
 	}
@@ -1005,13 +999,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	int count = 0;
 	bool (*dumpable)(attr_index_t) = is_dump_rw;
 	attr_index_t i;
-	struct dump dump;
-	bool locked = false;
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	/* Cache attribute locked value (read once before loop) */
-	locked = attr_is_locked();
-#endif
+	lcz_kvp_t kvp;
 
 	switch (type) {
 	case ATTR_DUMP_W:
@@ -1025,7 +1013,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		break;
 	}
 
-	/* Update all parameters that need to be prepared before reserving
+	/* Update all values that need to be prepared before reserving
 	 * the mutex - we want to avoid stacking up reservations of it,
 	 * and if an attribute value changes after this, it will still be
 	 * up to date
@@ -1040,16 +1028,8 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	do {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			if (dumpable(i)) {
-				dump = dump_display_option_handler(i, locked);
-				if (dump.hide) {
-					continue;
-				}
-
-				r = lcz_param_file_generate_file(i, dump.type,
-								 dump.data,
-								 dump.size,
-								 fstr);
-
+				entry_to_kvp(&kvp, &ATTR_TABLE[i]);
+				r = lcz_kvp_generate_file(&KVP_CFG, &kvp, fstr);
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (dump) [%u] status: %d",
@@ -1064,7 +1044,7 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 		/* Don't validate the file if any attribute errors occurred. */
 		BREAK_ON_ERROR(r);
 
-		r = lcz_param_file_validate_file(*fstr, strlen(*fstr));
+		r = lcz_kvp_validate_file(&KVP_CFG, *fstr, strlen(*fstr));
 	} while (0);
 	GIVE_MUTEX(attr_mutex);
 
@@ -1095,7 +1075,7 @@ int attr_set_quiet(attr_id_t id, bool value)
 	return r;
 }
 
-int attr_load(const char *abs_path, const char *feedback_path, bool *modified)
+int attr_load(const char *abs_path, bool *modified)
 {
 	int r = -EPERM;
 
@@ -1105,14 +1085,14 @@ int attr_load(const char *abs_path, const char *feedback_path, bool *modified)
 
 	TAKE_MUTEX(attr_mutex);
 	do {
-		r = load_attributes(abs_path, feedback_path, true, false, true);
+		r = load_attributes(abs_path, true, false, true);
 		BREAK_ON_ERROR(r);
 
 		if (modified != NULL) {
 			/* See if any attributes were modified prior to save */
 			uint16_t i = 0;
 			while (i < ATTR_TABLE_SIZE) {
-				if (atomic_test_bit(attr_modified, i) == true) {
+				if (atomic_test_bit(attr_modified, i)) {
 					*modified = true;
 					break;
 				}
@@ -1174,28 +1154,12 @@ int attr_default(attr_id_t id)
 
 	if (entry != NULL) {
 		memcpy(entry->pData, entry->pDefault, entry->size);
-		(void)show(entry, true);
+		(void)show(entry);
 		return 0;
 	} else {
 		return -EPERM;
 	}
 }
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-bool attr_is_locked(void)
-{
-	bool locked = true;
-	uint8_t lock_status =
-		attr_get_uint32(ATTR_ID_lock_status, LOCK_STATUS_NOT_SETUP);
-
-	if (lock_status == LOCK_STATUS_NOT_SETUP ||
-	    lock_status == LOCK_STATUS_SETUP_DISENGAGED) {
-		locked = false;
-	}
-
-	return locked;
-}
-#endif
 
 __weak int attr_notify(attr_id_t id)
 {
@@ -1203,35 +1167,64 @@ __weak int attr_notify(attr_id_t id)
 	return 0;
 }
 
-#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
 __weak void attr_save_status_notification(bool dirty)
 {
 	return;
 }
+
+int attr_force_save(void)
+{
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	return save_attributes(true);
+#else
+	return 0;
 #endif
+}
+
+int attr_update_config_version(void)
+{
+#ifdef ATTR_ID_config_version
+	uint32_t config_version = attr_get_uint32(ATTR_ID_config_version, 0);
+
+	return attr_set_uint32(ATTR_ID_config_version,
+			       (uint32_t)config_version);
+#endif
+
+	return -EIO;
+}
+
+void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
+{
+	*table_size = ATTR_TABLE_SIZE;
+	*min_id = 0;
+	*max_id = ATTR_TABLE_MAX_ID;
+}
+
+int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
+			   size_t *size, enum attr_type *type,
+			   enum attr_flags *flags, bool *prepared,
+			   const struct attr_min_max *min,
+			   const struct attr_min_max *max)
+{
+	if (index >= ATTR_TABLE_SIZE) {
+		return -EINVAL;
+	}
+
+	*id = index;
+	name = ATTR_TABLE[index].name;
+	*size = ATTR_TABLE[index].size;
+	*type = ATTR_TABLE[index].type;
+	*flags = ATTR_TABLE[index].flags;
+	*prepared = ATTR_TABLE[index].prepare != NULL;
+	min = &ATTR_TABLE[index].min;
+	max = &ATTR_TABLE[index].max;
+
+	return 0;
+}
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
 /******************************************************************************/
-/* Convert the attribute type into the parameter file type */
-static param_t convert_attr_type(attr_index_t index)
-{
-	if (ATTR_TABLE[index].type == ATTR_TYPE_STRING) {
-		return PARAM_STR;
-	} else {
-		return PARAM_BIN;
-	}
-}
-
-static size_t get_attr_length(attr_index_t index)
-{
-	if (ATTR_TABLE[index].type == ATTR_TYPE_STRING) {
-		return strlen(ATTR_TABLE[index].pData);
-	} else {
-		return ATTR_TABLE[index].size;
-	}
-}
-
 static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 			size_t vlen, bool broadcast, bool *modified)
 {
@@ -1307,7 +1300,8 @@ static int save_attributes(void)
 	attr_index_t i;
 	uint32_t checksum_file = 0;
 	uint32_t checksum_ram = 0;
-	uint32_t fstrlen;
+	uint32_t fstr_len;
+	lcz_kvp_t kvp;
 
 	TAKE_MUTEX(attr_mutex);
 
@@ -1318,10 +1312,9 @@ static int save_attributes(void)
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			if ((ATTR_TABLE[i].flags & FLAGS_SAVABLE) &&
 			    !(ATTR_TABLE[i].flags & FLAGS_DEPRECATED)) {
-				r = lcz_param_file_generate_file(
-					i, convert_attr_type(i),
-					ATTR_TABLE[i].pData, get_attr_length(i),
-					&fstr);
+				entry_to_kvp(&kvp, &ATTR_TABLE[i]);
+				r = lcz_kvp_generate_file(&KVP_CFG, &kvp,
+							  &fstr);
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (save) [%u] status: %d",
@@ -1332,19 +1325,19 @@ static int save_attributes(void)
 		}
 		BREAK_ON_ERROR(r);
 
-		fstrlen = strlen(fstr);
-		r = lcz_param_file_validate_file(fstr, fstrlen);
+		fstr_len = strlen(fstr);
+		r = lcz_kvp_validate_file(&KVP_CFG, fstr, fstr_len);
 		BREAK_ON_ERROR(r);
 
 		/* Calculate a CRC32 checksum of the current settings file and
 		 * pending data in RAM, which avoids an erase and write process
-		 * on the storage flash if there are no changes to write
+		 * on the storage flash if there are no changes to write.
 		 */
 		r = fsu_crc32_abs(&checksum_file, ATTR_ABS_PATH,
 				  fsu_get_file_size_abs(ATTR_ABS_PATH));
 
 		if (r == 0) {
-			checksum_ram = crc32_ieee_update(0, fstr, fstrlen);
+			checksum_ram = crc32_ieee_update(0, fstr, fstr_len);
 		} else {
 			/* If calculating the checksum fails, skip working out
 			 * the checksum of the RAM variables and just set the
@@ -1354,29 +1347,21 @@ static int save_attributes(void)
 		}
 
 		if (checksum_file != checksum_ram) {
-			/* Checksums mismatch, data has changed, write the
-			 * file
-			 */
-#if defined(CONFIG_ATTR_ENCRYPTED)
-			r = (int)lcz_param_file_enc_write(CONFIG_ATTR_FILE_NAME,
-						      fstr, fstrlen);
-#else
-			r = (int)lcz_param_file_write(CONFIG_ATTR_FILE_NAME,
-						      fstr, fstrlen);
-#endif
-			LOG_DBG("Wrote %d of %d bytes of parameters to file", r,
-				strlen(fstr));
+			r = lcz_kvp_write(KVP_CFG.encrypted,
+					  CONFIG_ATTR_FILE_NAME, fstr,
+					  fstr_len);
+			LOG_DBG("Wrote %d of %d bytes of key-value pairs to file",
+				r, strlen(fstr));
+		} else {
+			LOG_DBG("No attribute changes to write");
 		}
 	} while (0);
 
 	k_free(fstr);
 
-#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
 	if (r >= 0) {
-		/* Notify application that data has been saved */
 		attr_save_status_notification(false);
 	}
-#endif
 
 	GIVE_MUTEX(attr_mutex);
 
@@ -1397,12 +1382,9 @@ static int save_attributes(bool immediately)
 {
 	int rc = 0;
 
-#ifdef CONFIG_ATTR_SAVE_STATUS_CALLBACK
-	/* Notify application that data needs to be saved */
 	attr_save_status_notification(true);
-#endif
 
-	if (immediately == true) {
+	if (immediately) {
 		/* Flag set to immediate save, because the state of the device
 		 * is unknown and could be about to reboot, cancel a pending
 		 * run and do not reschedule another run, just run it in the
@@ -1472,7 +1454,7 @@ static void change_handler(bool send_notifications)
 #endif
 
 		if ((modified || unchanged) && !atomic_test_bit(quiet, i)) {
-			show(&ATTR_TABLE[i], true);
+			show(&ATTR_TABLE[i]);
 		}
 
 		if ((modified || unchanged) && send_notifications &&
@@ -1488,7 +1470,7 @@ static void change_handler(bool send_notifications)
 #ifdef CONFIG_ATTR_BROADCAST
 	if (pb != NULL) {
 		if (pb->count == 0) {
-			/* Don't send an empty messsage */
+			/* Don't send an empty message */
 			BufferPool_Free(pb);
 		} else {
 			if (Framework_Broadcast((FwkMsg_t *)pb, MSG_SIZE) !=
@@ -1514,16 +1496,9 @@ static void notification_handler(attr_id_t id)
 }
 
 /**
- * @brief This allows for permissions based on if the lock is active or
- * not, e.g. if the configuration lock is active you can hide parameters you
- * don't want seen.  Alternatively, obscure them to make it known that they're
- * there but not show the value. Once unlocked, you can then allow the user
- * to see those values.
- *
- * Examples of items that are conditionally readable.
- *   The dev EUI on the BT620
- *   LwM2M client ID on the MG100
- *
+ * @brief Hide attributes you don't want seen.
+ * Alternatively, obscure them to make it known that they're
+ * there but not show the value.
  */
 static int allow_get(const ate_t *const entry)
 {
@@ -1532,33 +1507,12 @@ static int allow_get(const ate_t *const entry)
 
 	if (entry->flags & FLAGS_HIDE_IN_SHOW) {
 		/* Hidden attribute */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-		    attr_is_locked() == false) {
-			/* Attributes are unlocked, show
-			 * because of overriding display option
-			 */
-			prevent_show = false;
-		}
-#endif
-
-		if (prevent_show == true) {
+		if (prevent_show) {
 			r = -EACCES;
 		}
 	} else if (entry->flags & FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-		    attr_is_locked() == false) {
-			/* Attributes are unlocked, show because
-			 * of overriding display option
-			 */
-			prevent_show = false;
-		}
-#endif
-		if (prevent_show == true) {
+		if (prevent_show) {
 			r = -EPERM;
 		}
 	}
@@ -1573,125 +1527,20 @@ static int allow_get(const ate_t *const entry)
  * @return int -EPERM - replace value with asterisks
  * @return int -EACCES - hide value (don't display asterisks)
  */
-static int allow_show(const ate_t *const entry, bool change_handler)
+static int allow_show(const ate_t *const entry)
 {
-	bool prevent_show = true;
-
 	if (entry->flags & FLAGS_HIDE_IN_SHOW) {
 		/* Hidden attribute, do not show */
-		if ((entry->flags & FLAGS_SHOW_ON_CHANGE) &&
-		    change_handler == true) {
-			/* Attribute value has changed, show because of
-			 * overriding display option
-			 */
-			prevent_show = false;
-		}
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-		    attr_is_locked() == false) {
-			/* Attributes are unlocked, show because of overriding
-			 * display option
-			 */
-			prevent_show = false;
-		}
-#endif
-
-		if (prevent_show == true) {
-			return -EACCES;
-		}
+		return -EACCES;
 	} else if (entry->flags & FLAGS_OBSCURE_IN_SHOW) {
 		/* Obscured attribute, show asterisks for value */
-		if ((entry->flags & FLAGS_SHOW_ON_CHANGE) &&
-		    change_handler == true) {
-			/* Attribute value has changed, show because of
-			 * overriding display option
-			 */
-			prevent_show = false;
-		}
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_SHOW_IF_UNLOCKED) &&
-		    attr_is_locked() == false) {
-			/* Attributes are unlocked, show because of overriding
-			 * display option
-			 */
-			prevent_show = false;
-		}
-#endif
-
-		if (prevent_show == true) {
-			return -EPERM;
-		}
+		return -EPERM;
 	}
 
 	return 0;
 }
 
-static struct dump dump_display_option_handler(attr_index_t index, bool locked)
-{
-	const struct attr_table_entry *entry = &ATTR_TABLE[index];
-	struct dump dump;
-
-	dump.hide = false;
-	dump.prevent = true;
-
-	if (entry->flags & FLAGS_HIDE_IN_DUMP) {
-		/* Hidden attribute, do not show */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
-		    locked == false) {
-			/* Attributes are unlocked, show because of overriding
-			 * display option
-			 */
-			dump.prevent = false;
-		}
-#endif
-		if (dump.prevent) {
-			dump.hide = true;
-		}
-
-	} else if (entry->flags & FLAGS_OBSCURE_IN_DUMP) {
-		/* Obscured attribute, show asterisks for value */
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-		if ((entry->flags &
-		     FLAGS_UNHIDE_UNOBSCURE_IN_DUMP_IF_UNLOCKED) &&
-		    locked == false) {
-			/* Attributes are unlocked, show because of overriding
-			 * display option */
-			dump.prevent = false;
-		}
-#endif
-	} else {
-		/* Normal attribute, OK to dump */
-		dump.prevent = false;
-	}
-
-	if (dump.prevent == false) {
-		/* Use real data */
-		dump.data = ATTR_TABLE[index].pData;
-		dump.size = get_attr_length(index);
-		dump.type = convert_attr_type(index);
-	} else {
-		/* Replace data with asterisks, use the same size as the data
-		 * up to 6 characters in length
-		 */
-		dump.data = asterisk_data;
-		if (convert_attr_type(index) == PARAM_STR) {
-			dump.size =
-				MIN(ASTERISK_DATA_SIZE, get_attr_length(index));
-		} else {
-			dump.size = MIN(ASTERISK_DATA_SIZE,
-					get_attr_length(index) * 2);
-		}
-		dump.type = PARAM_STR;
-	}
-
-	return dump;
-}
-
-static int show(const ate_t *const entry, bool change_handler)
+static int show(const ate_t *const entry)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
@@ -1699,7 +1548,7 @@ static int show(const ate_t *const entry, bool change_handler)
 	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
 
-	r = allow_show(entry, change_handler);
+	r = allow_show(entry);
 	if (r < 0) {
 		if (r == -EPERM) {
 			LOG_SHOW(CONFIG_ATTR_SHOW_FMT "******",
@@ -1758,12 +1607,12 @@ static int show(const ate_t *const entry, bool change_handler)
 		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
 			 f);
 		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", attr_table_index(entry),
-			 entry->name, log_strdup(float_str));
+			 entry->name, float_str);
 		break;
 
 	case ATTR_TYPE_STRING:
 		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "'%s'", attr_table_index(entry),
-			 entry->name, log_strdup((char *)entry->pData));
+			 entry->name, (char *)entry->pData);
 		break;
 
 	default:
@@ -1777,72 +1626,50 @@ static int show(const ate_t *const entry, bool change_handler)
 }
 
 /**
- * @brief Read parameter file from flash and load it into attributes/RAM.
+ * @brief Read key-value pair file from flash and load it into attributes/RAM.
  *
  * @param validate_first validate entire file when loading from an external
  * source. Otherwise, allow bad pairs when loading from a file that should be good.
  *
  * @param mask_modified Don't set modified flag during initialization
  */
-static int load_attributes(const char *fname, const char *feedback_path,
-			   bool validate_first, bool mask_modified,
-			   bool skip_non_writeable)
+static int load_attributes(const char *fname, bool validate_first,
+			   bool mask_modified, bool enforce_writable)
 {
 	int r = -EPERM;
 	size_t fsize;
 	char *fstr = NULL;
-	param_kvp_t *kvp = NULL;
+	lcz_kvp_t *kv = NULL;
 	size_t pairs = 0;
-	uint16_t error_count = 0;
+	bool do_write = false;
 
 	do {
-#if defined(CONFIG_ATTR_ENCRYPTED)
-		r = lcz_param_file_enc_parse_from_file(fname, &fsize, &fstr, &kvp);
-#else
-		r = lcz_param_file_parse_from_file(fname, &fsize, &fstr, &kvp);
-#endif
-		LOG_INF("pairs: %d fsize: %d file: %s", r, fsize,
-			log_strdup(fname));
-		BREAK_ON_ERROR(r);
-
+		r = lcz_kvp_parse_from_file(&KVP_CFG, fname, &fsize, &fstr,
+					    &kv);
+		LOG_INF("pairs: %d fsize: %d file: %s", r, fsize, fname);
+		if (r < 0) {
+			LOG_ERR("Unable to parse KVP file");
+			create_unable_to_parse_feedback_file();
+			break;
+		}
 		pairs = r;
 
-		if (validate_first) {
-			r = loader(kvp, fstr, pairs, false, mask_modified,
-				   &error_count, skip_non_writeable);
-
-			if (error_count != 0) {
-				/* Error occurred during verification, no point
-				 * in continuing
-				 */
-				r = -EINVAL;
-			}
+		/* Always run validator because it generates feedback file */
+		r = loader(kv, fstr, pairs, do_write, mask_modified,
+			   enforce_writable);
+		if (validate_first && r < 0) {
+			break;
 		}
-		BREAK_ON_ERROR(r);
 
-		r = loader(kvp, fstr, pairs, true, mask_modified, &error_count,
-			   skip_non_writeable);
+		do_write = true;
+		r = loader(kv, fstr, pairs, do_write, mask_modified,
+			   enforce_writable);
 
 	} while (0);
 
-	/* If we got as far as building the kvp list and any errors
-	 * occurred, build a list of diagnostics for all parameters in
-	 * the file.
-	 */
-	if ((kvp != NULL) && (error_count) && (feedback_path != NULL)) {
-		build_feedback_file(feedback_path, fstr, kvp, pairs);
-	}
-
-	/* If no errors occurred and we have a feedback path, we just
-	 * create an empty file.
-	 */
-	if ((!error_count) && (feedback_path != NULL)) {
-		build_empty_feedback_file(feedback_path);
-	}
-
 	/* Free the kvp allocation only if an allocation has been made */
-	if (kvp != NULL) {
-		k_free(kvp);
+	if (kv != NULL) {
+		k_free(kv);
 	}
 
 	/* Free the fstr allocation only if an allocation has been made */
@@ -1850,84 +1677,264 @@ static int load_attributes(const char *fname, const char *feedback_path,
 		k_free(fstr);
 	}
 
-	LOG_DBG("status %d", r);
+	if (r < 0) {
+		LOG_ERR("%s: status %d", __func__, r);
+	} else {
+		LOG_DBG("status %d", r);
+	}
 
 	return r;
 }
 
-static int loader(param_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified, uint16_t *error_count,
-		  bool skip_non_writeable)
+/* Use key-value information to find attribute table entry. */
+static const ate_t *kvp_find_entry(lcz_kvp_t *kvp)
+{
+	memset(&conversion, 0, sizeof(conversion));
+
+	if (kvp->key_len > ATTR_MAX_KEY_NAME_SIZE) {
+		LOG_ERR("%s: Key name too long", __func__);
+		return NULL;
+	}
+
+	if (kvp->val_len > ATTR_MAX_VALUE_SIZE) {
+		LOG_ERR("%s: Value too long", __func__);
+		return NULL;
+	}
+
+	if (kvp->key == NULL) {
+		LOG_ERR("%s: Invalid key pointer", __func__);
+		return NULL;
+	}
+	if (kvp->val == NULL) {
+		LOG_ERR("%s: Invalid value pointer", __func__);
+		return NULL;
+	}
+
+	/* null terminate key */
+	memcpy(conversion.key, kvp->key, kvp->key_len);
+	conversion.key[kvp->key_len] = 0;
+
+	/* null terminate value */
+	memcpy(conversion.value, kvp->val, kvp->val_len);
+	conversion.value[kvp->val_len] = 0;
+
+	/* Use name to find ID (table index) */
+	conversion.id = attr_get_id(conversion.key);
+	conversion.entry = attr_map(conversion.id);
+
+	return conversion.entry;
+}
+
+/* After entry has been found, perform data conversion for value */
+static int kvp_convert(lcz_kvp_t *kvp)
+{
+	int r = 0;
+
+	if (conversion.entry == NULL || kvp == NULL) {
+		return -EINVAL;
+	}
+
+	/* Convert from string into type
+	 * Length isn't currently used by number validators.
+	 */
+	switch (conversion.entry->type) {
+	case ATTR_TYPE_BOOL:
+	case ATTR_TYPE_U8:
+	case ATTR_TYPE_U16:
+	case ATTR_TYPE_U32:
+	case ATTR_TYPE_U64:
+		conversion.result.u64 = strtoull(conversion.value, NULL, 0);
+		conversion.result_len = sizeof(conversion.result.u64);
+		break;
+	case ATTR_TYPE_FLOAT:
+		conversion.result.dbl = strtod(conversion.value, NULL);
+		conversion.result_len = sizeof(conversion.result.dbl);
+		break;
+	case ATTR_TYPE_STRING:
+		/* Extra copy makes validation step uniform. */
+		memcpy(conversion.result.data, kvp->val, kvp->val_len);
+		conversion.result_len = kvp->val_len;
+		break;
+	case ATTR_TYPE_BYTE_ARRAY:
+		conversion.result_len =
+			hex2bin(kvp->val, kvp->val_len, conversion.result.data,
+				sizeof(conversion.result.data));
+		if (conversion.result_len == 0) {
+			r = -EINVAL;
+		}
+		break;
+	case ATTR_TYPE_S8:
+	case ATTR_TYPE_S16:
+	case ATTR_TYPE_S32:
+	case ATTR_TYPE_S64:
+	case ATTR_TYPE_ATOMIC:
+		conversion.result.s64 = strtoll(conversion.value, NULL, 0);
+		conversion.result_len = sizeof(conversion.result.s64);
+	default:
+	case ATTR_TYPE_ANY:
+	case ATTR_TYPE_UNKNOWN:
+		r = -EINVAL;
+		break;
+	}
+
+	return r;
+}
+
+/* Convert entry into key-value pair
+ *
+ * Assumes mutex (static buffer used to store value string)
+ */
+static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry)
+{
+	static char value[ATTR_MAX_VALUE_SIZE];
+	int len = -1;
+	int r = 0;
+
+	memset(value, 0, sizeof(value));
+
+	kvp->key = (char *)entry->name;
+	kvp->key_len = strlen(entry->name);
+	kvp->val = value;
+	kvp->val_len = 0;
+
+	switch (entry->type) {
+	case ATTR_TYPE_BOOL:
+		len = snprintk(value, sizeof(value), "%u",
+			       *(bool *)entry->pData);
+		break;
+	case ATTR_TYPE_U8:
+		len = snprintk(value, sizeof(value), "%u",
+			       *(uint8_t *)entry->pData);
+		break;
+	case ATTR_TYPE_U16:
+		len = snprintk(value, sizeof(value), "%u",
+			       *(uint16_t *)entry->pData);
+		break;
+	case ATTR_TYPE_U32:
+		len = snprintk(value, sizeof(value), "%u",
+			       *(uint32_t *)entry->pData);
+		break;
+
+	case ATTR_TYPE_U64:
+		len = snprintk(value, sizeof(value), "%" PRIu64,
+			       *(uint64_t *)entry->pData);
+		break;
+
+	case ATTR_TYPE_S8:
+		len = snprintk(value, sizeof(value), "%d",
+			       (int32_t)(*(int8_t *)entry->pData));
+		break;
+
+	case ATTR_TYPE_S16:
+		len = snprintk(value, sizeof(value), "%d",
+			       (int32_t)(*(int16_t *)entry->pData));
+		break;
+
+	case ATTR_TYPE_S32:
+		len = snprintk(value, sizeof(value), "%d",
+			       *(int32_t *)entry->pData);
+		break;
+
+	case ATTR_TYPE_S64:
+		len = snprintk(value, sizeof(value), "%" PRId64,
+			       *(int64_t *)entry->pData);
+		break;
+
+	case ATTR_TYPE_FLOAT:
+		len = snprintk(value, sizeof(value), "%e",
+			       *(double *)entry->pData);
+		break;
+
+	case ATTR_TYPE_STRING:
+		len = snprintk(value, sizeof(value), "%s",
+			       (char *)entry->pData);
+		if (len == 0) {
+			len = snprintk(value, sizeof(value), "%s",
+				       LCZ_KVP_EMPTY_VALUE_STR);
+		}
+		break;
+
+	case ATTR_TYPE_BYTE_ARRAY:
+	default:
+		len = bin2hex(entry->pData, entry->size, value, sizeof(value));
+		break;
+	}
+
+	if (len <= 0 || len >= sizeof(value)) {
+		r = -EINVAL;
+	} else if ((entry->type != ATTR_TYPE_STRING) &&
+		   (len > (entry->size * 2))) {
+		r = -EINVAL;
+	}
+
+	if (r == 0) {
+		kvp->val_len = len;
+	} else {
+		LOG_ERR("%s: Invalid conversion size %d", __func__, len);
+		kvp->val_len = 0;
+	}
+
+	return r;
+}
+
+static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write,
+		  bool mask_modified, bool enforce_writable)
 {
 	int r = -EPERM;
-	uint8_t bin[ATTR_MAX_BIN_SIZE];
-	size_t binlen;
 	size_t i;
-	const ate_t *entry;
-	int (*validate_or_write)(const ate_t *const, enum attr_type, void *,
-				 size_t) = do_write ? attr_write : validate;
 
-	if (error_count != NULL) {
-		*error_count = 0;
+	/* External files are always validated */
+	if (!do_write) {
+		start_feedback_file();
 	}
 
 	/* Loop through file
-	 * Find entry for each ID
+	 * Find entry for each key-value pair
 	 * Convert value from file into binary.
 	 */
 	for (i = 0; i < pairs; i++) {
-		entry = attr_map(kvp[i].id);
-
-		if (entry == NULL) {
-			r = -EPERM;
-		} else if (skip_non_writeable == true && !is_writable(entry)) {
-			/* When importing settings from a remote source, in
-			 * verification mode, skip entries that are not
-			 * writeable
-			 */
-			r = 0;
-		} else if (convert_attr_type(attr_table_index(entry)) ==
-			   PARAM_STR) {
-			r = validate_or_write(entry, ATTR_TYPE_STRING,
-					      kvp[i].keystr, kvp[i].length);
+		if (kvp_find_entry(kv + i) == NULL) {
+			r = -ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
+		} else if (!is_writable(conversion.entry) && enforce_writable) {
+			r = -ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE;
 		} else {
-			/* Attribute validators for numbers don't look at the length passed
-			 * into the function.  However, they do cast based on the size
-			 * of the parameter.
-			 */
-			memset(bin, 0, sizeof(bin));
-
-			binlen = hex2bin(kvp[i].keystr, kvp[i].length, bin,
-					 sizeof(bin));
-			if (binlen <= 0) {
-				r = -EINVAL;
-				LOG_ERR("Unable to convert hex->bin for id: %d",
-					attr_table_index(entry));
-			} else {
-				r = validate_or_write(entry, ATTR_TYPE_ANY, bin,
-						      binlen);
+			r = kvp_convert(kv + i);
+			if (r == 0) {
+				if (do_write) {
+					r = attr_write(conversion.entry,
+						       conversion.entry->type,
+						       conversion.result.data,
+						       conversion.result_len);
+				} else {
+					r = validate(conversion.entry,
+						     conversion.entry->type,
+						     conversion.result.data,
+						     conversion.result_len);
+				}
 			}
 		}
 
 		if (r < 0) {
-			/* We always update the error count here regardless
-			 * of whether break out is enabled.
-			 */
-			if (error_count != NULL) {
-				*error_count = *error_count + 1;
+			if (!do_write) {
+				append_feedback_file(kv + i, r);
 			}
+
+			/* Return errno instead of feedback code */
+			r = -EINVAL;
 
 			if (IS_ENABLED(CONFIG_ATTR_BREAK_ON_LOAD_FAILURE)) {
 				break;
 			}
 		}
 
-		if (mask_modified) {
-			if (entry != NULL) {
-				atomic_clear_bit(attr_modified,
-						 attr_table_index(entry));
-				atomic_clear_bit(attr_unchanged,
-						 attr_table_index(entry));
+		if (do_write && mask_modified) {
+			if (conversion.entry != NULL) {
+				atomic_clear_bit(
+					attr_modified,
+					attr_table_index(conversion.entry));
+				atomic_clear_bit(
+					attr_unchanged,
+					attr_table_index(conversion.entry));
 			}
 		}
 	}
@@ -1985,34 +1992,7 @@ static int prepare_for_read(const ate_t *const entry)
 
 static bool is_writable(const ate_t *const entry)
 {
-	bool r = false;
-	bool settings_locked = 0;
-
-	if (entry->flags & FLAGS_WRITABLE) {
-		if (entry->flags & FLAGS_LOCKABLE) {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-			settings_locked = attr_is_locked();
-
-			if (settings_locked == false) {
-#endif
-				r = true;
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-			}
-#endif
-		} else {
-			r = true;
-		}
-	}
-
-	if (!r) {
-		LOG_DBG("ID [%u] %s is %s", attr_table_index(entry),
-			entry->name,
-			(settings_locked == false ?
-				       "not writable" :
-				       "locked by settings passcode"));
-	}
-
-	return r;
+	return ((entry->flags & FLAGS_WRITABLE) != 0);
 }
 
 static bool is_dump_rw(attr_index_t index)
@@ -2107,220 +2087,56 @@ static int64_t sign_extend64(const ate_t *const entry)
 	return v;
 }
 
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-static void attr_load_settings_lock(void)
+/* write key, delimiter, and code */
+static void append_feedback_file(lcz_kvp_t *kvp, int code)
 {
+#ifdef CONFIG_ATTR_LOAD_FEEDBACK
+	const char *file_name = CONFIG_ATTRIBUTE_FEEDBACK_FILE;
+	char code_str[]= "=0\n";
 	int r;
-	uint8_t lock_enabled;
-	const struct attr_table_entry *const entry_lock =
-		attr_map(ATTR_ID_lock);
-	const struct attr_table_entry *const entry_lock_status =
-		attr_map(ATTR_ID_lock_status);
 
-	if (attr_initialized == true) {
-		/* Setup is already complete */
-		return;
-	}
-
-	/* Check settings lock status */
-	if (entry_lock == NULL || entry_lock_status == NULL) {
-		/* Missing required attributes */
-		if (entry_lock == NULL) {
-			LOG_ERR("Missing lock attribute (%d), settings lock inoperable",
-				ATTR_ID_lock);
-		}
-
-		if (entry_lock_status == NULL) {
-			LOG_ERR("Missing lock status attribute (%d), settings lock inoperable",
-				ATTR_ID_lock_status);
-		}
-	} else {
-		/* Set the current status of the lock */
-		lock_enabled = *(uint8_t *)entry_lock->pData;
-
-		r = attr_write(entry_lock_status, ATTR_TYPE_ANY, &lock_enabled,
-			       sizeof(lock_enabled));
-
-		if (r == 0) {
-			r = save_single(entry_lock_status);
-			change_single(entry_lock_status, ENABLE_NOTIFICATIONS);
-		}
-	}
-
-	/* Turn off the display on the terminal of the passcode */
-	attr_set_quiet(ATTR_ID_settings_passcode, true);
-}
-#endif
-
-static enum attr_write_error diagnose_parameter_write_error(param_kvp_t *kvp)
-{
-	enum attr_write_error result = ATTR_WRITE_ERROR_OK;
-	const struct attr_table_entry *entry;
-	uint8_t bin[ATTR_MAX_BIN_SIZE];
-	size_t binlen;
-
-	entry = attr_map(kvp->id);
 	do {
-		/* Does ID map to a valid table index? */
-		if (entry == NULL) {
-			result = ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
+		r = fsu_append_abs(file_name, kvp->key, kvp->key_len);
+		if (r < 0) {
 			break;
 		}
 
-		if (!is_writable(entry)) {
-			result = ATTR_WRITE_ERROR_PARAMETER_READ_ONLY;
+		code = abs(code);
+		if (code < 0 || code >= ATTR_WRITE_ERROR_CODE_COUNT) {
+			LOG_ERR("Invalid attribute write feedback code %d",
+				code);
+			code = ATTR_WRITE_ERROR_UNKNOWN;
+		}
+
+		code_str[1] = code + '0';
+		r = fsu_append_abs(file_name, code_str, strlen(code_str));
+		if (r < 0) {
 			break;
 		}
 
-		/* If not diagnosed, run validator to get details. */
-		if (entry->type == ATTR_TYPE_STRING) {
-			result = entry->validator(entry, kvp->keystr,
-						  kvp->length, false);
-		} else {
-			binlen = hex2bin(kvp->keystr, kvp->length, bin,
-					 sizeof(bin));
-			/* Make sure the data is valid for use */
-			if (binlen > 0) {
-				result = entry->validator(entry, bin, binlen,
-							  false);
-			} else {
-				result =
-					ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
-			}
-		}
-		break;
+	} while (0);
 
-	} while (1);
-
-	/* Validators return negative error codes */
-	return abs(result);
-}
-
-static int build_feedback_file(const char *feedback_path, char *fstr,
-			       param_kvp_t *kvp, size_t pairs)
-{
-	/* Start with a result greater than zero here
-	 * so we enter the while loop
-	 */
-	int result = 1;
-	int pair_index;
-	enum attr_write_error attribute_write_error;
-	param_kvp_t *next_kvp;
-	uint16_t total_length = 0;
-	uint8_t *write_buffer;
-
-	/* Reserve enough space to hold details of all parameters. We add
-	 * an extra character here so the append_feedback function can keep
-	 * the string buffer null terminated for internal use.
-	 */
-	uint16_t buffer_size = (ATTR_LOAD_FEEDBACK_ENTRY_SIZE * pairs) + 1;
-	/* Also be sure we align properly for malloc calls */
-	buffer_size = ((buffer_size / ATTR_LOAD_FEEDBACK_ALIGN_SIZE) *
-		       ATTR_LOAD_FEEDBACK_ALIGN_SIZE) +
-		      ATTR_LOAD_FEEDBACK_ALIGN_SIZE;
-
-	write_buffer = k_malloc(buffer_size);
-
-	/* Then add our feedback if possible */
-	if (write_buffer != NULL) {
-		/* Start out with a blank buffer */
-		memset(write_buffer, 0x0, buffer_size);
-		/* Work through all load KVPs */
-		for (pair_index = 0; (pair_index < pairs) && (result > 0);
-		     pair_index++) {
-			/* Get next KVP for diagnosis */
-			next_kvp = &kvp[pair_index];
-			/* Diagnose the next parameter error */
-			attribute_write_error =
-				diagnose_parameter_write_error(next_kvp);
-			/* And add to our output file */
-			result = lcz_param_file_append_feedback(
-				next_kvp->id, attribute_write_error,
-				write_buffer);
-			/* Zero and less indicates an error occurred,
-			 * greater than zero an added length.
-			 */
-			if (result > 0) {
-				total_length += result;
-			}
-		}
+	if (r < 0) {
+		LOG_ERR("Unable to append to feedback file");
 	}
-
-	/* OK to write our feedback file? */
-	if (write_buffer != NULL) {
-		/* Any data added? */
-		if (total_length) {
-			/* Either create or overwrite the feedback file */
-			result = fsu_write_abs(feedback_path, write_buffer,
-					       total_length);
-		}
-		/* Free memory regardless */
-		k_free(write_buffer);
-	}
-	return (result);
-}
-
-static int build_empty_feedback_file(const char *feedback_path)
-{
-	int result;
-
-	result = fsu_write_abs(feedback_path, NULL, 0);
-
-	return (result);
-}
-
-int attr_force_save(void)
-{
-#ifdef CONFIG_ATTR_DEFERRED_SAVE
-	return save_attributes(true);
-#else
-	return 0;
 #endif
 }
 
-#ifdef CONFIG_ATTR_CONFIGURATION_VERSION
-int attr_update_config_version(void)
+static void start_feedback_file(void)
 {
-	uint8_t config_version;
-
-	if (attr_get(ATTR_ID_config_version, &config_version,
-		     sizeof(config_version)) == sizeof(config_version)) {
-		config_version++;
-		(void)attr_set_uint32(ATTR_ID_config_version,
-				      (uint32_t)config_version);
-
-		return 0;
+#ifdef CONFIG_ATTR_LOAD_FEEDBACK
+	if (fsu_write_abs(CONFIG_ATTRIBUTE_FEEDBACK_FILE, NULL, 0) < 0) {
+		LOG_ERR("Unable to start feedback file");
 	}
-
-	return -EIO;
-}
 #endif
-
-void attr_get_indices(uint16_t *table_size, uint16_t *min_id, uint16_t *max_id)
-{
-	*table_size = ATTR_TABLE_SIZE;
-	*min_id = 0;
-	*max_id = ATTR_TABLE_MAX_ID;
 }
 
-int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
-			   size_t *size, enum attr_type *type,
-			   enum attr_flags *flags, bool *prepared,
-			   const struct attr_min_max *min,
-			   const struct attr_min_max *max)
+static void create_unable_to_parse_feedback_file(void)
 {
-	if (index >= ATTR_TABLE_SIZE) {
-		return -EINVAL;
-	}
+#ifdef CONFIG_ATTR_LOAD_FEEDBACK
+	lcz_kvp_t kvp = { .key = "0", .key_len = 1, .val = 0, .val_len = 0 };
 
-	*id = index;
-	name = ATTR_TABLE[index].name;
-	*size = ATTR_TABLE[index].size;
-	*type = ATTR_TABLE[index].type;
-	*flags = ATTR_TABLE[index].flags;
-	*prepared = ATTR_TABLE[index].prepare != NULL;
-	min = &ATTR_TABLE[index].min;
-	max = &ATTR_TABLE[index].max;
-
-	return 0;
+	start_feedback_file();
+	append_feedback_file(&kvp, ATTR_WRITE_ERROR_UNABLE_TO_PARSE_FILE);
+#endif
 }

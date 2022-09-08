@@ -442,9 +442,8 @@ int attr_set_mask32(attr_id_t id, uint8_t bit, uint8_t value);
  */
 int attr_set_mask64(attr_id_t id, uint8_t bit, uint8_t value);
 
-#ifdef CONFIG_ATTR_SHELL
 /**
- * @brief Get the id of an attribute
+ * @brief Get the id (table index) of an attribute using the name
  *
  * @param name of the attribute
  *
@@ -493,7 +492,6 @@ int attr_delete(void);
  */
 const char *const attr_get_string_set_error(int value);
 
-#endif /* CONFIG_ATTR_SHELL */
 
 /**
  * @brief Print all parameters to the console using system workq.  The prepare
@@ -529,7 +527,7 @@ int attr_set_quiet(attr_id_t id, bool value);
  *
  * @retval negative error code, number of parameters on success
  */
-int attr_load(const char *abs_path, const char *feedback_path, bool *modified);
+int attr_load(const char *abs_path, bool *modified);
 
 /**
  * @brief Notification callback

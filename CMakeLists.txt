@@ -28,10 +28,6 @@ zephyr_sources(
     ${ATTR_CUSTOM_PATH_BASE}/src/attr_table.c
 )
 
-if(CONFIG_ATTR_SETTINGS_LOCK)
-zephyr_sources_ifdef(CONFIG_ATTR_SHELL_LOCK src/shell_lock.c)
-endif()
-
 if(CONFIG_FRAMEWORK)
     # Add framework ID and msgcode files
     add_fwk_id_file(${CMAKE_CURRENT_SOURCE_DIR}/framework/attr_ids.h)

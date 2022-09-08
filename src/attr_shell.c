@@ -33,6 +33,15 @@
 #endif
 
 /******************************************************************************/
+/* Local Constant, Macro and Type Definitions                                 */
+/******************************************************************************/
+
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
+	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED)
+#define ALL_OR_LIMITED 1
+#endif
+
+/******************************************************************************/
 /* Local Function Prototypes                                                  */
 /******************************************************************************/
 static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv);
@@ -42,15 +51,11 @@ static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_get_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_size_cmd(const struct shell *shell, size_t argc, char **argv);
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(ALL_OR_LIMITED)
 static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv);
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL)
 static int ats_factory_reset_cmd(const struct shell *shell, size_t argc,
 				 char **argv);
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv);
@@ -65,7 +70,7 @@ static int ats_query_cmd(const struct shell *shell, size_t argc, char **argv);
 
 static int ats_quiet_cmd(const struct shell *shell, size_t argc, char **argv);
 
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
+#ifdef CONFIG_ATTR_SHELL_NOTIFICATIONS
 static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_disable_notify_cmd(const struct shell *shell, size_t argc,
 				  char **argv);
@@ -111,7 +116,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		  "Disable printing for a parameter\n"
 		  "<id> <0 = verbose, 1 = quiet>",
 		  ats_quiet_cmd),
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
+#ifdef CONFIG_ATTR_SHELL_NOTIFICATIONS
 	SHELL_CMD(notify, NULL,
 		  "Enable/Disable BLE notifications\n"
 		  "<id> <0 = disable, 1 = enable>",
@@ -127,17 +132,13 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		"Value must be larger than upTime (ms) and LCZ_QRTC_MINIMUM_EPOCH",
 		ats_qrtc_cmd),
 #endif
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(ALL_OR_LIMITED)
 	SHELL_CMD(load, NULL, "Load attributes from a file <abs file name>",
 		  ats_load_cmd),
 	SHELL_CMD(dump, NULL, "<0 = rw, 1 = w, 2 = ro> <abs_path>\n",
 		  ats_dump_cmd),
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL)
 	SHELL_CMD(
 		type, NULL,
 		"Display an attribute file\n"
@@ -463,7 +464,7 @@ static int ats_quiet_cmd(const struct shell *shell, size_t argc, char **argv)
 	return r;
 }
 
-#ifdef CONFIG_ATTR_SHELL_SETTINGS_MANIPULATION
+#ifdef CONFIG_ATTR_SHELL_NOTIFICATIONS
 static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	attr_id_t id = 0;
@@ -516,48 +517,24 @@ static int ats_qrtc_cmd(const struct shell *shell, size_t argc, char **argv)
 }
 #endif
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||        \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED) ||              \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
+#if defined(ALL_OR_LIMITED)
 static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int r = -EINVAL;
 	bool modified;
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||            \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
-	if (attr_is_locked() == true) {
-		shell_error(shell, "Configuration lock active");
-		return -EACCES;
-	}
-#endif
-
 	if ((argc == 2) && (argv[1] != NULL)) {
-		r = attr_load(argv[1],
-#ifdef CONFIG_ATTR_LOAD_FEEDBACK
-			      CONFIG_ATTR_SHELL_FEEDBACK_FILE,
-#else
-			      NULL,
-#endif
-			      &modified);
+		r = attr_load(argv[1], &modified);
 
 		if (r < 0) {
 			shell_error(shell, "Attribute load error");
 		} else {
-#ifdef CONFIG_ATTR_CONFIGURATION_VERSION
 			/* Update the device configuration version if a
 			 * modification was made
 			 */
 			if (modified == true) {
-				attr_update_config_version();
+				r = attr_update_config_version();
 			}
-#endif
-
-#ifdef CONFIG_ATTR_LOAD_FEEDBACK
-			shell_print(shell, "Feedback data saved to: %s",
-				    CONFIG_ATTR_SHELL_FEEDBACK_FILE);
-#endif
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
@@ -573,14 +550,6 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 	const char *fname;
 	int r = -EPERM;
 	int type;
-
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK) ||            \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_LIMITED_WITH_LOCK)
-	if (attr_is_locked() == true) {
-		shell_error(shell, "Configuration lock active");
-		return -EACCES;
-	}
-#endif
 
 #ifdef ATTR_ID_dump_path
 	fname = attr_get_quasi_static(ATTR_ID_dump_path);
@@ -622,20 +591,12 @@ static int ats_dump_cmd(const struct shell *shell, size_t argc, char **argv)
 	return (r < 0) ? r : 0;
 }
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL) ||                      \
-	defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
+#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL)
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	int r = 0;
 	uint8_t *buf;
 	ssize_t size;
-
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
-	if (attr_is_locked() == true) {
-		shell_error(shell, "Configuration lock active");
-		return -EACCES;
-	}
-#endif
 
 	if ((argc >= 2) && (argv[1] != NULL)) {
 		size = fsu_get_file_size_abs(argv[1]);
@@ -667,13 +628,6 @@ static int ats_factory_reset_cmd(const struct shell *shell, size_t argc,
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
-	if (attr_is_locked() == true) {
-		shell_error(shell, "Configuration lock active");
-		return -EACCES;
-	}
-#endif
-
 #ifdef CONFIG_ATTR_SHELL_FACTORY_RESET_MSG
 	shell_print(shell, "Requesting factory reset");
 	FRAMEWORK_MSG_CREATE_AND_BROADCAST(FWK_ID_RESERVED, FMC_ATTR_FACTORY_RESET);
@@ -688,17 +642,12 @@ static int ats_delete_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
+	int r;
 
-#if defined(CONFIG_ATTR_SHELL_CONFIG_MANIPULATION_ALL_WITH_LOCK)
-	if (attr_is_locked() == true) {
-		shell_error(shell, "Configuration lock active");
-		return -EACCES;
-	}
-#endif
+	r = attr_delete();
+	shell_print(shell, "Delete attribute file status: %d", r);
 
-	shell_print(shell, "Delete attribute file status: %d", attr_delete());
-
-	return 0;
+	return r;
 }
 #endif
-#endif
+#endif /* ALL_OR_LIMITED */

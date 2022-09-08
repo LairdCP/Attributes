@@ -439,9 +439,12 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	struct set_parameter user_params;
 	struct set_parameter_result response;
 	enum attr_type type;
+	bool *mod_ptr = NULL;
 #ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
 	bool modified = false;
+	mod_ptr = &modified;
 #endif
+
 	int r = 0;
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
@@ -465,13 +468,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 		    _set_parameter_p2_bool) {
 			r = attr_set((attr_id_t)user_params._set_parameter_p1,
 				     type, &user_params._set_parameter_p2_bool,
-				     sizeof(bool),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-				     modified
-#else
-				     NULL
-#endif
-			);
+				     sizeof(bool), mod_ptr);
 		} else {
 			r = -ENOMSG;
 		}
@@ -504,12 +501,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(int8_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_S16) {
 				int16_t tmp_val =
 					(int16_t)user_params
@@ -517,12 +509,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(int16_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_S32) {
 				int32_t tmp_val =
 					(int32_t)user_params
@@ -530,24 +517,13 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(int32_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_S64) {
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type,
 					&user_params._set_parameter_p2__int64,
-					sizeof(int64_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					sizeof(int64_t), mod_ptr);
 			}
 		} else {
 			r = -ENOMSG;
@@ -576,12 +552,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(uint8_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_U16) {
 				uint16_t tmp_val =
 					(uint16_t)user_params
@@ -589,12 +560,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(uint16_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_U32) {
 				uint32_t tmp_val =
 					(uint32_t)user_params
@@ -602,24 +568,13 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type, &tmp_val, sizeof(uint32_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					mod_ptr);
 			} else if (type == ATTR_TYPE_U64) {
 				r = attr_set(
 					(attr_id_t)user_params._set_parameter_p1,
 					type,
 					&user_params._set_parameter_p2__uint64,
-					sizeof(uint64_t),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-					modified
-#else
-					NULL
-#endif
-				);
+					sizeof(uint64_t), mod_ptr);
 			}
 		} else {
 			r = -ENOMSG;
@@ -631,12 +586,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				(attr_id_t)user_params._set_parameter_p1, type,
 				(void *)user_params._set_parameter_p2_tstr.value,
 				user_params._set_parameter_p2_tstr.len,
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-				modified
-#else
-				NULL
-#endif
-			);
+				mod_ptr);
 		} else {
 			r = -ENOMSG;
 		}
@@ -646,13 +596,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 			float tmp_val =
 				(float)user_params._set_parameter_p2_float;
 			r = attr_set((attr_id_t)user_params._set_parameter_p1,
-				     type, &tmp_val, sizeof(float),
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-				     modified
-#else
-				     NULL
-#endif
-			);
+				     type, &tmp_val, sizeof(float), mod_ptr);
 		} else {
 			r = -ENOMSG;
 		}
@@ -663,12 +607,7 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 				(attr_id_t)user_params._set_parameter_p1, type,
 				(void *)user_params._set_parameter_p2_bstr.value,
 				user_params._set_parameter_p2_bstr.len,
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
-				modified
-#else
-				NULL
-#endif
-			);
+				mod_ptr);
 		} else {
 			r = -ENOMSG;
 		}
@@ -714,11 +653,6 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	if (attr_is_locked() == true) {
-		r = -EACCES;
-	}
-#endif
 #ifdef ATTR_ID_load_path
 	load_path = attr_get_quasi_static(ATTR_ID_load_path);
 #else
@@ -729,39 +663,13 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		/* The input file is an optional parameter. */
 		r = attr_load((user_params._load_parameter_file_p1_present ==
 					       true ?
-				       user_params._load_parameter_file_p1
+					     user_params._load_parameter_file_p1
 					       ._load_parameter_file_p1.value :
-				       (void *)load_path),
-#ifdef CONFIG_ATTR_LOAD_FEEDBACK
-			      CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE,
-#else
-			      NULL,
-#endif
+					     (void *)load_path),
 			      &modified);
 	}
 
 	load_parameter_file_data._load_parameter_file_result_r = r;
-
-	if (r == 0) {
-#ifdef CONFIG_ATTR_LOAD_FEEDBACK
-		/* Encode the feedback file path. */
-		load_parameter_file_data._load_parameter_file_result_f
-			._load_parameter_file_result_f.value =
-			CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE;
-		load_parameter_file_data._load_parameter_file_result_f
-			._load_parameter_file_result_f.len =
-			strlen(CONFIG_ATTRIBUTE_MGMT_FEEDBACK_FILE);
-		load_parameter_file_data._load_parameter_file_result_f_present =
-			true;
-
-#ifdef CONFIG_ATTR_CONFIGURATION_VERSION
-		/* If modified, update the device configuration version */
-		if (modified == true) {
-			attr_update_config_version();
-		}
-#endif
-#endif
-	}
 
 	if (!cbor_encode_load_parameter_file_result(
 		    zse->payload_mut, (zse->payload_end - zse->payload),
@@ -790,12 +698,6 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 					     &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	if (attr_is_locked() == true) {
-		r = -EACCES;
-	}
-#endif
 
 	if (r == 0) {
 		file_name = NULL;
@@ -866,12 +768,6 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 	uint8_t factory_reset_enabled = 0;
 #endif
 	zcbor_state_t *zse = ctxt->cnbe->zs;
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	if (attr_is_locked() == true) {
-		r = -EACCES;
-	}
-#endif
 
 	if (r == 0) {
 #ifdef ATTR_ID_factory_reset_enable
@@ -989,254 +885,27 @@ static int disable_notify(struct mgmt_ctxt *ctxt)
 
 static int check_lock_status(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint32_t rsp_len = 0;
-	struct check_lock_status_result check_lock_status_data;
-	bool lock_enabled;
-	bool lock_active = false;
-	uint8_t lock_status;
-	int r = 0;
-	zcbor_state_t *zse = ctxt->cnbe->zs;
-
-	r = attr_get(ATTR_ID_lock, &lock_enabled, sizeof(lock_enabled));
-
-	if (r >= 0) {
-		r = attr_get(ATTR_ID_lock_status, &lock_status,
-			     sizeof(lock_status));
-
-		if (r >= 0) {
-			if (lock_status == LOCK_STATUS_SETUP_ENGAGED) {
-				lock_active = true;
-			}
-
-			/* Completed successfully so return success result
-			 * code
-			 */
-			r = 0;
-		}
-	}
-
-	check_lock_status_data._check_lock_status_result_r = r;
-	check_lock_status_data._check_lock_status_result_r1 = lock_enabled;
-	check_lock_status_data._check_lock_status_result_r2 = lock_active;
-
-	if (!cbor_encode_check_lock_status_result(
-		    zse->payload_mut, (zse->payload_end - zse->payload),
-		    &check_lock_status_data, &rsp_len)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	zse->payload += rsp_len;
-
-	return MGMT_ERR_EOK;
-#else
 	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int set_lock_code(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint32_t rsp_len = 0;
-	struct set_lock_code user_params;
-	struct set_lock_code_result set_lock_code_data;
-	int r = 0;
-	zcbor_state_t *zse = ctxt->cnbe->zs;
-	zcbor_state_t *zsd = ctxt->cnbd->zs;
-
-	if (!cbor_decode_set_lock_code(zsd->payload,
-				       (zsd->payload_end - zsd->payload),
-				       &user_params, NULL)) {
-		return MGMT_ERR_EINVAL;
-	}
-
-	if (attr_is_locked() == true) {
-		r = -EACCES;
-	}
-
-	if (r == 0) {
-		r = attr_set_uint32(ATTR_ID_settings_passcode,
-				    user_params._set_lock_code_p1);
-	}
-
-	if (r == 0) {
-		r = attr_set_uint32(ATTR_ID_lock, true);
-	}
-
-	if (r == 0) {
-		/* This sets the lock ready to be engaged when the user
-		 * disconnects, when the module is rebooted or when the user
-		 * manually requests it with the lock command, but allows
-		 * further configuration changes to the unit until then
-		 */
-		r = attr_set_uint32(ATTR_ID_lock_status,
-				    LOCK_STATUS_SETUP_DISENGAGED);
-
-		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
-	}
-
-	set_lock_code_data._set_lock_code_result_r = r;
-
-	if (!cbor_encode_set_lock_code_result(zse->payload_mut,
-					      (zse->payload_end - zse->payload),
-					      &set_lock_code_data, &rsp_len)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	zse->payload += rsp_len;
-
-	return MGMT_ERR_EOK;
-#else
 	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int lock(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint32_t rsp_len = 0;
-	struct lock_result lock_data;
-	enum settings_passcode_status passcode_status =
-		SETTINGS_PASSCODE_STATUS_UNDEFINED;
-	int r = 0;
-	zcbor_state_t *zse = ctxt->cnbe->zs;
-
-	if (attr_is_locked() == false) {
-		/* Lock the settings */
-		attr_set_uint32(ATTR_ID_lock, true);
-		attr_set_uint32(ATTR_ID_lock_status, LOCK_STATUS_SETUP_ENGAGED);
-		passcode_status = SETTINGS_PASSCODE_STATUS_VALID_CODE;
-
-		/* Send feedback about the passcode */
-		attr_set_uint32(ATTR_ID_settings_passcode_status,
-				passcode_status);
-
-		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
-	}
-
-	lock_data._lock_result_r = r;
-
-	if (!cbor_encode_lock_result(zse->payload_mut,
-				     (zse->payload_end - zse->payload),
-				     &lock_data, &rsp_len)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	zse->payload += rsp_len;
-
-	return MGMT_ERR_EOK;
-#else
 	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int unlock(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint32_t rsp_len = 0;
-	enum settings_passcode_status passcode_status =
-		SETTINGS_PASSCODE_STATUS_UNDEFINED;
-	struct unlock user_params;
-	struct unlock_result unlock_data;
-	uint32_t real_lock_code;
-	int r = 0;
-	zcbor_state_t *zse = ctxt->cnbe->zs;
-	zcbor_state_t *zsd = ctxt->cnbd->zs;
-
-	if (!cbor_decode_unlock(zsd->payload, (zsd->payload_end - zsd->payload),
-				&user_params, NULL)) {
-		return MGMT_ERR_EINVAL;
-	}
-
-	if (attr_is_locked() == true) {
-		real_lock_code =
-			attr_get_uint32(ATTR_ID_settings_passcode, 123456);
-
-		/* Check if the passcode entered matches */
-		if (real_lock_code == user_params._unlock_p1) {
-			/* Unlock the settings */
-			attr_set_uint32(ATTR_ID_lock_status,
-					LOCK_STATUS_SETUP_DISENGAGED);
-			passcode_status = SETTINGS_PASSCODE_STATUS_VALID_CODE;
-		} else {
-			passcode_status = SETTINGS_PASSCODE_STATUS_INVALID_CODE;
-			r = -EINVAL;
-
-			/* Sleep for 1.5 seconds to slow down possible
-			 * attacks
-			 */
-			k_sleep(K_MSEC(LOCK_INVALID_WAIT_TIME_MS));
-		}
-
-		/* Send feedback to APP about the passcode */
-		attr_set_uint32(ATTR_ID_settings_passcode_status,
-				passcode_status);
-	}
-
-	if (user_params._unlock_p2 == true && attr_is_locked() == false &&
-	    r == 0) {
-		/* User has requested to remove the lock entirely */
-		attr_set_uint32(ATTR_ID_lock, false);
-		attr_set_uint32(ATTR_ID_lock_status, LOCK_STATUS_NOT_SETUP);
-	}
-
-	if (r == 0) {
-		ATTR_FRAMEWORK_BROADCAST(FMC_ATTR_LOCK_STATUS_CHANGED);
-	}
-
-	unlock_data._unlock_result_r = r;
-
-	if (!cbor_encode_unlock_result(zse->payload_mut,
-				       (zse->payload_end - zse->payload),
-				       &unlock_data, &rsp_len)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	zse->payload += rsp_len;
-
-	return MGMT_ERR_EOK;
-#else
 	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int get_unlock_error_code(struct mgmt_ctxt *ctxt)
 {
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	uint32_t rsp_len = 0;
-	struct get_unlock_error_code_result unlock_error_code_data;
-	enum settings_passcode_status passcode_status =
-		SETTINGS_PASSCODE_STATUS_UNDEFINED;
-	int r = 0;
-	zcbor_state_t *zse = ctxt->cnbe->zs;
-
-	r = attr_get(ATTR_ID_settings_passcode_status, &passcode_status,
-		     sizeof(passcode_status));
-
-	if (r >= 0) {
-		/* Clear status */
-		attr_set_uint32(ATTR_ID_settings_passcode_status,
-				SETTINGS_PASSCODE_STATUS_UNDEFINED);
-
-		r = 0;
-	}
-
-	unlock_error_code_data._get_unlock_error_code_result_r = r;
-	unlock_error_code_data._get_unlock_error_code_result_r1 =
-		passcode_status;
-
-	if (!cbor_encode_get_unlock_error_code_result(
-		    zse->payload_mut, (zse->payload_end - zse->payload),
-		    &unlock_error_code_data, &rsp_len)) {
-		return MGMT_ERR_EMSGSIZE;
-	}
-
-	zse->payload += rsp_len;
-
-	return MGMT_ERR_EOK;
-#else
 	return MGMT_ERR_ENOTSUP;
-#endif
 }
 
 static int get_api_version(struct mgmt_ctxt *ctxt)
