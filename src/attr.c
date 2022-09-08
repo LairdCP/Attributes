@@ -42,14 +42,13 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 		break;                                                         \
 	}
 
-/* Sys init order isn't always respected */
 #define TAKE_MUTEX(m)                                                          \
 	while (!attr_initialized) {                                            \
 		k_yield();                                                     \
 	}                                                                      \
 	k_mutex_lock(&m, K_FOREVER)
 
-#define TAKE_MUTEX_NO_INIT(m) k_mutex_lock(&m, K_FOREVER)
+#define TAKE_MUTEX_DURING_INIT(m) k_mutex_lock(&m, K_FOREVER)
 
 #define GIVE_MUTEX(m) k_mutex_unlock(&m)
 
@@ -111,20 +110,19 @@ ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
 ATOMIC_DEFINE(attr_unchanged, ATTR_TABLE_SIZE);
 ATOMIC_DEFINE(attr_skip_broadcast, ATTR_TABLE_SIZE);
 
+K_MUTEX_DEFINE(attr_mutex);
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static ATOMIC_DEFINE(quiet, ATTR_TABLE_SIZE);
 static ATOMIC_DEFINE(notify, ATTR_TABLE_SIZE);
 
-static struct k_mutex attr_mutex;
-static struct k_mutex attr_save_change_mutex;
-
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
 static struct k_work_delayable attr_save_delayed_work;
 #endif
 
-static bool attr_initialized;
+static volatile bool attr_initialized;
 
 static const char asterisk_data[] = "******";
 #define ASTERISK_DATA_SIZE (sizeof(asterisk_data) - 1)
@@ -197,10 +195,55 @@ static void save_attributes_work(struct k_work *item);
 #endif
 
 /******************************************************************************/
-/* Global Function Definitions                                                */
+/* Global Function Prototypes                                                 */
 /******************************************************************************/
+extern void attr_table_initialize(void);
+extern void attr_table_factory_reset(void);
+
+/******************************************************************************/
+/* SYS INIT                                                                   */
+/******************************************************************************/
+static int attr_init(const struct device *device)
+{
+	ARG_UNUSED(device);
+	int r = -EPERM;
+
+	TAKE_MUTEX_DURING_INIT(attr_mutex);
+
+	attr_table_initialize();
+
+#ifdef ATTR_INDEX_load_path
+	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) ==
+	    0) {
+		LOG_WRN("SMP load path should be different from attribute source");
+	}
+#endif
+
+	if (fsu_get_file_size_abs(ATTR_ABS_PATH) < 0) {
+		r = 0;
+		LOG_INF("Attribute file doesn't exist");
+	} else {
+		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
+		r = load_attributes(ATTR_ABS_PATH, NULL, true, true, false);
+	}
+
+#ifdef CONFIG_ATTR_DEFERRED_SAVE
+	k_work_init_delayable(&attr_save_delayed_work, save_attributes_work);
+#endif
+
+	initialize_quiet();
+
+	attr_initialized = true;
+	GIVE_MUTEX(attr_mutex);
+
+	return r;
+}
+
 SYS_INIT(attr_init, APPLICATION, CONFIG_ATTR_INIT_PRIORITY);
 
+/******************************************************************************/
+/* Global Function Definitions                                                */
+/******************************************************************************/
 int attr_factory_reset(void)
 {
 	fsu_delete_abs(ATTR_QUIET_ABS_PATH);
@@ -486,6 +529,7 @@ bool attr_are_flags_set(attr_id_t id, atomic_val_t bitmask)
 	}
 	return false;
 }
+
 int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value)
 {
 	ATTR_ENTRY_DECL(id);
@@ -1265,7 +1309,7 @@ static int save_attributes(void)
 	uint32_t checksum_ram = 0;
 	uint32_t fstrlen;
 
-	TAKE_MUTEX(attr_save_change_mutex);
+	TAKE_MUTEX(attr_mutex);
 
 	/* Converting to file format is larger, but makes it easier to go between
 	 * different versions.
@@ -1334,7 +1378,7 @@ static int save_attributes(void)
 	}
 #endif
 
-	GIVE_MUTEX(attr_save_change_mutex);
+	GIVE_MUTEX(attr_mutex);
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
 	attr_set_signed32(ATTR_ID_attr_save_error_code, ((r < 0) ? r : 0));
@@ -1913,17 +1957,9 @@ static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 {
 	int r = -EPERM;
 
-#ifdef CONFIG_ATTR_DEFERRED_SAVE
-	TAKE_MUTEX_NO_INIT(attr_save_change_mutex);
-#endif
-
 	if (type == entry->type || type == ATTR_TYPE_ANY) {
 		r = entry->validator(entry, pv, vlen, true);
 	}
-
-#ifdef CONFIG_ATTR_DEFERRED_SAVE
-	GIVE_MUTEX(attr_save_change_mutex);
-#endif
 
 	if (r < 0) {
 		LOG_WRN("Validation failure id: %u %s", attr_table_index(entry),
@@ -2287,47 +2323,4 @@ int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
 	max = &ATTR_TABLE[index].max;
 
 	return 0;
-}
-
-/******************************************************************************/
-/* SYS INIT                                                                   */
-/******************************************************************************/
-static int attr_init(const struct device *device)
-{
-	ARG_UNUSED(device);
-	int r = -EPERM;
-
-	k_mutex_init(&attr_mutex);
-	k_mutex_init(&attr_save_change_mutex);
-
-	attr_table_initialize();
-
-#ifdef ATTR_INDEX_load_path
-	if (strcmp(ATTR_ABS_PATH, ATTR_TABLE[ATTR_INDEX_load_path].pData) ==
-	    0) {
-		LOG_WRN("SMP load path should be different from attribute source");
-	}
-#endif
-
-	if (fsu_get_file_size_abs(ATTR_ABS_PATH) < 0) {
-		r = 0;
-		LOG_INF("Parameter file doesn't exist");
-	} else {
-		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
-		r = load_attributes(ATTR_ABS_PATH, NULL, true, true, false);
-	}
-
-#ifdef CONFIG_ATTR_DEFERRED_SAVE
-	k_work_init_delayable(&attr_save_delayed_work, save_attributes_work);
-#endif
-
-	initialize_quiet();
-
-#ifdef CONFIG_ATTR_SETTINGS_LOCK
-	attr_load_settings_lock();
-#endif
-
-	attr_initialized = true;
-
-	return r;
 }
