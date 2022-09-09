@@ -1155,6 +1155,8 @@ class attributes:
                 s = s.replace("Psk", "PSK")
                 s = s.replace("Rpk", "RPK")
                 s = s.replace("Usb", "USB")
+                s = s.replace("Wb S1", "WB-S1")
+                s = s.replace("Nb S1", "NB-S1")
                 lst.append(s)
         lst.append("/* pyend */\n\n")
         return ''.join(lst)
