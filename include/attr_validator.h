@@ -60,6 +60,7 @@ int av_cpi32(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
 int av_cpi16(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
 int av_cpi8(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
 int av_cpb(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
+int av_cps(const ate_t *const entry, void *pv, size_t vlen, bool do_write);
 
 #ifdef __cplusplus
 }

@@ -485,3 +485,29 @@ int av_cpb(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	}
 	return r;
 }
+
+int av_cps(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
+{
+	CHECK_ENTRY();
+	__ASSERT((entry->size == entry->max.ux + 1), "Unexpected string size");
+	int r = 0;
+
+	if (vlen < entry->min.ux) {
+		r = -ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
+	} else if (vlen < entry->size) {
+		/* Must be smaller to account for NULL character */
+		size_t current_vlen = strlen(entry->pData);
+
+		if (do_write) {
+			if ((current_vlen != vlen) ||
+			    (memcmp(entry->pData, pv, vlen) != 0)) {
+				set_modified(entry);
+				memset(entry->pData, 0, entry->size);
+				strncpy(entry->pData, pv, vlen);
+			}
+		}
+	} else {
+		r = -ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS;
+	}
+	return r;
+}
