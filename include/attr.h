@@ -652,6 +652,15 @@ int attr_get_entry_details(uint16_t index, attr_id_t *id, const char *name,
 			   const struct attr_min_max *min,
 			   const struct attr_min_max *max);
 
+/**
+ * @brief Get the string representation of an enumerated type
+ *
+ * @param id of attribute
+ * @return const char* const If found, string representation of current
+ * state, otherwise error string.
+ */
+const char *const attr_get_enum_string(attr_id_t id);
+
 #ifdef __cplusplus
 }
 #endif
