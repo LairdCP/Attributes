@@ -529,12 +529,14 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 		if (r < 0) {
 			shell_error(shell, "Attribute load error");
 		} else {
+#ifdef ATTR_ID_config_version
 			/* Update the device configuration version if a
 			 * modification was made
 			 */
 			if (modified == true) {
 				r = attr_update_config_version();
 			}
+#endif
 		}
 	} else {
 		shell_error(shell, "Unexpected parameters");
