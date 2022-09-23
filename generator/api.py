@@ -48,8 +48,11 @@ DISPLAY_OBSCURE_IN_SHOW_FLAG = 0x40
 DISPLAY_HIDE_IN_SHOW_FLAG = 0x80
 NOTIFY_IF_VALUE_UNCHANGED = 0x2000
 
-# 64-bit number requires 20 characters
-MAX_NUMBER_SIZE = 21
+# 64-bit number requires 20 characters (+ sign + terminator)
+# This value is also larger than the maximum number of digits used for floats
+MAX_NUMBER_STR_SIZE = 22
+# 1/7 printed with default settings and %e: -1.428571e-01
+MAX_FLOAT_STR_SIZE = 14
 
 EMPTY_VALUE_STRING = '""'
 
@@ -249,6 +252,7 @@ class attributes:
         self.methodEnums = []
         self.methodEnumNames = []
         self.methodEnumIncludeErrno = []
+        self.enableFpuCheck = 0
 
         # Process the yaml version of the file
         self.LoadConfig(fname + ".yml")
@@ -272,6 +276,7 @@ class attributes:
                 # Required schema fields
                 a = p['schema']
                 self.CheckValidType(a['type'], p['x-ctype'], p['name'])
+                self.CheckFloat(p['x-ctype'])
                 self.type.append(a['type'])
                 self.ctype.append(p['x-ctype'])
 
@@ -410,7 +415,7 @@ class attributes:
         elif array_size != 0:
             size = array_size * 2
         elif kind == "float":
-            size = 30
+            size = MAX_FLOAT_STR_SIZE
         elif kind == "int8_t":
             size = len("-128")
         elif kind == "int16_t":
@@ -642,6 +647,13 @@ class attributes:
         else:
             raise TypeError(
                 f"Type {ctype} not expected in c-type for {name} parameter")
+
+    def CheckFloat(self, ctype: str):
+        """
+        Check for floating type so that compile time FPU check can be added.
+        """
+        if ctype == "float":
+            self.enableFpuCheck = 1
 
     def CheckForDuplicates(self) -> None:
         """
@@ -911,9 +923,11 @@ class attributes:
         defs.append(self.JustifyDefine("MAX_KEY_NAME_SIZE", "",
                                        self.maxNameLength + 1))
         defs.append(self.JustifyDefine("MAX_VALUE_SIZE", "",
-                                       max(max(self.stringMax), (2 * maxBinSize), MAX_NUMBER_SIZE) + 1))
+                                       max(max(self.stringMax), (2 * maxBinSize), MAX_NUMBER_STR_SIZE) + 1))
         defs.append(self.JustifyDefine("MAX_FILE_SIZE", "",
-                                       self.EstimateMaxFileSize()))
+                                       self.EstimateMaxFileSize(dest_api_folder)))
+        defs.append(self.JustifyDefine("ENABLE_FPU_CHECK", "",
+                                       self.enableFpuCheck))
 
         self.CreateMaxStringSizes(defs)
         self.CreateArraySizes(defs)

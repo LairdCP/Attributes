@@ -40,6 +40,11 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 BUILD_ASSERT(CONFIG_LCZ_KVP_INIT_PRIORITY < CONFIG_ATTR_INIT_PRIORITY,
 	     "Invalid init priority");
 
+#if ATTR_ENABLE_FPU_CHECK
+BUILD_ASSERT(IS_ENABLED(CONFIG_FPU),
+	     "FPU must be enabled for string conversion of floats");
+#endif
+
 #define BREAK_ON_ERROR(x)                                                      \
 	if (x < 0) {                                                           \
 		break;                                                         \
@@ -123,7 +128,7 @@ static struct {
 		uint8_t data[ATTR_MAX_VALUE_SIZE];
 		uint64_t u64;
 		int64_t s64;
-		double dbl;
+		float flt;
 	} result;
 	size_t result_len;
 } conversion;
@@ -836,8 +841,6 @@ static int shell_show(const struct shell *shell, const ate_t *const entry)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
-	float f = 0.0;
-	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
 
 	r = allow_show(entry);
@@ -900,11 +903,9 @@ static int shell_show(const struct shell *shell, const ate_t *const entry)
 		break;
 
 	case ATTR_TYPE_FLOAT:
-		memcpy(&f, entry->pData, entry->size);
-		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
-			 f);
-		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%s",
-			    attr_table_index(entry), entry->name, float_str);
+		shell_print(shell, CONFIG_ATTR_SHOW_FMT "%e",
+			    attr_table_index(entry), entry->name,
+			    *(float *)entry->pData);
 		break;
 
 	case ATTR_TYPE_STRING:
@@ -1544,8 +1545,6 @@ static int show(const ate_t *const entry)
 {
 	uint32_t u = 0;
 	int32_t i = 0;
-	float f = 0.0;
-	char float_str[CONFIG_ATTR_FLOAT_MAX_STR_SIZE] = { 0 };
 	int r;
 
 	r = allow_show(entry);
@@ -1603,11 +1602,8 @@ static int show(const ate_t *const entry)
 		break;
 
 	case ATTR_TYPE_FLOAT:
-		memcpy(&f, entry->pData, entry->size);
-		snprintf(float_str, sizeof(float_str), CONFIG_ATTR_FLOAT_FMT,
-			 f);
-		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%s", attr_table_index(entry),
-			 entry->name, float_str);
+		LOG_SHOW(CONFIG_ATTR_SHOW_FMT "%e", attr_table_index(entry),
+			 entry->name, *(float *)entry->pData);
 		break;
 
 	case ATTR_TYPE_STRING:
@@ -1747,8 +1743,8 @@ static int kvp_convert(lcz_kvp_t *kvp)
 		conversion.result_len = sizeof(conversion.result.u64);
 		break;
 	case ATTR_TYPE_FLOAT:
-		conversion.result.dbl = strtod(conversion.value, NULL);
-		conversion.result_len = sizeof(conversion.result.dbl);
+		conversion.result.flt = strtof(conversion.value, NULL);
+		conversion.result_len = sizeof(conversion.result.flt);
 		break;
 	case ATTR_TYPE_STRING:
 		/* Extra copy makes validation step uniform. */
@@ -1786,84 +1782,82 @@ static int kvp_convert(lcz_kvp_t *kvp)
  */
 static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry)
 {
-	static char value[ATTR_MAX_VALUE_SIZE];
+	static char str[ATTR_MAX_VALUE_SIZE];
 	int len = -1;
 	int r = 0;
 
-	memset(value, 0, sizeof(value));
+	memset(str, 0, sizeof(str));
 
 	kvp->key = (char *)entry->name;
 	kvp->key_len = strlen(entry->name);
-	kvp->val = value;
+	kvp->val = str;
 	kvp->val_len = 0;
 
 	switch (entry->type) {
 	case ATTR_TYPE_BOOL:
-		len = snprintk(value, sizeof(value), "%u",
-			       *(bool *)entry->pData);
+		len = snprintk(str, sizeof(str), "%u", *(bool *)entry->pData);
 		break;
 	case ATTR_TYPE_U8:
-		len = snprintk(value, sizeof(value), "%u",
+		len = snprintk(str, sizeof(str), "%u",
 			       *(uint8_t *)entry->pData);
 		break;
 	case ATTR_TYPE_U16:
-		len = snprintk(value, sizeof(value), "%u",
+		len = snprintk(str, sizeof(str), "%u",
 			       *(uint16_t *)entry->pData);
 		break;
 	case ATTR_TYPE_U32:
-		len = snprintk(value, sizeof(value), "%u",
+		len = snprintk(str, sizeof(str), "%u",
 			       *(uint32_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_U64:
-		len = snprintk(value, sizeof(value), "%" PRIu64,
+		len = snprintk(str, sizeof(str), "%" PRIu64,
 			       *(uint64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_S8:
-		len = snprintk(value, sizeof(value), "%d",
+		len = snprintk(str, sizeof(str), "%d",
 			       (int32_t)(*(int8_t *)entry->pData));
 		break;
 
 	case ATTR_TYPE_S16:
-		len = snprintk(value, sizeof(value), "%d",
+		len = snprintk(str, sizeof(str), "%d",
 			       (int32_t)(*(int16_t *)entry->pData));
 		break;
 
 	case ATTR_TYPE_S32:
-		len = snprintk(value, sizeof(value), "%d",
+		len = snprintk(str, sizeof(str), "%d",
 			       *(int32_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_S64:
-		len = snprintk(value, sizeof(value), "%" PRId64,
+		len = snprintk(str, sizeof(str), "%" PRId64,
 			       *(int64_t *)entry->pData);
 		break;
 
 	case ATTR_TYPE_FLOAT:
-		len = snprintk(value, sizeof(value), "%e",
-			       *(double *)entry->pData);
+		len = snprintk(str, sizeof(str), "%e", *(float *)entry->pData);
 		break;
 
 	case ATTR_TYPE_STRING:
-		len = snprintk(value, sizeof(value), "%s",
-			       (char *)entry->pData);
+		len = snprintk(str, sizeof(str), "%s", (char *)entry->pData);
 		if (len == 0) {
-			len = snprintk(value, sizeof(value), "%s",
+			len = snprintk(str, sizeof(str), "%s",
 				       LCZ_KVP_EMPTY_VALUE_STR);
 		}
 		break;
 
 	case ATTR_TYPE_BYTE_ARRAY:
 	default:
-		len = bin2hex(entry->pData, entry->size, value, sizeof(value));
+		len = bin2hex(entry->pData, entry->size, str, sizeof(str));
+		if (len != (entry->size * 2)) {
+			r = -EINVAL;
+		}
 		break;
 	}
 
-	if (len <= 0 || len >= sizeof(value)) {
-		r = -EINVAL;
-	} else if ((entry->type != ATTR_TYPE_STRING) &&
-		   (len > (entry->size * 2))) {
+	/* Check output of snprintk */
+	if (len <= 0 || len >= sizeof(str)) {
 		r = -EINVAL;
 	}
 
