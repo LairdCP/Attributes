@@ -771,6 +771,21 @@ int64_t attr_get_signed64(attr_id_t id, int64_t alt)
 	return v;
 }
 
+bool attr_get_bool(attr_id_t id)
+{
+	ATTR_ENTRY_DECL(id);
+	bool b = false;
+
+	if (entry != NULL) {
+		if (entry->type == ATTR_TYPE_BOOL) {
+			if (prepare_for_read(entry) >= 0) {
+				b = *(bool *)entry->pData;
+			}
+		}
+	}
+	return b;
+}
+
 uint32_t attr_get_uint32(attr_id_t id, uint32_t alt)
 {
 	uint32_t v;

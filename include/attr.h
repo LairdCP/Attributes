@@ -410,6 +410,15 @@ uint64_t attr_get_uint64(attr_id_t id, uint64_t alt);
 int64_t attr_get_signed64(attr_id_t id, int64_t alt);
 
 /**
+ * @brief Accessor function for bool
+ *
+ * @param id an attribute id
+ *
+ * @retval false if not found, otherwise value
+ */
+bool attr_get_bool(attr_id_t id);
+
+/**
  * @brief Alternate Accessor function for uint32
  *
  * @param id an attribute id
