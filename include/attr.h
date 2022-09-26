@@ -36,14 +36,24 @@ extern "C" {
 /* Global Constants, Macros and type Definitions                              */
 /******************************************************************************/
 #ifdef CONFIG_ATTR_BROADCAST
+
+#define ATTR_BROADCAST_MSG_SIZE(count)                                         \
+	(sizeof(attr_changed_msg_t) + (sizeof(attr_id_t) * count))
+
 typedef struct attr_broadcast_msg {
 	FwkMsgHeader_t header;
 	size_t count;
-	attr_id_t list[ATTR_TABLE_WRITABLE_COUNT];
+	attr_id_t list[];
 } attr_changed_msg_t;
+
 BUILD_ASSERT(ATTR_TABLE_MAX_ID < (1 << (8 * sizeof(attr_id_t))),
 	     "List element size too small");
-BUILD_ASSERT(sizeof(attr_changed_msg_t) < CONFIG_BUFFER_POOL_SIZE,
+
+/* A better check would be size * number of attr broadcast message receivers,
+ * but that information isn't currently available at compile time.
+ */
+BUILD_ASSERT(ATTR_BROADCAST_MSG_SIZE(ATTR_TABLE_WRITABLE_COUNT) <
+		     CONFIG_BUFFER_POOL_SIZE,
 	     "Buffer pool too small for attribute changed broadcast");
 #endif
 

@@ -73,7 +73,9 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_FPU),
 
 #define ATOMIC_ARRAY_SIZE(num_bits) (1 + ((num_bits)-1) / ATOMIC_BITS)
 
-enum { DISABLE_NOTIFICATIONS = 0, ENABLE_NOTIFICATIONS = 1 };
+enum { DISABLE_NOTIFICATIONS = 0, NOTIFY = 1 };
+
+enum { DISABLE_BROADCAST = 0, BROADCAST = 1 };
 
 static const char EMPTY_STRING[] = "";
 
@@ -103,7 +105,6 @@ extern const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE];
 
 ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
 ATOMIC_DEFINE(attr_unchanged, ATTR_TABLE_SIZE);
-ATOMIC_DEFINE(attr_skip_broadcast, ATTR_TABLE_SIZE);
 
 K_MUTEX_DEFINE(attr_mutex);
 
@@ -147,8 +148,10 @@ static int save_attributes(bool immediately);
 static int save_attributes(void);
 #endif
 
-static void change_single(const ate_t *const entry, bool send_notifications);
-static void change_handler(bool send_notifications);
+static void change_single(const ate_t *const entry, bool send_notifications,
+			  bool skip_broadcast);
+static void broadcast_single(attr_id_t id);
+static void change_multiple(bool send_notifications);
 static void notification_handler(attr_id_t id);
 
 static int load_attributes(const char *fname, bool validate_first,
@@ -369,7 +372,7 @@ int attr_set_string(attr_id_t id, char const *pv, size_t vlen)
 		r = attr_write(entry, ATTR_TYPE_STRING, (void *)pv, vlen);
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -386,7 +389,7 @@ int attr_set_byte_array(attr_id_t id, char const *pv, size_t vlen)
 		r = attr_write(entry, ATTR_TYPE_BYTE_ARRAY, (void *)pv, vlen);
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -454,7 +457,7 @@ int attr_set_uint64(attr_id_t id, uint64_t value)
 		r = attr_write(entry, ATTR_TYPE_U64, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -472,7 +475,7 @@ int attr_set_signed64(attr_id_t id, int64_t value)
 		r = attr_write(entry, ATTR_TYPE_S64, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -490,7 +493,7 @@ int attr_set_uint32(attr_id_t id, uint32_t value)
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -514,7 +517,7 @@ int attr_add_uint32(attr_id_t id, uint32_t value)
 			       sizeof(current_val));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -535,7 +538,7 @@ int attr_set_flags(attr_id_t id, atomic_val_t bitmask)
 			       ATTR_FLAG_SET);
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -556,7 +559,7 @@ int attr_clear_flags(attr_id_t id, atomic_val_t bitmask)
 			       ATTR_FLAG_CLEAR);
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -588,8 +591,8 @@ int attr_set_no_broadcast_uint32(attr_id_t id, uint32_t value)
 		if (r == 0) {
 			r = save_single(entry);
 			index = entry - &ATTR_TABLE[0];
-			atomic_set_bit(attr_skip_broadcast, index);
-			change_single(entry, DISABLE_NOTIFICATIONS);
+			change_single(entry, DISABLE_NOTIFICATIONS,
+				      DISABLE_BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -607,7 +610,7 @@ int attr_set_signed32(attr_id_t id, int32_t value)
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -625,7 +628,7 @@ int attr_set_float(attr_id_t id, float value)
 		r = attr_write(entry, ATTR_TYPE_FLOAT, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -858,7 +861,7 @@ int attr_set_mask32(attr_id_t id, uint8_t bit, uint8_t value)
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -878,7 +881,7 @@ int attr_set_mask64(attr_id_t id, uint8_t bit, uint8_t value)
 		r = attr_write(entry, ATTR_TYPE_ANY, &local, sizeof(local));
 		if (r == 0) {
 			r = save_single(entry);
-			change_single(entry, ENABLE_NOTIFICATIONS);
+			change_single(entry, NOTIFY, BROADCAST);
 		}
 		GIVE_MUTEX(attr_mutex);
 	}
@@ -1167,7 +1170,7 @@ int attr_load(const char *abs_path, bool *modified)
 
 		/* If attributes can't be saved, then still broadcast. */
 		r = save_attributes(ATTR_SAVE_NOW);
-		change_handler(DISABLE_NOTIFICATIONS);
+		change_multiple(DISABLE_NOTIFICATIONS);
 	} while (0);
 	GIVE_MUTEX(attr_mutex);
 
@@ -1312,11 +1315,9 @@ static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 
 				if (r == 0) {
 					r = save_single(entry);
-					if (broadcast) {
-						change_single(
-							entry,
-							DISABLE_NOTIFICATIONS);
-					}
+					change_single(entry,
+						      DISABLE_NOTIFICATIONS,
+						      broadcast);
 				}
 			}
 			GIVE_MUTEX(attr_mutex);
@@ -1341,15 +1342,6 @@ static int save_single(const ate_t *const entry)
 		}
 	}
 	return r;
-}
-
-static void change_single(const ate_t *const entry, bool send_notifications)
-{
-	if (atomic_test_bit(attr_modified, attr_table_index(entry))) {
-		change_handler(send_notifications);
-	} else if (atomic_test_bit(attr_unchanged, attr_table_index(entry))) {
-		change_handler(send_notifications);
-	}
 }
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
@@ -1482,19 +1474,18 @@ static int save_attributes(bool immediately)
 #endif
 
 /* generate framework broadcast, show value, and BLE notification callback */
-static void change_handler(bool send_notifications)
+static void change_multiple(bool send_notifications)
 {
 	attr_index_t i;
 	bool modified;
 	bool unchanged;
-	bool skip_broadcast;
 
 #ifdef CONFIG_ATTR_BROADCAST
-	const size_t MSG_SIZE = sizeof(attr_changed_msg_t);
-	attr_changed_msg_t *pb = BufferPool_Take(MSG_SIZE);
+	size_t msg_size = ATTR_BROADCAST_MSG_SIZE(ATTR_TABLE_WRITABLE_COUNT);
+	attr_changed_msg_t *pb = BufferPool_Take(msg_size);
 
 	if (pb == NULL) {
-		LOG_ERR("Unable to allocate memory for attr broadcast");
+		LOG_ERR("Unable to allocate memory for attr %s", __func__);
 	} else {
 		pb->header.msgCode = FMC_ATTR_CHANGED;
 		pb->header.txId = FWK_ID_RESERVED;
@@ -1505,30 +1496,29 @@ static void change_handler(bool send_notifications)
 	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 		modified = atomic_test_bit(attr_modified, i);
 		unchanged = atomic_test_bit(attr_unchanged, i);
-		skip_broadcast = atomic_test_bit(attr_skip_broadcast, i);
+
+		if (!modified && !unchanged) {
+			continue;
+		}
 
 #ifdef CONFIG_ATTR_BROADCAST
-		if ((modified || unchanged) &&
-		    (ATTR_TABLE[i].flags & FLAGS_BROADCAST) &&
-		    !skip_broadcast) {
+		if (ATTR_TABLE[i].flags & FLAGS_BROADCAST) {
 			if (pb != NULL) {
 				pb->list[pb->count++] = i;
 			}
 		}
 #endif
 
-		if ((modified || unchanged) && !atomic_test_bit(quiet, i)) {
+		if (!atomic_test_bit(quiet, i)) {
 			show(&ATTR_TABLE[i]);
 		}
 
-		if ((modified || unchanged) && send_notifications &&
-		    atomic_test_bit(notify, i)) {
+		if (send_notifications && atomic_test_bit(notify, i)) {
 			notification_handler(i);
 		}
 
 		atomic_clear_bit(attr_modified, i);
 		atomic_clear_bit(attr_unchanged, i);
-		atomic_clear_bit(attr_skip_broadcast, i);
 	}
 
 #ifdef CONFIG_ATTR_BROADCAST
@@ -1537,13 +1527,67 @@ static void change_handler(bool send_notifications)
 			/* Don't send an empty message */
 			BufferPool_Free(pb);
 		} else {
-			if (Framework_Broadcast((FwkMsg_t *)pb, MSG_SIZE) !=
+			if (Framework_Broadcast((FwkMsg_t *)pb, msg_size) !=
 			    FWK_SUCCESS) {
 				/* most likely */
 				LOG_DBG("Zero consumers for broadcast");
 				BufferPool_Free(pb);
 			}
 		}
+	}
+#endif
+}
+
+static void change_single(const ate_t *const entry, bool send_notifications,
+			  bool broadcast)
+{
+	attr_index_t idx = attr_table_index(entry);
+	bool modified = atomic_test_bit(attr_modified, idx);
+	bool unchanged = atomic_test_bit(attr_unchanged, idx);
+
+	if (!modified && !unchanged) {
+		return;
+	}
+
+	if (!atomic_test_bit(quiet, idx)) {
+		show(entry);
+	}
+
+	if (send_notifications && atomic_test_bit(notify, idx)) {
+		notification_handler(idx);
+	}
+
+	atomic_clear_bit(attr_modified, idx);
+	atomic_clear_bit(attr_unchanged, idx);
+
+	if (!broadcast || ((entry->flags & FLAGS_BROADCAST) == 0)) {
+		return;
+	}
+
+	/* ID is currently the same as the index */
+	broadcast_single(idx);
+}
+
+static void broadcast_single(attr_id_t id)
+{
+#ifdef CONFIG_ATTR_BROADCAST
+	size_t msg_size = ATTR_BROADCAST_MSG_SIZE(1);
+	attr_changed_msg_t *pb = BufferPool_Take(msg_size);
+
+	if (pb == NULL) {
+		LOG_ERR("Unable to allocate memory for attr %s", __func__);
+	} else {
+		pb->header.msgCode = FMC_ATTR_CHANGED;
+		pb->header.txId = FWK_ID_RESERVED;
+		pb->header.rxId = FWK_ID_RESERVED;
+		pb->list[0] = id;
+		pb->count = 1;
+	}
+
+	if (Framework_Broadcast((FwkMsg_t *)pb, msg_size) != FWK_SUCCESS) {
+		/* most likely */
+		LOG_DBG("Zero consumers for broadcast");
+		BufferPool_Free(pb);
 	}
 #endif
 }
@@ -2149,7 +2193,7 @@ static void append_feedback_file(lcz_kvp_t *kvp, int code)
 {
 #ifdef CONFIG_ATTR_LOAD_FEEDBACK
 	const char *file_name = CONFIG_ATTRIBUTE_FEEDBACK_FILE;
-	char code_str[]= "=0\n";
+	char code_str[] = "=0\n";
 	int r;
 
 	do {
