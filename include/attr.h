@@ -230,6 +230,15 @@ int attr_set_signed64(attr_id_t id, int64_t value);
 int attr_set_uint32(attr_id_t id, uint32_t value);
 
 /**
+ * @brief Add a value to the current attribute value (uint8, 16 or 32)
+ *
+ * @param id An attribute id.
+ * @param value The value to add.
+ * @return int negative error code, 0 on success
+ */
+int attr_add_uint32(attr_id_t id, uint32_t value);
+
+/**
  * @brief Helper function to set atomic_t flags.
  * With the value of bitmask to set bit(s) other bits may also be set or cleared.
  *

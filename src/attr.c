@@ -473,6 +473,30 @@ int attr_set_uint32(attr_id_t id, uint32_t value)
 	return r;
 }
 
+int attr_add_uint32(attr_id_t id, uint32_t value)
+{
+	ATTR_ENTRY_DECL(id);
+	int r = -EPERM;
+	uint32_t current_val;
+
+	if (entry != NULL) {
+		r = attr_copy_uint32(&current_val, id);
+		if (r != 0) {
+			return r;
+		}
+		current_val += value;
+		TAKE_MUTEX(attr_mutex);
+		r = attr_write(entry, ATTR_TYPE_ANY, &current_val,
+			       sizeof(current_val));
+		if (r == 0) {
+			r = save_single(entry);
+			change_single(entry, ENABLE_NOTIFICATIONS);
+		}
+		GIVE_MUTEX(attr_mutex);
+	}
+	return r;
+}
+
 int attr_set_flags(attr_id_t id, atomic_val_t bitmask)
 {
 	ATTR_ENTRY_DECL(id);
