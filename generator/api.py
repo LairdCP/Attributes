@@ -925,7 +925,7 @@ class attributes:
         defs.append(self.JustifyDefine("MAX_VALUE_SIZE", "",
                                        max(max(self.stringMax), (2 * maxBinSize), MAX_NUMBER_STR_SIZE) + 1))
         defs.append(self.JustifyDefine("MAX_FILE_SIZE", "",
-                                       self.EstimateMaxFileSize(dest_api_folder)))
+                                       self.EstimateMaxFileSize()))
         defs.append(self.JustifyDefine("ENABLE_FPU_CHECK", "",
                                        self.enableFpuCheck))
 
