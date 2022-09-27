@@ -14,8 +14,11 @@
 #include <string.h>
 #include <errno_str.h>
 #include "attr_validator.h"
-#include "attr_custom_validator.h"
 #include "attr_table.h"
+
+#ifdef CONFIG_ATTR_CUSTOM_VALIDATOR
+#include "attr_custom_validator.h"
+#endif
 
 /**************************************************************************************************/
 /* Local Constant, Macro and Type Definitions                                                     */

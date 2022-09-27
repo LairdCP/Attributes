@@ -197,6 +197,12 @@ config ATTR_ID_CONDITIONAL_CODE_ENABLE
 	  When disabled undefined attribute names
 	  will result in compilation errors.
 
+config ATTR_CUSTOM_VALIDATOR
+	bool "Enable inclusion of custom validator header file"
+	help
+	  If custom validators are present in the API, they
+	  must be defined by the application.
+
 # Include logging configuration
 module = ATTR
 module-str = ATTR

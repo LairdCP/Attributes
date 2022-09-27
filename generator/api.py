@@ -1109,12 +1109,6 @@ def generate(api_src: Path, dest_dir: Path, proj_key: str):
         files = ["attr_table.h", "attr_util.h"]
         for x in files:
             shutil.copy(template_dir.joinpath(x), dest_inc_folder.joinpath(x))
-        # Only copy the custom validator file if it doesn't exist
-        files = ["attr_custom_validator.h"]
-        for x in files:
-            p = dest_inc_folder.joinpath(x)
-            if not Path.exists(p):
-                shutil.copy(template_dir.joinpath(x), p)
     except:
         raise Exception("Unable to copy templates")
 
