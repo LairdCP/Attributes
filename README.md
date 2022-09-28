@@ -2,6 +2,8 @@
 
 The attribute module is a system for saving configuration to non-volatile memory, reporting read-only/run-time parameters, and issuing commands.
 
+Hash requires gperf.  It should be installed by Zephyr, but can be installed using chocolatey.
+
 ## API
 
 The attribute API is described using OpenRPC in the file attributes.json.

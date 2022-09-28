@@ -28,6 +28,8 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 
 #include "attr_table.h"
 #include "attr_table_private.h"
+#include "attr_hash.h"
+
 #include "attr.h"
 
 #ifdef CONFIG_ATTR_BROADCAST
@@ -890,12 +892,11 @@ int attr_set_mask64(attr_id_t id, uint8_t bit, uint8_t value)
 
 attr_id_t attr_get_id(const char *name)
 {
-	attr_index_t i;
+	const struct attr_hash_entry *entry;
 
-	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
-		if (strcmp(name, ATTR_TABLE[i].name) == 0) {
-			return i;
-		}
+	entry = attr_id_from_hash(name, strlen(name));
+	if (entry != NULL) {
+		return entry->id;
 	}
 
 	return ATTR_INVALID_ID;

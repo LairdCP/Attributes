@@ -14,6 +14,7 @@ import os
 import inflection
 import shutil
 import sys
+import subprocess
 import math
 import dollar_ref
 from pathlib import Path
@@ -691,7 +692,7 @@ class attributes:
             dest_hdr_file, dest_api_folder))
         self.CreateUtilFile(self.CreateSkeleton(
             dest_util_file, dest_api_folder))
-
+        self.MakeGperfFile(dest_src_folder)
         self.MakeDefaultFile(dest_api_folder)
         self.MakeWritableFile(dest_api_folder)
 
@@ -892,6 +893,42 @@ class attributes:
             print("Unable to open max length file for writing")
 
         return size
+
+    def MakeGperfFile(self, dest_api_folder: Path):
+        """ Hash names for quicker lookup of ID """
+        try:
+            src = dest_api_folder.joinpath("attr.gperf")
+            dest = dest_api_folder.joinpath("attr_hash.c")
+            # Generate gperf input file
+            with open(src, 'w') as f:
+                f.write('%{\n#include "attr_hash.h"\n%}\n')
+                f.write(
+                    "struct attr_hash_entry { const char* name; int id; };\n")
+                f.write("%%\n")
+                for i in range(self.projectAttributeCount):
+                    f.write(f"{self.name[i]}, {self.id[i]}\n")
+                f.write("%%")
+
+            subprocess.call(
+                f"gperf -C -c -G -D -t -T --word-array-name=word_list --lookup-function-name=attr_id_from_hash --hash-function-name=gperf_hash --output-file={dest} {src}", shell=True)
+
+            # Don't fail if system doesn't have clang installed.
+            try:
+                subprocess.call(f"clang-format -i -style=file {dest}")
+            except:
+                print("Unable to clang-format gperf hash file")
+
+            # Strip #line comments
+            with open(dest, 'r') as f:
+                lines = f.readlines()
+            with open(dest, 'w') as f:
+                for line in lines:
+                    if "#line" not in line:
+                        f.write(line)
+
+            src.unlink()
+        except:
+            print("Error generating gperf hash file")
 
     def MakeDefaultFile(self, dest_api_folder: Path):
         try:

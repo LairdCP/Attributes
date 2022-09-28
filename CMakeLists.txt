@@ -25,6 +25,7 @@ endif()
 
 zephyr_include_directories(${ATTR_CUSTOM_PATH_BASE}/include)
 zephyr_sources(
+    ${ATTR_CUSTOM_PATH_BASE}/src/attr_hash.c
     ${ATTR_CUSTOM_PATH_BASE}/src/attr_table.c
 )
 
