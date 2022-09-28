@@ -400,6 +400,7 @@ const void *attr_get_quasi_static(attr_id_t id)
 	if (entry != NULL) {
 		return (const void *)entry->pData;
 	} else {
+		LOG_DBG("Empty string used for id: %d", id);
 		return (const void *)EMPTY_STRING;
 	}
 }

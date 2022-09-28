@@ -1,4 +1,0 @@
-inflection==0.5.1
-jsonref==0.2
-pathlib==1.0.1
-dollar-ref==0.1.3

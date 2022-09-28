@@ -6,6 +6,7 @@
 menuconfig ATTR
 	bool "Enable attributes module"
 	depends on LCZ_KVP
+	select ERRNO_STR
 
 if ATTR
 
@@ -187,6 +188,14 @@ config ATTR_FILE_ADDITIONAL_COMMENT_CHARS
 	help
 	  The attribute generator accounts generates the maximum file size
 	  based on the maximum length of each attribute.
+
+config ATTR_ID_CONDITIONAL_CODE_ENABLE
+	bool "Allow preprocssor resolution of attribute names into ids"
+	help
+	  When enabled undefined attribute names return invalid id when
+	  use with ATTR_ID macro.
+	  When disabled undefined attribute names
+	  will result in compilation errors.
 
 # Include logging configuration
 module = ATTR

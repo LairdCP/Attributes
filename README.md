@@ -59,9 +59,9 @@ An attribute file can also be used to obtain the current state of a device.
 
 Example File:
 ```
-1=freezer
-4=40e20100
-99=pinnacle_100_354616090287629
+location=freezer
+key=40e20100
+name=pinnacle_100_354616090287629
 ```
 
 ## Non-Volatile Storage
@@ -96,18 +96,18 @@ uart:~$ attr set 1 cupboard
 
 When a value changes, a message is printed to the log (info level). The quiet command can be used to silence changes. For example, to disable the printing of the power supply voltage.
 ```
-<inf> attr: [175] powerSupplyVoltage            4.0360e+00
-<inf> attr: [180] lteSinr                       29
-<inf> attr: [175] powerSupplyVoltage            4.0400e+00
-<inf> attr: [180] lteSinr                       31
-<inf> attr: [175] powerSupplyVoltage            4.0430e+00
-<inf> attr: [180] lteSinr                       27
+<inf> attr: [175] power_supply_voltage           4.0360e+00
+<inf> attr: [180] lte_sinr                       29
+<inf> attr: [175] power_supply_voltage           4.0400e+00
+<inf> attr: [180] lte_sinr                       31
+<inf> attr: [175] power_supply_voltage           4.0430e+00
+<inf> attr: [180] lte_sinr                       27
 
-uart:~$ attr quiet powerSupplyVoltage 1
+uart:~$ attr quiet power_supply_voltage 1
 <dbg> fsu.fsu_wa_abs: /lfs/quiet.bin write (16)
 
-<inf> attr: [180] lteSinr                       30
-<inf> attr: [180] lteSinr                       28
+<inf> attr: [180] lte_sinr                       30
+<inf> attr: [180] lte_sinr                       28
 ```
 
 ## Implementation Details
@@ -170,7 +170,6 @@ The following fields are specific to this implementation and are not part of the
 | x-ctype                  | y        | NA      | Variable type in C. "string" converted to "char" by generator.                             |
 | x-default                | y        | NA      | Default value                                                                              |
 | x-example                | n        | NA      | A commonly used or alternate value                                                         |
-| x-lockable               | n        | false   | If true, when attributes are locked then value cannot be written                           |
 | x-broadcast              | n        | false   | If framework is enabled, generate attribute changed broadcast message                      |
 | x-savable                | n        | false   | Save value to file system                                                                  |
 | x-writable               | n        | false   | If true, value can be written from SMP or loaded from file                                 |
@@ -180,14 +179,9 @@ The following fields are specific to this implementation and are not part of the
 | x-validator              | n        | type    | Override for write validation function. Often used for control points                      |
 | x-prepare                | n        | NA      | Optional function that is called before a value is read or dumped                          |
 | x-enum-include-errno     | n        | false   | If true, then include negative error numbers as part of enum                               |
-| x-hide-in-dump           | n        | false   | If true, hidden attribute, do not show anything in dump                                    |
-| x-obscure-in-dump        | n        | false   | If true, obscured attribute, show asterisks for value in dump                              |
-| x-show-on-change         | n        | false   | If attribute value changes, override hidden (x-hide-on-show) option and show the new value |
 | x-notify-if-unchanged    | n        | false   | If true, report value even if it is unchanged                                              |
-| x-show-unlocked-override | n        | false   | If attribute lock is unlocked, override hidden (x-hide-on-show) and show the value         |
 | x-obscure-in-show        | n        | false   | If true, obscured attribute value with asterisks when requested                            |
 | x-hide-in-show           | n        | false   | If true, hide attribute show nothing when requested                                        |
-| x-dump-unlocked-override | n        | false   | If attribute lock is unlocked, override hidden (x-hide-on-show) and show the value in dump |
 
 The following are used by the methods
 
@@ -200,7 +194,7 @@ Custom validators are specified by the suffix of the validator function name.
 "x-validator": "cp32"
 ```
 
-Prepare functions are declared as weak and can be overridden in application. They are of the form attr_prepare_NAME. Example for the variable named upTime.
+Prepare functions must be defined in application. They are of the form attr_prepare_NAME. Example for the variable named up_time.
 ```
-int attr_prepare_upTime(void);
+int attr_prepare_up_time(void);
 ```

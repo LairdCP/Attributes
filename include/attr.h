@@ -1,8 +1,12 @@
 /**
- * @file attr_.c
+ * @file attr.h
  * @brief
  *
  * Copyright (c) 2021-2022 Laird Connectivity
+ *
+ * Copyright (c) 2011-2014, Wind River Systems, Inc.
+ * Copyright (c) 2020, Nordic Semiconductor ASA
+ * IS_ENABLED logic from sys/util_internal.h (modified).
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -16,6 +20,7 @@ extern "C" {
 /******************************************************************************/
 /* Includes                                                                   */
 /******************************************************************************/
+#include <zephyr.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <shell/shell.h>
@@ -25,6 +30,7 @@ extern "C" {
 #endif
 
 #include "attr_table.h"
+#include "attr_util.h"
 
 /******************************************************************************/
 /* Global Constants, Macros and type Definitions                              */
@@ -47,12 +53,37 @@ enum attr_dump {
 	ATTR_DUMP_RO = 2,
 };
 
-
 /* Defines for setting/clearing flags via length parameter
  * used in the attr_set_flags and attr_clear_flags functions
  */
 #define ATTR_FLAG_CLEAR 0
 #define ATTR_FLAG_SET 1
+
+/* Return 1 if attribute is present
+ * This relies on names being unique enough across different projects.
+ * (As does #ifdef ATTR_ID_<name>).
+ */
+#define IS_ATTR_ENABLED(an_id) IS_ATTR_ENABLED1(an_id)
+
+#define IS_ATTR_ENABLED1(an_id) IS_ATTR_ENABLED2(_ATTRX##an_id)
+#define IS_ATTR_ENABLED2(one_or_two_args) IS_ATTR_ENABLED3(one_or_two_args 1, 0)
+#define IS_ATTR_ENABLED3(ignore_this, val, ...) val
+
+/* If valid return ID of attribute, otherwise return invalid ID */
+#define ATTR_ID(a_name) ATTR_NAME(a_name)
+
+#ifdef CONFIG_ATTR_ID_CONDITIONAL_CODE_ENABLE
+#define ATTR_NAME(a_name) COND_CODE_2_ATTR(ATTR_ID_##a_name)
+#define COND_CODE_2_ATTR(an_id) COND_CODE_1_ATTR(an_id)
+#define COND_CODE_1_ATTR(an_id)                                                \
+	__COND_CODE_ATTR(_ATTRX##an_id, (an_id), (ATTR_TABLE_SIZE))
+#define __COND_CODE_ATTR(one_or_two_args, _if_code, _else_code)                \
+	__GET_ARG2_DE_BRACKET_ATTR(one_or_two_args _if_code, _else_code)
+#define __GET_ARG2_DE_BRACKET_ATTR(ignore_this, val, ...) __DE_BRACKET_ATTR val
+#define __DE_BRACKET_ATTR(...) __VA_ARGS__
+#else
+#define ATTR_NAME(a_name) ATTR_ID_##a_name
+#endif
 
 /******************************************************************************/
 /* Function Definitions                                                       */
