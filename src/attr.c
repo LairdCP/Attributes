@@ -1577,6 +1577,7 @@ static void broadcast_single(attr_id_t id)
 
 	if (pb == NULL) {
 		LOG_ERR("Unable to allocate memory for attr %s", __func__);
+		return;
 	} else {
 		pb->header.msgCode = FMC_ATTR_CHANGED;
 		pb->header.txId = FWK_ID_RESERVED;
