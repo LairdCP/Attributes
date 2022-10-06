@@ -256,8 +256,7 @@ static int ats_set_cmd(const struct shell *shell, size_t argc, char **argv)
 				break;
 			}
 
-			shell_print(shell, "Set status: %s",
-				    attr_get_string_set_error(r));
+			shell_print(shell, "Set status: %d", r);
 
 		} else {
 			shell_error(shell, "Invalid id");
@@ -281,8 +280,7 @@ static int ats_set_string_cmd(const struct shell *shell, size_t argc,
 		id = get_id(argv[1]);
 		r = attr_set(id, ATTR_TYPE_STRING, argv[2], strlen(argv[2]),
 			     NULL);
-		shell_print(shell, "Set string status: %s",
-			    attr_get_string_set_error(r));
+		shell_print(shell, "Set string status: %d", r);
 	} else {
 		shell_error(shell, "Unexpected parameters");
 		r = -EINVAL;
@@ -362,8 +360,7 @@ static int ats_mod_cmd(const struct shell *shell, size_t argc, char **argv)
 				break;
 			}
 
-			shell_print(shell, "Set (mod) status: %s",
-				    attr_get_string_set_error(r));
+			shell_print(shell, "Set (mod) status: %d", r);
 
 		} else {
 			shell_error(shell, "Invalid id");
@@ -527,7 +524,7 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 		r = attr_load(argv[1], &modified);
 
 		if (r < 0) {
-			shell_error(shell, "Attribute load error");
+			shell_error(shell, "Attribute load error %d", r);
 		} else {
 #ifdef ATTR_ID_config_version
 			/* Update the device configuration version if a

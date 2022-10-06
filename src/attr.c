@@ -528,7 +528,7 @@ int attr_add_uint32(attr_id_t id, uint32_t value)
 int attr_set_flags(attr_id_t id, atomic_val_t bitmask)
 {
 	ATTR_ENTRY_DECL(id);
-	int r = -ENOENT;
+	int r = -EPERM;
 
 	if (entry != NULL) {
 		TAKE_MUTEX(attr_mutex);
@@ -549,7 +549,7 @@ int attr_set_flags(attr_id_t id, atomic_val_t bitmask)
 int attr_clear_flags(attr_id_t id, atomic_val_t bitmask)
 {
 	ATTR_ENTRY_DECL(id);
-	int r = -ENOENT;
+	int r = -EPERM;
 
 	if (entry != NULL) {
 		TAKE_MUTEX(attr_mutex);
@@ -1031,31 +1031,6 @@ int attr_show_all(const struct shell *shell)
 int attr_delete(void)
 {
 	return fsu_delete_abs(ATTR_ABS_PATH);
-}
-
-const char *const attr_get_string_set_error(int value)
-{
-	switch (abs(value)) {
-	case ATTR_WRITE_ERROR_OK:
-		return "success";
-	case ATTR_WRITE_ERROR_NUMERIC_TOO_LOW:
-		return "too low";
-	case ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH:
-		return "too high";
-	case ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS:
-		return "too many characters";
-	case ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE:
-		return "value not writable";
-	case ATTR_WRITE_ERROR_PARAMETER_UNKNOWN:
-		return "attribute name unknown";
-	case ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH:
-		return "invalid length";
-	case ATTR_WRITE_ERROR_UNABLE_TO_PARSE_FILE:
-		return "unable to parse file";
-	case ATTR_WRITE_ERROR_UNKNOWN:
-	default:
-		return "unknown error";
-	}
 }
 
 #endif /* CONFIG_ATTR_SHELL */
@@ -2040,8 +2015,30 @@ static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write)
 	return r;
 }
 
-static int validate(const ate_t *const entry, enum attr_type type, void *pv,
-		    size_t vlen)
+static const char *const attr_get_string_set_error(int value)
+{
+	switch (abs(value)) {
+	case ATTR_WRITE_ERROR_OK:
+		return "success";
+	case ATTR_WRITE_ERROR_NUMERIC_TOO_LOW:
+		return "too low";
+	case ATTR_WRITE_ERROR_NUMERIC_TOO_HIGH:
+		return "too high";
+	case ATTR_WRITE_ERROR_STRING_TOO_MANY_CHARACTERS:
+		return "too many characters";
+	case ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE:
+		return "value not writable";
+	case ATTR_WRITE_ERROR_PARAMETER_UNKNOWN:
+		return "attribute name unknown";
+	case ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH:
+		return "invalid length";
+	case ATTR_WRITE_ERROR_UNABLE_TO_PARSE_FILE:
+		return "unable to parse file";
+	case ATTR_WRITE_ERROR_UNKNOWN:
+	default:
+		return "unknown error";
+	}
+}
 
 /**
  * @brief Validate-only or validate-and-write (when do write is true).

@@ -545,16 +545,6 @@ int attr_show_all(const struct shell *shell);
 int attr_delete(void);
 
 /**
- * @brief Helper function
- *
- * @param value error code
- *
- * @return const char* const string representation of error code
- */
-const char *const attr_get_string_set_error(int value);
-
-
-/**
  * @brief Print all parameters to the console using system workq.  The prepare
  * function is run for each attribute that it applies to.
  *
