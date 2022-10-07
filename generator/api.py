@@ -164,13 +164,13 @@ def Reserved0Check(parameters: list) -> None:
     raise Exception("Unable to find reserved0 with x-id of 0")
 
 
-def CreateCompleteApiFile(api_src: Path, api_dest: Path, proj_name: str):
+def CreateCompleteApiFile(api_src: Path, api_dest: Path, proj_keys: str):
     """Aggregate individual files into one
 
     Args:
         api_src (Path): top level yml file
         attr_combine_path (Path): destination
-        proj_name (str): project or board name (e.g., mg100, bt610)
+        proj_keys (str): project or board name separated by '+' (e.g., mg100, bt610)
     """
     ref = dollar_ref.resolve_file(str(api_src), '')
 
@@ -199,13 +199,19 @@ def CreateCompleteApiFile(api_src: Path, api_dest: Path, proj_name: str):
     device_params = ref['components']['contentDescriptors']['device_params']
 
     # Add board/project specific attributes
-    if len(proj_name) > 0:
+    if len(proj_keys) > 0:
         try:
-            proj = device_params[f'x-{proj_name}']
-            for attr in proj:
-                attributes_used.extend(dollar_ref.pluck(attr, 'attributes'))
+            keys = proj_keys.split('+')
+            for k in keys:
+                try:
+                    proj = device_params[f'x-{k}']
+                    for attr in proj:
+                        attributes_used.extend(
+                            dollar_ref.pluck(attr, 'attributes'))
+                except:
+                    print(f'Project "{k}" specific attributes not found')
         except:
-            print(f"No {proj_name} specific attributes found")
+            print(f'Error parsing project keys "{proj_keys}"')
 
     # Remove the array items from device_params that will not be used in the output file
     remove_items = []
@@ -1120,11 +1126,11 @@ class attributes:
             fout.writelines(x.lst)
 
 
-def generate(api_src: Path, dest_dir: Path, proj_key: str):
+def generate(api_src: Path, dest_dir: Path, keys: str):
     """ Generate API and attribute files for a specific project """
-    dest_api_folder = dest_dir.joinpath(proj_key, "attributes")  # ?
-    dest_inc_folder = dest_dir.joinpath(proj_key, "include")
-    dest_src_folder = dest_dir.joinpath(proj_key, "src")
+    dest_api_folder = dest_dir.joinpath(keys.replace('+', '_'), "attributes")
+    dest_inc_folder = dest_dir.joinpath(keys.replace('+', '_'), "include")
+    dest_src_folder = dest_dir.joinpath(keys.replace('+', '_'), "src")
 
     # Generate folders
     try:
@@ -1149,7 +1155,7 @@ def generate(api_src: Path, dest_dir: Path, proj_key: str):
     except:
         raise Exception("Unable to copy templates")
 
-    CreateCompleteApiFile(api_src, dest_api_folder, proj_key)
+    CreateCompleteApiFile(api_src, dest_api_folder, keys)
 
     a = attributes(dest_api_folder.joinpath("api.yml"))
     a.UpdateFiles(dest_api_folder, dest_src_folder, dest_inc_folder)
