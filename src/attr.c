@@ -79,6 +79,8 @@ enum { DISABLE_NOTIFICATIONS = 0, NOTIFY = 1 };
 
 enum { DISABLE_BROADCAST = 0, BROADCAST = 1 };
 
+enum { VALIDATE = 0, DO_WRITE = 1 };
+
 static const char EMPTY_STRING[] = "";
 
 /* Time (in ms) between checks if a save is currently in progress */
@@ -156,15 +158,11 @@ static void broadcast_single(attr_id_t id);
 static void change_multiple(bool send_notifications);
 static void notification_handler(attr_id_t id);
 
-static int load_attributes(const char *fname, bool validate_first,
-			   bool mask_modified, bool enforce_writable);
+static int load_attributes(const char *fname);
+static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write);
 
-static int loader(lcz_kvp_t *kvp, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified, bool enforce_writable);
-
-static int validate(const ate_t *const entry, enum attr_type type, void *pv,
-		    size_t vlen);
-
+static int validate_or_write(const ate_t *const entry, enum attr_type type,
+			     void *pv, size_t vlen, bool do_write);
 static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 		      size_t vlen);
 
@@ -192,6 +190,7 @@ static const ate_t *kvp_find_entry(lcz_kvp_t *kvp);
 static int kvp_convert(lcz_kvp_t *kvp);
 static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry);
 
+static const char *const attr_get_string_set_error(int value);
 static void start_feedback_file(void);
 static void append_feedback_file(lcz_kvp_t *kvp, int code);
 static void create_unable_to_parse_feedback_file(void);
@@ -226,7 +225,7 @@ static int attr_init(const struct device *device)
 		LOG_INF("Attribute file doesn't exist");
 	} else {
 		LOG_DBG("Attempting to load from: " ATTR_ABS_PATH);
-		r = load_attributes(ATTR_ABS_PATH, true, true, false);
+		r = load_attributes(ATTR_ABS_PATH);
 	}
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
@@ -274,13 +273,13 @@ bool attr_valid_id(attr_id_t id)
 int attr_set(attr_id_t id, enum attr_type type, void *pv, size_t vlen,
 	     bool *modified)
 {
-	return set_internal(id, type, pv, vlen, true, modified);
+	return set_internal(id, type, pv, vlen, BROADCAST, modified);
 }
 
 int attr_set_without_broadcast(attr_id_t id, enum attr_type type, void *pv,
 			       size_t vlen, bool *modified)
 {
-	return set_internal(id, type, pv, vlen, false, modified);
+	return set_internal(id, type, pv, vlen, DISABLE_BROADCAST, modified);
 }
 
 int attr_get(attr_id_t id, void *pv, size_t vlen)
@@ -1153,7 +1152,7 @@ int attr_load(const char *abs_path, bool *modified)
 
 	TAKE_MUTEX(attr_mutex);
 	do {
-		r = load_attributes(abs_path, true, false, true);
+		r = load_attributes(abs_path);
 		BREAK_ON_ERROR(r);
 
 		if (modified != NULL) {
@@ -1302,16 +1301,12 @@ static int set_internal(attr_id_t id, enum attr_type type, void *pv,
 	if (entry != NULL) {
 		if (is_writable(entry)) {
 			TAKE_MUTEX(attr_mutex);
-			r = validate(entry, type, pv, vlen);
+			r = attr_write(entry, type, pv, vlen);
 			if (r == 0) {
-				r = attr_write(entry, type, pv, vlen);
-
 				if (modified != NULL) {
-					*modified = (atomic_test_bit(
-							     attr_modified,
-							     attr_table_index(
-								     entry)) ==
-						     true);
+					*modified = atomic_test_bit(
+						attr_modified,
+						attr_table_index(entry));
 				}
 
 				if (r == 0) {
@@ -1732,21 +1727,14 @@ static int show(const ate_t *const entry)
 
 /**
  * @brief Read key-value pair file from flash and load it into attributes/RAM.
- *
- * @param validate_first validate entire file when loading from an external
- * source. Otherwise, allow bad pairs when loading from a file that should be good.
- *
- * @param mask_modified Don't set modified flag during initialization
  */
-static int load_attributes(const char *fname, bool validate_first,
-			   bool mask_modified, bool enforce_writable)
+static int load_attributes(const char *fname)
 {
 	int r = -EPERM;
 	size_t fsize;
 	char *fstr = NULL;
 	lcz_kvp_t *kv = NULL;
 	size_t pairs = 0;
-	bool do_write = false;
 
 	do {
 		r = lcz_kvp_parse_from_file(&KVP_CFG, fname, &fsize, &fstr,
@@ -1759,16 +1747,22 @@ static int load_attributes(const char *fname, bool validate_first,
 		}
 		pairs = r;
 
-		/* Always run validator because it generates feedback file */
-		r = loader(kv, fstr, pairs, do_write, mask_modified,
-			   enforce_writable);
-		if (validate_first && r < 0) {
-			break;
+		/* Feedback file is generated during validation. */
+		r = loader(kv, fstr, pairs, VALIDATE);
+
+		/* Does entire file need to be valid? */
+		if (r < 0) {
+			if (attr_initialized && IS_ENABLED(CONFIG_ATTR_VALIDATE_ENTIRE_FILE)) {
+				break;
+			} else if (
+				!attr_initialized &&
+				IS_ENABLED(
+					CONFIG_ATTR_VALIDATE_ENTIRE_FILE_ON_INIT)) {
+				break;
+			}
 		}
 
-		do_write = true;
-		r = loader(kv, fstr, pairs, do_write, mask_modified,
-			   enforce_writable);
+		r = loader(kv, fstr, pairs, DO_WRITE);
 
 	} while (0);
 
@@ -1980,13 +1974,13 @@ static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry)
 	return r;
 }
 
-static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write,
-		  bool mask_modified, bool enforce_writable)
+static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write)
 {
-	int r = -EPERM;
+	int r = -EINVAL;
+	int fail_count = 0;
 	size_t i;
 
-	/* External files are always validated */
+	/* Generate feedback file during validation */
 	if (!do_write) {
 		start_feedback_file();
 	}
@@ -1998,39 +1992,34 @@ static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write,
 	for (i = 0; i < pairs; i++) {
 		if (kvp_find_entry(kv + i) == NULL) {
 			r = -ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
-		} else if (!is_writable(conversion.entry) && enforce_writable) {
+			LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
+					attr_get_string_set_error(r));
+		} else if (!is_writable(conversion.entry) && attr_initialized) {
+			/* During init values that aren't writable must be restored */
 			r = -ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE;
+			LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
+					attr_get_string_set_error(r));
 		} else {
 			r = kvp_convert(kv + i);
 			if (r == 0) {
-				if (do_write) {
-					r = attr_write(conversion.entry,
-						       conversion.entry->type,
-						       conversion.result.data,
-						       conversion.result_len);
-				} else {
-					r = validate(conversion.entry,
-						     conversion.entry->type,
-						     conversion.result.data,
-						     conversion.result_len);
-				}
+				r = validate_or_write(conversion.entry,
+						      conversion.entry->type,
+						      conversion.result.data,
+						      conversion.result_len,
+						      do_write);
 			}
 		}
 
+		/* Validate or load entire file */
 		if (r < 0) {
+			fail_count += 1;
 			if (!do_write) {
 				append_feedback_file(kv + i, r);
 			}
-
-			/* Return errno instead of feedback code */
-			r = -EINVAL;
-
-			if (IS_ENABLED(CONFIG_ATTR_BREAK_ON_LOAD_FAILURE)) {
-				break;
-			}
 		}
 
-		if (do_write && mask_modified) {
+		/* During init - don't notify system of changes */
+		if (r == 0 && !attr_initialized && do_write) {
 			if (conversion.entry != NULL) {
 				atomic_clear_bit(
 					attr_modified,
@@ -2042,41 +2031,52 @@ static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write,
 		}
 	}
 
+	/* Return errno instead of feedback code */
+	if (r < 0 || fail_count > 0) {
+		r = -EINVAL;
+	}
+	LOG_DBG("fail_count: %d", fail_count);
+
 	return r;
 }
 
 static int validate(const ate_t *const entry, enum attr_type type, void *pv,
 		    size_t vlen)
+
+/**
+ * @brief Validate-only or validate-and-write (when do write is true).
+ * Validate only is used when determining if a file is OK to use.
+ *
+ * @return int attribute error code (used by feedback file)
+ */
+static int validate_or_write(const ate_t *const entry, enum attr_type type,
+			     void *pv, size_t vlen, bool do_write)
 {
-	int r = -EPERM;
+	int r = -ATTR_WRITE_ERROR_UNKNOWN;
 
 	if (type == entry->type || type == ATTR_TYPE_ANY) {
-		r = entry->validator(entry, pv, vlen, false);
+		r = entry->validator(entry, pv, vlen, do_write);
 	}
 
 	if (r < 0) {
-		LOG_WRN("Failure id: %u %s", attr_table_index(entry),
-			entry->name);
+		LOG_WRN("%s failure for %s: %s",
+			do_write ? "Write" : "Validation", entry->name,
+			attr_get_string_set_error(r));
 		LOG_HEXDUMP_DBG(pv, vlen, "attr data");
 	}
+
 	return r;
 }
 
+/**
+ * @brief If validation is okay, then write the value
+ *
+ * @return int error number
+ */
 static int attr_write(const ate_t *const entry, enum attr_type type, void *pv,
 		      size_t vlen)
 {
-	int r = -EPERM;
-
-	if (type == entry->type || type == ATTR_TYPE_ANY) {
-		r = entry->validator(entry, pv, vlen, true);
-	}
-
-	if (r < 0) {
-		LOG_WRN("Validation failure id: %u %s", attr_table_index(entry),
-			entry->name);
-		LOG_HEXDUMP_DBG(pv, vlen, "attr data");
-	}
-	return r;
+	return validate_or_write(entry, type, pv, vlen, DO_WRITE) < 0 ? -EINVAL : 0;
 }
 
 /**

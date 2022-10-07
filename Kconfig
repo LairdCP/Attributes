@@ -28,8 +28,15 @@ config ATTR_FILE_NAME
 	string "File name for attributes"
 	default "attr.txt"
 
-config ATTR_BREAK_ON_LOAD_FAILURE
-	bool "Stop loading on first failure"
+config ATTR_VALIDATE_ENTIRE_FILE_ON_INIT
+	bool "Only load saved attributes if entire file passes validation"
+	help
+	  If this is true, then if values are removed or their ranges are
+	  changed, then none of the file will be loaded.
+
+config ATTR_VALIDATE_ENTIRE_FILE
+	bool "Only load attribute file if entire file passes validation"
+	default y
 
 config ATTR_SHELL
 	bool "Enable Attribute Shell"
