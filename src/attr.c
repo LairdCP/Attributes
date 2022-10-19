@@ -68,6 +68,7 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_FPU),
 #define ATTR_ABS_PATH CONFIG_FSU_MOUNT_POINT "/" CONFIG_ATTR_FILE_NAME
 
 #define ATTR_QUIET_ABS_PATH CONFIG_FSU_MOUNT_POINT "/quiet.bin"
+#define ATTR_QUIET_CRC_ABS_PATH CONFIG_FSU_MOUNT_POINT "/quiet.crc"
 
 #define LOG_ALT_USED() LOG_DBG("Alt value used ID [%u]: %d", id, r)
 
@@ -177,7 +178,7 @@ static bool is_writable(const ate_t *const entry);
 
 static int64_t sign_extend64(const ate_t *const entry);
 
-static int initialize_quiet(void);
+static void initialize_quiet(void);
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
 static void save_attributes_work(struct k_work *item);
@@ -245,6 +246,7 @@ SYS_INIT(attr_init, APPLICATION, CONFIG_ATTR_INIT_PRIORITY);
 int attr_factory_reset(void)
 {
 	fsu_delete_abs(ATTR_QUIET_ABS_PATH);
+	fsu_delete_abs(ATTR_QUIET_CRC_ABS_PATH);
 	attr_table_factory_reset();
 	return save_attributes(ATTR_SAVE_NOW);
 }
@@ -2150,31 +2152,54 @@ static bool is_dump_ro(attr_index_t index)
  * @brief Use a file to determine if attribute should be printed by show
  * or made 'quiet'.
  */
-static int initialize_quiet(void)
+static void initialize_quiet(void)
 {
-	int r = -EPERM;
+	uint32_t quiet_crc = 0;
+	int r = -1;
 
-	r = fsu_lfs_mount();
-	if (r >= 0) {
+	do {
 		r = fsu_read_abs(ATTR_QUIET_ABS_PATH, &quiet, sizeof(quiet));
-
 		if (r != sizeof(quiet)) {
-			LOG_WRN("Unexpected quiet file size");
-			r = -1;
+			LOG_DBG("Quiet file not found");
+			break;
 		}
 
-		/* If file doesn't exists, generate alt quiet settings. */
-		if (r < 0) {
-			r = fsu_write_abs(ATTR_QUIET_ABS_PATH, quiet,
-					  sizeof(quiet));
+		r = fsu_read_abs(ATTR_QUIET_CRC_ABS_PATH, &quiet_crc,
+				 sizeof(quiet_crc));
+		if (r != sizeof(quiet_crc)) {
+			LOG_DBG("Quiet CRC not found");
+			break;
+		}
 
-			if (r < 0) {
-				LOG_ERR("Unable to write quiet file: %d", r);
-			}
+		/* Has the size remained the same but the attributes changed? */
+		if (quiet_crc != ATTR_TABLE_CRC_OF_NAMES) {
+			r = -1;
+			LOG_DBG("Quiet CRC mismatch");
+			break;
+		}
+
+		r = 0;
+	} while (0);
+
+	if (r < 0) {
+		LOG_INF("Initializing quiet");
+
+		atomic_clear(quiet);
+
+		/* Bug 21703: Allow a default quiet value to be specified in yaml */
+
+		r = fsu_write_abs(ATTR_QUIET_ABS_PATH, quiet, sizeof(quiet));
+		if (r < 0) {
+			LOG_ERR("Unable to write quiet file: %d", r);
+		}
+
+		quiet_crc = ATTR_TABLE_CRC_OF_NAMES;
+		r = fsu_write_abs(ATTR_QUIET_CRC_ABS_PATH, &quiet_crc,
+				  sizeof(quiet_crc));
+		if (r < 0) {
+			LOG_ERR("Unable to write quiet CRC file: %d", r);
 		}
 	}
-
-	return r;
 }
 
 static int64_t sign_extend64(const ate_t *const entry)

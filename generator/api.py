@@ -21,6 +21,7 @@ from pathlib import Path
 import string
 from dataclasses import dataclass
 import csv
+import zlib
 
 JSON_INDENT = '  '
 
@@ -837,6 +838,9 @@ class attributes:
             "TABLE_MAX_ID", "", max(self.id)))
         defs.append(self.JustifyDefine(
             "TABLE_WRITABLE_COUNT", "", sum(self.writable)))
+        defs.append(self.JustifyDefine(
+            "TABLE_CRC_OF_NAMES", "", self.CrcOfNames()))
+
         defs.append(self.JustifyDefine("MAX_STR_LENGTH", "",
                                        max(self.stringMax)))
         defs.append(self.JustifyDefine("MAX_STR_SIZE", "",
@@ -865,6 +869,13 @@ class attributes:
         else:
             name = key
         return "#define ATTR_" + name.ljust(width) + f" {str(value)}\n"
+
+    def CrcOfNames(self):
+        """ Generate a CRC32 of the attribute names """
+        crc = 0
+        for name in self.name:
+            crc = zlib.crc32(name.encode('utf8'), crc)
+        return hex(crc)
 
     def CreateMaxStringSizes(self, lst: list) -> str:
         """
