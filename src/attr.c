@@ -95,10 +95,7 @@ static const char EMPTY_STRING[] = "";
 #endif
 
 static const lcz_kvp_cfg_t KVP_CFG = {
-	.max_file_size = (ATTR_MAX_FILE_SIZE +
-			  CONFIG_ATTR_FILE_ADDITIONAL_COMMENT_CHARS),
-	.max_key_len = (ATTR_MAX_KEY_NAME_SIZE - 1),
-	.max_val_len = (ATTR_MAX_VALUE_SIZE - 1),
+	.max_file_out_size = ATTR_MAX_FILE_SIZE,
 	.encrypted = IS_ENABLED(CONFIG_ATTR_ENCRYPTED) ? true : false,
 };
 
@@ -1070,8 +1067,12 @@ int attr_prepare_then_dump(char **fstr, enum attr_dump type)
 	do {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			if (dumpable(i)) {
-				entry_to_kvp(&kvp, &ATTR_TABLE[i]);
-				r = lcz_kvp_generate_file(&KVP_CFG, &kvp, fstr);
+				r = entry_to_kvp(&kvp, &ATTR_TABLE[i]);
+				if (r == 0) {
+					r = lcz_kvp_generate_file(&KVP_CFG,
+								  &kvp, fstr);
+				}
+
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (dump) [%u] status: %d",
@@ -1339,9 +1340,12 @@ static int save_attributes(void)
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			if ((ATTR_TABLE[i].flags & FLAGS_SAVABLE) &&
 			    !(ATTR_TABLE[i].flags & FLAGS_DEPRECATED)) {
-				entry_to_kvp(&kvp, &ATTR_TABLE[i]);
-				r = lcz_kvp_generate_file(&KVP_CFG, &kvp,
-							  &fstr);
+				r = entry_to_kvp(&kvp, &ATTR_TABLE[i]);
+				if (r == 0) {
+					r = lcz_kvp_generate_file(&KVP_CFG,
+								  &kvp, &fstr);
+				}
+
 				if (r < 0) {
 					LOG_ERR("Error converting attribute table "
 						"into file (save) [%u] status: %d",
@@ -1751,11 +1755,7 @@ static int load_attributes(const char *fname)
 		k_free(fstr);
 	}
 
-	if (r < 0) {
-		LOG_ERR("%s: status %d", __func__, r);
-	} else {
-		LOG_DBG("status %d", r);
-	}
+	LOG_INF("%s: %d", __func__, r);
 
 	return r;
 }
@@ -1765,13 +1765,17 @@ static const ate_t *kvp_find_entry(lcz_kvp_t *kvp)
 {
 	memset(&conversion, 0, sizeof(conversion));
 
+	/* Invalid lengths aren't an error during init
+	 * (when switching configurations).
+	 */
+
 	if (kvp->key_len > ATTR_MAX_KEY_NAME_SIZE) {
-		LOG_ERR("%s: Key name too long", __func__);
+		LOG_WRN("%s: Key name too long", __func__);
 		return NULL;
 	}
 
 	if (kvp->val_len > ATTR_MAX_VALUE_SIZE) {
-		LOG_ERR("%s: Value too long", __func__);
+		LOG_WRN("%s: Value too long", __func__);
 		return NULL;
 	}
 
@@ -1935,7 +1939,7 @@ static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry)
 	}
 
 	/* Check output of snprintk */
-	if (len <= 0 || len >= sizeof(str)) {
+	if (len <= 0 || len >= ATTR_MAX_VALUE_SIZE) {
 		r = -EINVAL;
 	}
 
@@ -1944,6 +1948,14 @@ static int entry_to_kvp(lcz_kvp_t *kvp, const ate_t *const entry)
 	} else {
 		LOG_ERR("%s: Invalid conversion size %d", __func__, len);
 		kvp->val_len = 0;
+	}
+
+	/* Make sure storage for key is large enough when reading file.
+	 * (Validate output of code generator.)
+	 */
+	if (kvp->key_len <= 0 || kvp->key_len >= ATTR_MAX_KEY_NAME_SIZE) {
+		LOG_ERR("%s: Invalid key length %d", __func__, kvp->key_len);
+		r = -EINVAL;
 	}
 
 	return r;

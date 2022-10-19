@@ -189,13 +189,6 @@ config ATTR_ENCRYPTED
 	  When enabled, attribute and attribute load files will be
 	  encrypted.
 
-config ATTR_FILE_ADDITIONAL_COMMENT_CHARS
-	int "Allow extra space in key-value pair file for comments"
-	default 320
-	help
-	  The attribute generator accounts generates the maximum file size
-	  based on the maximum length of each attribute.
-
 config ATTR_ID_CONDITIONAL_CODE_ENABLE
 	bool "Allow preprocssor resolution of attribute names into ids"
 	help
