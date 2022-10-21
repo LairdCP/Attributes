@@ -570,7 +570,9 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	int r = 0;
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
+	size_t length;
 	const char *load_path;
+	char path[FSU_MAX_ABS_PATH_SIZE];
 
 	if (!cbor_decode_load_parameter_file(zsd->payload,
 					     (zsd->payload_end - zsd->payload),
@@ -578,18 +580,27 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
+	if (user_params.p1_present) {
+		load_path = user_params.p1.p1.value;
+		length = user_params.p1.p1.len;
+	} else {
 #ifdef ATTR_ID_load_path
-	load_path = attr_get_quasi_static(ATTR_ID_load_path);
+		load_path = attr_get_quasi_static(ATTR_ID_load_path);
 #else
-	load_path = "/lfs/attr.txt";
+		load_path = "/lfs/attr.txt";
 #endif
+		length = strlen(load_path);
+	}
+
+	if (length < FSU_MAX_ABS_PATH_SIZE) {
+		memcpy(path, load_path, length);
+		path[length] = 0;
+	} else {
+		r = -EINVAL;
+	}
 
 	if (r == 0) {
-		/* The input file is an optional parameter. */
-		r = attr_load((user_params.p1_present == true ?
-					     user_params.p1.p1.value :
-					     (void *)load_path),
-			      &modified);
+		r = attr_load(path, &modified);
 	}
 
 	load_parameter_file_data.r = r;
