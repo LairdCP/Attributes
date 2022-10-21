@@ -540,9 +540,10 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 		r = -EINVAL;
 	}
 
-#ifdef CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION
+#if defined(CONFIG_ATTRIBUTE_MGMT_INCREMENT_CONFIG_VERSION) &&                 \
+	defined(ATTR_ID_config_version)
 	if (r == 0 && modified == true) {
-		(void)attr_update_config_version();
+		(void)attr_add_uint32(ATTR_ID_config_version, 1);
 	}
 #endif
 

@@ -644,11 +644,11 @@ bool attr_is_locked(void);
 int attr_force_save(void);
 
 /**
- * @brief Update (increment) configuration version attribute
+ * @brief Increment configuration version attribute
  *
  * @return int 0 on success, else negative errno.
  */
-int attr_update_config_version(void);
+int attr_increment_config_version(void);
 
 /**
  * @brief Save status callback

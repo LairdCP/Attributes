@@ -1226,13 +1226,10 @@ int attr_force_save(void)
 #endif
 }
 
-int attr_update_config_version(void)
+int attr_increment_config_version(void)
 {
 #ifdef ATTR_ID_config_version
-	uint32_t config_version = attr_get_uint32(ATTR_ID_config_version, 0);
-
-	return attr_set_uint32(ATTR_ID_config_version,
-			       (uint32_t)config_version);
+	return attr_add_uint32(ATTR_ID_config_version, 1);
 #endif
 
 	return -EIO;
