@@ -623,9 +623,11 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 	struct dump_parameter_file_result dump_parameter_file_data = { 0 };
 	int r = MGMT_ERR_EOK;
 	char *fstr = NULL;
+	size_t file_name_length;
 	const char *file_name;
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
+	char path[FSU_MAX_ABS_PATH_SIZE];
 
 	if (!cbor_decode_dump_parameter_file(zsd->payload,
 					     (zsd->payload_end - zsd->payload),
@@ -633,44 +635,56 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_EINVAL;
 	}
 
-	if (r == 0) {
+	do {
 		file_name = NULL;
 #ifdef CONFIG_ATTRIBUTE_MGMT_DUMP_USER_FILE_NAME
 		/* The output file is an optional parameter */
 		if (user_params.p2_present == true) {
 			file_name = user_params.p2.p2.value;
+			file_name_length = user_params.p2.p2.len;
+
 		}
 #endif
 #ifdef ATTR_ID_dump_path
 		if (file_name == NULL) {
 			file_name = attr_get_quasi_static(ATTR_ID_dump_path);
+			file_name_length = strlen(file_name);
 		}
 #else
 		if (file_name == NULL) {
 			file_name = "/lfs/dump.txt";
+			file_name_length = strlen(file_name);
 		}
 #endif
+
+		if (file_name_length < FSU_MAX_ABS_PATH_SIZE) {
+			memcpy(path, file_name, file_name_length);
+			path[file_name_length] = 0;
+		} else {
+			r = -EINVAL;
+			break;
+		}
 
 		/* This will malloc a string as large as maximum parameter file size. */
 		if (user_params.p1 < UINT8_MAX) {
 			/* Clear file before proceeding */
-			fsu_delete_abs(file_name);
+			fsu_delete_abs(path);
 
 			/* Dump parameters to file */
 			r = attr_prepare_then_dump(&fstr, user_params.p1);
 			if (r >= 0) {
-				r = fsu_write_abs(file_name, fstr,
+				r = fsu_write_abs(path, fstr,
 						  strlen(fstr));
 				k_free(fstr);
+			} else {
+				break;
 			}
 		}
 
-		if (r >= 0) {
-			dump_parameter_file_data.n.n.value = file_name;
-			dump_parameter_file_data.n.n.len = strlen(file_name);
-			dump_parameter_file_data.n_present = true;
-		}
-	}
+		dump_parameter_file_data.n.n.value = path;
+		dump_parameter_file_data.n.n.len = strlen(path);
+		dump_parameter_file_data.n_present = true;
+	} while(0);
 
 	dump_parameter_file_data.r = r;
 
