@@ -139,6 +139,14 @@ config MCUMGR_CMD_ATTRIBUTE_MGMT
 
 if MCUMGR_CMD_ATTRIBUTE_MGMT
 
+config ATTRIBUTE_MGMT_INIT_PRIORITY
+	int "Application level init priority mcumgr attribute management"
+	range 2 99
+	default 71
+	help
+	  Can't be higher than ATTR_INIT_PRIORITY.
+	  Recommended to be higher than main thread init priority.
+
 config ATTRIBUTE_MGMT_MEMFAULT_FILE_NAME
 	string "File name used for writing memfault data"
 	depends on LCZ_MEMFAULT_FILE

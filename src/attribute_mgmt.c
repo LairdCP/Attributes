@@ -210,7 +210,7 @@ static struct {
 /******************************************************************************/
 /* Global Function Definitions                                                */
 /******************************************************************************/
-SYS_INIT(attribute_mgmt_init, APPLICATION, 99);
+SYS_INIT(attribute_mgmt_init, APPLICATION, CONFIG_ATTRIBUTE_MGMT_INIT_PRIORITY);
 
 #ifdef CONFIG_MCUMGR_SMP_BT
 /* Callback from attribute module */
