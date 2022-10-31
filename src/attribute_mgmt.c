@@ -349,19 +349,28 @@ static void cbor_encode_attribute(uint16_t param_id,
 	attr_id_t id = (attr_id_t)param_id;
 	enum attr_type type = attr_get_type(id);
 
-	if (type == ATTR_TYPE_S8 || type == ATTR_TYPE_S16 ||
-	    type == ATTR_TYPE_S32 || type == ATTR_TYPE_S64) {
+	response->r1_present = true;
+
+	switch (type) {
+	case ATTR_TYPE_S8:
+	case ATTR_TYPE_S16:
+	case ATTR_TYPE_S32:
+	case ATTR_TYPE_S64:
 		response->r1.r1_choice = _get_parameter_result_r1__int64;
 		response->r = attr_get(id, &response->r1._int64,
 				       sizeof(response->r1._int64));
-		response->r1_present = true;
-	} else if (type == ATTR_TYPE_U8 || type == ATTR_TYPE_U16 ||
-		   type == ATTR_TYPE_U32 || type == ATTR_TYPE_U64) {
+		break;
+
+	case ATTR_TYPE_U8:
+	case ATTR_TYPE_U16:
+	case ATTR_TYPE_U32:
+	case ATTR_TYPE_U64:
 		response->r1.r1_choice = _get_parameter_result_r1__uint64;
 		response->r = attr_get(id, &response->r1._uint64,
 				       sizeof(response->r1._uint64));
-		response->r1_present = true;
-	} else if (type == ATTR_TYPE_STRING) {
+		break;
+
+	case ATTR_TYPE_STRING:
 		response->r1.r1_choice = _get_parameter_result_r1_tstr;
 		response->r1.tstr.value = attr_get_pointer(id, &response->r);
 		if (response->r1.tstr.value == NULL) {
@@ -369,23 +378,31 @@ static void cbor_encode_attribute(uint16_t param_id,
 		} else {
 			response->r1.tstr.len = strlen(response->r1.tstr.value);
 		}
-		response->r1_present = true;
-	} else if (type == ATTR_TYPE_FLOAT) {
+		/* For strings the terminator must be removed from the maximum size. */
+		if (response->r > 0) {
+			response->r -= 1;
+		}
+		break;
+
+	case ATTR_TYPE_FLOAT:
 		response->r1.r1_choice = _get_parameter_result_r1_float;
 		response->r = attr_get(id, &response->r1._float,
 				       sizeof(response->r1._float));
-		response->r1_present = true;
-	} else if (type == ATTR_TYPE_BOOL) {
+		break;
+
+	case ATTR_TYPE_BOOL:
 		response->r1.r1_choice = _get_parameter_result_r1_bool;
 		response->r = attr_get(id, &response->r1._bool,
 				       sizeof(response->r1._bool));
-		response->r1_present = true;
-	} else if (type == ATTR_TYPE_BYTE_ARRAY) {
+		break;
+
+	case ATTR_TYPE_BYTE_ARRAY:
 		response->r1.r1_choice = _get_parameter_result_r1_bstr;
 		response->r1.bstr.value = attr_get_pointer(id, &response->r);
 		response->r1.bstr.len = response->r;
-		response->r1_present = true;
-	} else {
+		break;
+
+	default:
 		response->r = -EINVAL;
 		response->r1_present = false;
 	}
@@ -642,7 +659,6 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 		if (user_params.p2_present == true) {
 			file_name = user_params.p2.p2.value;
 			file_name_length = user_params.p2.p2.len;
-
 		}
 #endif
 #ifdef ATTR_ID_dump_path
@@ -673,8 +689,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 			/* Dump parameters to file */
 			r = attr_prepare_then_dump(&fstr, user_params.p1);
 			if (r >= 0) {
-				r = fsu_write_abs(path, fstr,
-						  strlen(fstr));
+				r = fsu_write_abs(path, fstr, strlen(fstr));
 				k_free(fstr);
 			} else {
 				break;
@@ -684,7 +699,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 		dump_parameter_file_data.n.n.value = path;
 		dump_parameter_file_data.n.n.len = strlen(path);
 		dump_parameter_file_data.n_present = true;
-	} while(0);
+	} while (0);
 
 	dump_parameter_file_data.r = r;
 
