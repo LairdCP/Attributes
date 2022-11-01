@@ -153,7 +153,7 @@ static int save_attributes(void);
 static void change_single(const ate_t *const entry, bool send_notifications,
 			  bool skip_broadcast);
 static void broadcast_single(attr_id_t id);
-static void change_multiple(bool send_notifications);
+static int change_multiple(bool send_notifications);
 static void notification_handler(attr_id_t id);
 
 static int load_attributes(const char *fname);
@@ -1123,36 +1123,29 @@ int attr_set_quiet(attr_id_t id, bool value)
 int attr_load(const char *abs_path, bool *modified)
 {
 	int r = -EPERM;
-
-	if (modified != NULL) {
-		*modified = false;
-	}
+	size_t pairs = 0;
+	int mod_count = 0;
 
 	TAKE_MUTEX(attr_mutex);
 	do {
-		r = load_attributes(abs_path);
+		r = pairs = load_attributes(abs_path);
 		BREAK_ON_ERROR(r);
 
-		if (modified != NULL) {
-			/* See if any attributes were modified prior to save */
-			uint16_t i = 0;
-			while (i < ATTR_TABLE_SIZE) {
-				if (atomic_test_bit(attr_modified, i)) {
-					*modified = true;
-					break;
-				}
-
-				++i;
-			}
-		}
-
-		/* If attributes can't be saved, then still broadcast. */
 		r = save_attributes(ATTR_SAVE_NOW);
-		change_multiple(DISABLE_NOTIFICATIONS);
+
+		/* If attributes can't be saved, then still broadcast and
+		 * and generate modified count.
+		 */
+		mod_count = change_multiple(DISABLE_NOTIFICATIONS);
+
 	} while (0);
 	GIVE_MUTEX(attr_mutex);
 
-	return r;
+	if (modified != NULL) {
+		*modified = mod_count > 0;
+	}
+
+	return (r < 0) ? r : pairs;
 }
 
 int attr_set_notify(attr_id_t id, bool value)
@@ -1366,11 +1359,15 @@ static int save_attributes(void)
 
 	GIVE_MUTEX(attr_mutex);
 
+	LOG_INF("%s: size %d", __func__, r);
+
+	r = (r < 0) ? r : 0;
+
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
-	attr_set_signed32(ATTR_ID_attr_save_error_code, ((r < 0) ? r : 0));
+	attr_set_signed32(ATTR_ID_attr_save_error_code, r);
 #endif
 
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 #ifdef CONFIG_ATTR_DEFERRED_SAVE
@@ -1419,11 +1416,12 @@ static int save_attributes(bool immediately)
 #endif
 
 /* generate framework broadcast, show value, and BLE notification callback */
-static void change_multiple(bool send_notifications)
+static int change_multiple(bool send_notifications)
 {
 	attr_index_t i;
 	bool modified;
 	bool unchanged;
+	int mod_count = 0;
 
 #ifdef CONFIG_ATTR_BROADCAST
 	size_t msg_size = ATTR_BROADCAST_MSG_SIZE(ATTR_TABLE_WRITABLE_COUNT);
@@ -1462,6 +1460,9 @@ static void change_multiple(bool send_notifications)
 			notification_handler(i);
 		}
 
+		if (modified) {
+			mod_count += 1;
+		}
 		atomic_clear_bit(attr_modified, i);
 		atomic_clear_bit(attr_unchanged, i);
 	}
@@ -1481,6 +1482,10 @@ static void change_multiple(bool send_notifications)
 		}
 	}
 #endif
+
+	LOG_DBG("modified count: %u", mod_count);
+
+	return mod_count;
 }
 
 static void change_single(const ate_t *const entry, bool send_notifications,
@@ -1680,7 +1685,7 @@ static int show(const ate_t *const entry)
 static int load_attributes(const char *fname)
 {
 	int r = -EPERM;
-	size_t fsize;
+	size_t fsize = 0;
 	char *fstr = NULL;
 	lcz_kvp_t *kv = NULL;
 	size_t pairs = 0;
@@ -1688,7 +1693,6 @@ static int load_attributes(const char *fname)
 	do {
 		r = lcz_kvp_parse_from_file(&KVP_CFG, fname, &fsize, &fstr,
 					    &kv);
-		LOG_INF("pairs: %d fsize: %d file: %s", r, fsize, fname);
 		if (r < 0) {
 			LOG_ERR("Unable to parse KVP file");
 			create_unable_to_parse_feedback_file();
@@ -1725,9 +1729,9 @@ static int load_attributes(const char *fname)
 		k_free(fstr);
 	}
 
-	LOG_INF("%s: %d", __func__, r);
+	LOG_INF("load %s: status: %d pairs: %u size: %u", fname, r, pairs, fsize);
 
-	return r;
+	return (r < 0) ? r : pairs;
 }
 
 /* Use key-value information to find attribute table entry. */
