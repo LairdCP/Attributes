@@ -1,0 +1,74 @@
+int64  = int .size 8
+uint64 = uint .size 8
+
+set_parameter = {
+    "p1" => uint,                                                        ; Attribute ID
+    "p2" => bool/uint64/int64/tstr/float/bstr                            ; Value
+}
+
+set_parameter_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+get_parameter = {
+    "p1" => uint                                                         ; Attribute ID
+}
+
+get_parameter_result = {
+    "r" => int,                                                          ; Result code
+    "id" => uint,                                                        ; Attribute ID
+    ? "r1" => bool/uint64/int64/tstr/float/bstr                          ; Attribute value
+}
+
+load_parameter_file = {
+    ? "p1" => tstr                                                       ; File name
+}
+
+load_parameter_file_result = {
+    "r" => int,                                                          ; Result code
+    ? "f" => tstr                                                        ; File name
+}
+
+dump_parameter_file = {
+    "p1" => uint,                                                        ; Attribute type
+    ? "p2" => tstr                                                       ; File name
+}
+
+dump_parameter_file_result = {
+    "r" => int,                                                          ; Result code
+    ? "n" => tstr                                                        ; File name
+}
+
+factory_reset = {
+}
+
+factory_reset_result = {
+    "r" => int                                                           ; Result code
+}
+
+set_notify = {
+    "p1" => uint,                                                        ; Attribute ID
+    "p2" => bool                                                         ; Notifications
+}
+
+set_notify_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+get_notify = {
+    "p1" => uint                                                         ; Attribute ID
+}
+
+get_notify_result = {
+    "id" => uint,                                                        ; Attribute ID
+    "r" => int                                                           ; Result code
+}
+
+disable_notify = {
+}
+
+disable_notify_result = {
+    "r" => int                                                           ; Result code
+}

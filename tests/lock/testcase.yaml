@@ -1,4 +1,0 @@
-tests:
-  components.attr.lock:
-    tags: attributes
-    harness: ztest
