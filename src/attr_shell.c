@@ -531,7 +531,7 @@ static int ats_load_cmd(const struct shell *shell, size_t argc, char **argv)
 			 * modification was made
 			 */
 			if (modified == true) {
-				r = attr_update_config_version();
+				r = attr_increment_config_version();
 			}
 #endif
 		}
