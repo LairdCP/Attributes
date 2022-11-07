@@ -1842,6 +1842,7 @@ static int kvp_convert(lcz_kvp_t *kvp)
 	case ATTR_TYPE_ATOMIC:
 		conversion.result.s64 = strtoll(conversion.value, NULL, 0);
 		conversion.result_len = sizeof(conversion.result.s64);
+		break;
 	default:
 	case ATTR_TYPE_ANY:
 	case ATTR_TYPE_UNKNOWN:
