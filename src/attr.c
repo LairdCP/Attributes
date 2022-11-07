@@ -635,6 +635,24 @@ int attr_set_float(attr_id_t id, float value)
 	return r;
 }
 
+int attr_set_bool(attr_id_t id, bool value)
+{
+	ATTR_ENTRY_DECL(id);
+	bool local = value;
+	int r = -EPERM;
+
+	if (entry != NULL) {
+		TAKE_MUTEX(attr_mutex);
+		r = attr_write(entry, ATTR_TYPE_BOOL, &local, sizeof(local));
+		if (r == 0) {
+			r = save_single(entry);
+			change_single(entry, NOTIFY, BROADCAST);
+		}
+		GIVE_MUTEX(attr_mutex);
+	}
+	return r;
+}
+
 int attr_copy_uint64(uint64_t *pv, attr_id_t id)
 {
 	ATTR_ENTRY_DECL(id);

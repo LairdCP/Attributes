@@ -386,6 +386,16 @@ int attr_copy_signed32(int32_t *pv, attr_id_t id);
 int attr_set_float(attr_id_t id, float value);
 
 /**
+ * @brief Used to set the value of a bool attribute
+ *
+ * @param id an attribute id.
+ * @param value The value to set.
+ *
+ * @retval negative error code, 0 on success
+ */
+int attr_set_bool(attr_id_t id, bool value);
+
+/**
  * @brief Accessor Function for float
  *
  * @param pv pointer to data
