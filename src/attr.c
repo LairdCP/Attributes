@@ -1974,13 +1974,17 @@ static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write)
 	for (i = 0; i < pairs; i++) {
 		if (kvp_find_entry(kv + i) == NULL) {
 			r = -ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
-			LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
-					attr_get_string_set_error(r));
+			if (!do_write) {
+				LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
+						attr_get_string_set_error(r));
+			}
 		} else if (!is_writable(conversion.entry) && attr_initialized) {
 			/* During init values that aren't writable must be restored */
 			r = -ATTR_WRITE_ERROR_PARAMETER_NOT_WRITABLE;
-			LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
-					attr_get_string_set_error(r));
+			if (!do_write) {
+				LOG_HEXDUMP_WRN(kv[i].key, kv[i].key_len,
+						attr_get_string_set_error(r));
+			}
 		} else {
 			r = kvp_convert(kv + i);
 			if (r == 0) {
@@ -2017,7 +2021,11 @@ static int loader(lcz_kvp_t *kv, char *fstr, size_t pairs, bool do_write)
 	if (r < 0 || fail_count > 0) {
 		r = -EINVAL;
 	}
-	LOG_DBG("fail_count: %d", fail_count);
+
+	/* Limit logging to validation of file (which always occurs) */
+	if (!do_write) {
+		LOG_DBG("fail_count: %d", fail_count);
+	}
 
 	return r;
 }
