@@ -1795,13 +1795,15 @@ static const ate_t *kvp_find_entry(lcz_kvp_t *kvp)
 	return conversion.entry;
 }
 
-/* After entry has been found, perform data conversion for value */
+/* After entry has been found, perform data conversion for value
+ * @retval attr_write error code
+ */
 static int kvp_convert(lcz_kvp_t *kvp)
 {
-	int r = 0;
+	int r = ATTR_WRITE_ERROR_OK;
 
 	if (conversion.entry == NULL || kvp == NULL) {
-		return -EINVAL;
+		return -ATTR_WRITE_ERROR_UNKNOWN;
 	}
 
 	/* Convert from string into type
@@ -1830,7 +1832,7 @@ static int kvp_convert(lcz_kvp_t *kvp)
 			hex2bin(kvp->val, kvp->val_len, conversion.result.data,
 				sizeof(conversion.result.data));
 		if (conversion.result_len == 0) {
-			r = -EINVAL;
+			r = -ATTR_WRITE_ERROR_PARAMETER_INVALID_LENGTH;
 		}
 		break;
 	case ATTR_TYPE_S8:
@@ -1843,7 +1845,7 @@ static int kvp_convert(lcz_kvp_t *kvp)
 	default:
 	case ATTR_TYPE_ANY:
 	case ATTR_TYPE_UNKNOWN:
-		r = -EINVAL;
+		r = -ATTR_WRITE_ERROR_PARAMETER_UNKNOWN;
 		break;
 	}
 
