@@ -227,9 +227,9 @@ int attr_notify(attr_id_t index)
 	cbor_encode_attribute(index, &response);
 
 	do {
-		if (!cbor_encode_get_parameter_result(
-			    smp_ble.cmd.buffer, sizeof(smp_ble.cmd.buffer),
-			    &response, &rsp_len)) {
+		if (cbor_encode_get_parameter_result(smp_ble.cmd.buffer,
+						     sizeof(smp_ble.cmd.buffer),
+						     &response, &rsp_len)) {
 			err = -EMSGSIZE;
 			break;
 		}
@@ -315,9 +315,9 @@ static int get_parameter(struct mgmt_ctxt *ctxt)
 
 	user_params.p1 = INVALID_PARAM_ID;
 
-	if (!cbor_decode_get_parameter(zsd->payload,
-				       (zsd->payload_end - zsd->payload),
-				       &user_params, NULL)) {
+	if (cbor_decode_get_parameter(zsd->payload,
+				      (zsd->payload_end - zsd->payload),
+				      &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -329,9 +329,9 @@ static int get_parameter(struct mgmt_ctxt *ctxt)
 
 	cbor_encode_attribute(user_params.p1, &response);
 
-	if (!cbor_encode_get_parameter_result(zse->payload_mut,
-					      (zse->payload_end - zse->payload),
-					      &response, &rsp_len)) {
+	if (cbor_encode_get_parameter_result(zse->payload_mut,
+					     (zse->payload_end - zse->payload),
+					     &response, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -426,9 +426,9 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 
 	user_params.p1 = INVALID_PARAM_ID;
 
-	if (!cbor_decode_set_parameter(zsd->payload,
-				       (zsd->payload_end - zsd->payload),
-				       &user_params, NULL)) {
+	if (cbor_decode_set_parameter(zsd->payload,
+				      (zsd->payload_end - zsd->payload),
+				      &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -567,9 +567,9 @@ static int set_parameter(struct mgmt_ctxt *ctxt)
 	response.id = user_params.p1;
 	response.r = r;
 
-	if (!cbor_encode_set_parameter_result(zse->payload_mut,
-					      (zse->payload_end - zse->payload),
-					      &response, &rsp_len)) {
+	if (cbor_encode_set_parameter_result(zse->payload_mut,
+					     (zse->payload_end - zse->payload),
+					     &response, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -591,9 +591,9 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 	const char *load_path;
 	char path[FSU_MAX_ABS_PATH_SIZE];
 
-	if (!cbor_decode_load_parameter_file(zsd->payload,
-					     (zsd->payload_end - zsd->payload),
-					     &user_params, NULL)) {
+	if (cbor_decode_load_parameter_file(zsd->payload,
+					    (zsd->payload_end - zsd->payload),
+					    &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -622,7 +622,7 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 
 	load_parameter_file_data.r = r;
 
-	if (!cbor_encode_load_parameter_file_result(
+	if (cbor_encode_load_parameter_file_result(
 		    zse->payload_mut, (zse->payload_end - zse->payload),
 		    &load_parameter_file_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
@@ -646,9 +646,9 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
 	char path[FSU_MAX_ABS_PATH_SIZE];
 
-	if (!cbor_decode_dump_parameter_file(zsd->payload,
-					     (zsd->payload_end - zsd->payload),
-					     &user_params, NULL)) {
+	if (cbor_decode_dump_parameter_file(zsd->payload,
+					    (zsd->payload_end - zsd->payload),
+					    &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -703,7 +703,7 @@ static int dump_parameter_file(struct mgmt_ctxt *ctxt)
 
 	dump_parameter_file_data.r = r;
 
-	if (!cbor_encode_dump_parameter_file_result(
+	if (cbor_encode_dump_parameter_file_result(
 		    zse->payload_mut, (zse->payload_end - zse->payload),
 		    &dump_parameter_file_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
@@ -747,9 +747,9 @@ static int factory_reset(struct mgmt_ctxt *ctxt)
 
 	factory_reset_data.r = r;
 
-	if (!cbor_encode_factory_reset_result(zse->payload_mut,
-					      (zse->payload_end - zse->payload),
-					      &factory_reset_data, &rsp_len)) {
+	if (cbor_encode_factory_reset_result(zse->payload_mut,
+					     (zse->payload_end - zse->payload),
+					     &factory_reset_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -769,9 +769,9 @@ static int set_notify(struct mgmt_ctxt *ctxt)
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
-	if (!cbor_decode_set_notify(zsd->payload,
-				    (zsd->payload_end - zsd->payload),
-				    &user_params, NULL)) {
+	if (cbor_decode_set_notify(zsd->payload,
+				   (zsd->payload_end - zsd->payload),
+				   &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -779,9 +779,9 @@ static int set_notify(struct mgmt_ctxt *ctxt)
 	set_notify_data.r =
 		attr_set_notify((attr_id_t)user_params.p1, user_params.p2);
 
-	if (!cbor_encode_set_notify_result(zse->payload_mut,
-					   (zse->payload_end - zse->payload),
-					   &set_notify_data, &rsp_len)) {
+	if (cbor_encode_set_notify_result(zse->payload_mut,
+					  (zse->payload_end - zse->payload),
+					  &set_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -798,18 +798,18 @@ static int get_notify(struct mgmt_ctxt *ctxt)
 	zcbor_state_t *zse = ctxt->cnbe->zs;
 	zcbor_state_t *zsd = ctxt->cnbd->zs;
 
-	if (!cbor_decode_get_notify(zsd->payload,
-				    (zsd->payload_end - zsd->payload),
-				    &user_params, NULL)) {
+	if (cbor_decode_get_notify(zsd->payload,
+				   (zsd->payload_end - zsd->payload),
+				   &user_params, NULL)) {
 		return MGMT_ERR_EINVAL;
 	}
 
 	get_notify_data.id = user_params.p1;
 	get_notify_data.r = attr_get_notify((attr_id_t)user_params.p1);
 
-	if (!cbor_encode_get_notify_result(zse->payload_mut,
-					   (zse->payload_end - zse->payload),
-					   &get_notify_data, &rsp_len)) {
+	if (cbor_encode_get_notify_result(zse->payload_mut,
+					  (zse->payload_end - zse->payload),
+					  &get_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
@@ -826,9 +826,9 @@ static int disable_notify(struct mgmt_ctxt *ctxt)
 
 	disable_notify_data.r = attr_disable_notify();
 
-	if (!cbor_encode_disable_notify_result(
-		    zse->payload_mut, (zse->payload_end - zse->payload),
-		    &disable_notify_data, &rsp_len)) {
+	if (cbor_encode_disable_notify_result(zse->payload_mut,
+					      (zse->payload_end - zse->payload),
+					      &disable_notify_data, &rsp_len)) {
 		return MGMT_ERR_EMSGSIZE;
 	}
 
