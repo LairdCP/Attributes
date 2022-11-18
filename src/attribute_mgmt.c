@@ -620,7 +620,8 @@ static int load_parameter_file(struct mgmt_ctxt *ctxt)
 		r = attr_load(path, &modified);
 	}
 
-	load_parameter_file_data.r = r;
+	/* Bug 23168 - External (SMP) API doesn't match internal API */
+	load_parameter_file_data.r = r >= 0 ? 0 : r;
 
 	if (cbor_encode_load_parameter_file_result(
 		    zse->payload_mut, (zse->payload_end - zse->payload),
