@@ -15,26 +15,46 @@
 #error "The type file was generated with a different default_max_qty than this file"
 #endif
 
-static bool encode_repeated_load_parameter_file_p1(zcbor_state_t *state, const struct load_parameter_file_p1 *input);
-static bool encode_repeated_load_parameter_file_result_f(zcbor_state_t *state, const struct load_parameter_file_result_f *input);
-static bool encode_repeated_dump_parameter_file_p2(zcbor_state_t *state, const struct dump_parameter_file_p2 *input);
-static bool encode_repeated_dump_parameter_file_result_n(zcbor_state_t *state, const struct dump_parameter_file_result_n *input);
-static bool encode_repeated_get_parameter_result_r1(zcbor_state_t *state, const struct get_parameter_result_r1_ *input);
-static bool encode_disable_notify_result(zcbor_state_t *state, const struct disable_notify_result *input);
-static bool encode_disable_notify(zcbor_state_t *state, const void *input);
-static bool encode_get_notify_result(zcbor_state_t *state, const struct get_notify_result *input);
-static bool encode_get_notify(zcbor_state_t *state, const struct get_notify *input);
-static bool encode_set_notify_result(zcbor_state_t *state, const struct set_notify_result *input);
-static bool encode_set_notify(zcbor_state_t *state, const struct set_notify *input);
-static bool encode_factory_reset_result(zcbor_state_t *state, const struct factory_reset_result *input);
-static bool encode_factory_reset(zcbor_state_t *state, const void *input);
-static bool encode_dump_parameter_file_result(zcbor_state_t *state, const struct dump_parameter_file_result *input);
-static bool encode_dump_parameter_file(zcbor_state_t *state, const struct dump_parameter_file *input);
-static bool encode_load_parameter_file_result(zcbor_state_t *state, const struct load_parameter_file_result *input);
-static bool encode_load_parameter_file(zcbor_state_t *state, const struct load_parameter_file *input);
-static bool encode_get_parameter_result(zcbor_state_t *state, const struct get_parameter_result *input);
-static bool encode_get_parameter(zcbor_state_t *state, const struct get_parameter *input);
-static bool encode_set_parameter_result(zcbor_state_t *state, const struct set_parameter_result *input);
+static bool encode_repeated_load_parameter_file_p1(zcbor_state_t *state, const struct load_parameter_file_p1 *input);
+
+static bool encode_repeated_load_parameter_file_result_f(zcbor_state_t *state, const struct load_parameter_file_result_f *input);
+
+static bool encode_repeated_dump_parameter_file_p2(zcbor_state_t *state, const struct dump_parameter_file_p2 *input);
+
+static bool encode_repeated_dump_parameter_file_result_n(zcbor_state_t *state, const struct dump_parameter_file_result_n *input);
+
+static bool encode_repeated_get_parameter_result_r1(zcbor_state_t *state, const struct get_parameter_result_r1_ *input);
+
+static bool encode_disable_notify_result(zcbor_state_t *state, const struct disable_notify_result *input);
+
+static bool encode_disable_notify(zcbor_state_t *state, const void *input);
+
+static bool encode_get_notify_result(zcbor_state_t *state, const struct get_notify_result *input);
+
+static bool encode_get_notify(zcbor_state_t *state, const struct get_notify *input);
+
+static bool encode_set_notify_result(zcbor_state_t *state, const struct set_notify_result *input);
+
+static bool encode_set_notify(zcbor_state_t *state, const struct set_notify *input);
+
+static bool encode_factory_reset_result(zcbor_state_t *state, const struct factory_reset_result *input);
+
+static bool encode_factory_reset(zcbor_state_t *state, const void *input);
+
+static bool encode_dump_parameter_file_result(zcbor_state_t *state, const struct dump_parameter_file_result *input);
+
+static bool encode_dump_parameter_file(zcbor_state_t *state, const struct dump_parameter_file *input);
+
+static bool encode_load_parameter_file_result(zcbor_state_t *state, const struct load_parameter_file_result *input);
+
+static bool encode_load_parameter_file(zcbor_state_t *state, const struct load_parameter_file *input);
+
+static bool encode_get_parameter_result(zcbor_state_t *state, const struct get_parameter_result *input);
+
+static bool encode_get_parameter(zcbor_state_t *state, const struct get_parameter *input);
+
+static bool encode_set_parameter_result(zcbor_state_t *state, const struct set_parameter_result *input);
+
 static bool encode_set_parameter(zcbor_state_t *state, const struct set_parameter *input);
 
 
@@ -51,7 +71,8 @@ static bool encode_repeated_load_parameter_file_p1(
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_repeated_load_parameter_file_result_f(
 		zcbor_state_t *state, const struct load_parameter_file_result_f *input)
@@ -66,7 +87,8 @@ static bool encode_repeated_load_parameter_file_result_f(
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_repeated_dump_parameter_file_p2(
 		zcbor_state_t *state, const struct dump_parameter_file_p2 *input)
@@ -81,7 +103,8 @@ static bool encode_repeated_dump_parameter_file_p2(
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_repeated_dump_parameter_file_result_n(
 		zcbor_state_t *state, const struct dump_parameter_file_result_n *input)
@@ -96,7 +119,8 @@ static bool encode_repeated_dump_parameter_file_result_n(
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_repeated_get_parameter_result_r1(
 		zcbor_state_t *state, const struct get_parameter_result_r1_ *input)
@@ -120,7 +144,8 @@ static bool encode_repeated_get_parameter_result_r1(
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_disable_notify_result(
 		zcbor_state_t *state, const struct disable_notify_result *input)
@@ -128,27 +153,24 @@ static bool encode_disable_notify_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 1) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
-	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 1))));
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
+	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_disable_notify(
 		zcbor_state_t *state, const void *input)
 {
 	zcbor_print("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 0) && zcbor_map_end_encode(state, 0))));
+	return true;
+}
 
-	if (!tmp_result)
-		zcbor_trace();
-
-	return tmp_result;
-}
 
 static bool encode_get_notify_result(
 		zcbor_state_t *state, const struct get_notify_result *input)
@@ -156,16 +178,17 @@ static bool encode_get_notify_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).id))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
-	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_get_notify(
 		zcbor_state_t *state, const struct get_notify *input)
@@ -173,14 +196,15 @@ static bool encode_get_notify(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 1) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
-	&& (zcbor_uint32_encode(state, (&(*input).p1))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 1))));
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
+	&& (zcbor_uint32_encode(state, (&(*input).p1))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_set_notify_result(
 		zcbor_state_t *state, const struct set_notify_result *input)
@@ -188,16 +212,17 @@ static bool encode_set_notify_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).id))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
-	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_set_notify(
 		zcbor_state_t *state, const struct set_notify *input)
@@ -205,16 +230,17 @@ static bool encode_set_notify(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).p1))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p2", tmp_str.len = sizeof("p2") - 1, &tmp_str)))))
-	&& (zcbor_bool_encode(state, (&(*input).p2))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& (zcbor_bool_encode(state, (&(*input).p2))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_factory_reset_result(
 		zcbor_state_t *state, const struct factory_reset_result *input)
@@ -222,27 +248,24 @@ static bool encode_factory_reset_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 1) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
-	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 1))));
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
+	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_factory_reset(
 		zcbor_state_t *state, const void *input)
 {
 	zcbor_print("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 0) && zcbor_map_end_encode(state, 0))));
+	return true;
+}
 
-	if (!tmp_result)
-		zcbor_trace();
-
-	return tmp_result;
-}
 
 static bool encode_dump_parameter_file_result(
 		zcbor_state_t *state, const struct dump_parameter_file_result *input)
@@ -250,15 +273,16 @@ static bool encode_dump_parameter_file_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
 	&& (zcbor_int32_encode(state, (&(*input).r))))
-	&& zcbor_present_encode(&((*input).n_present), (zcbor_encoder_t *)encode_repeated_dump_parameter_file_result_n, state, (&(*input).n))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& zcbor_present_encode(&((*input).n_present), (zcbor_encoder_t *)encode_repeated_dump_parameter_file_result_n, state, (&(*input).n))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_dump_parameter_file(
 		zcbor_state_t *state, const struct dump_parameter_file *input)
@@ -266,15 +290,16 @@ static bool encode_dump_parameter_file(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).p1))))
-	&& zcbor_present_encode(&((*input).p2_present), (zcbor_encoder_t *)encode_repeated_dump_parameter_file_p2, state, (&(*input).p2))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& zcbor_present_encode(&((*input).p2_present), (zcbor_encoder_t *)encode_repeated_dump_parameter_file_p2, state, (&(*input).p2))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_load_parameter_file_result(
 		zcbor_state_t *state, const struct load_parameter_file_result *input)
@@ -282,28 +307,30 @@ static bool encode_load_parameter_file_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
 	&& (zcbor_int32_encode(state, (&(*input).r))))
-	&& zcbor_present_encode(&((*input).f_present), (zcbor_encoder_t *)encode_repeated_load_parameter_file_result_f, state, (&(*input).f))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& zcbor_present_encode(&((*input).f_present), (zcbor_encoder_t *)encode_repeated_load_parameter_file_result_f, state, (&(*input).f))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_load_parameter_file(
 		zcbor_state_t *state, const struct load_parameter_file *input)
 {
 	zcbor_print("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 1) && ((zcbor_present_encode(&((*input).p1_present), (zcbor_encoder_t *)encode_repeated_load_parameter_file_p1, state, (&(*input).p1))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 1))));
+	bool tmp_result = (((((zcbor_present_encode(&((*input).p1_present), (zcbor_encoder_t *)encode_repeated_load_parameter_file_p1, state, (&(*input).p1))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_get_parameter_result(
 		zcbor_state_t *state, const struct get_parameter_result *input)
@@ -311,17 +338,18 @@ static bool encode_get_parameter_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 3) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
 	&& (zcbor_int32_encode(state, (&(*input).r))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).id))))
-	&& zcbor_present_encode(&((*input).r1_present), (zcbor_encoder_t *)encode_repeated_get_parameter_result_r1, state, (&(*input).r1))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 3))));
+	&& zcbor_present_encode(&((*input).r1_present), (zcbor_encoder_t *)encode_repeated_get_parameter_result_r1, state, (&(*input).r1))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_get_parameter(
 		zcbor_state_t *state, const struct get_parameter *input)
@@ -329,14 +357,15 @@ static bool encode_get_parameter(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 1) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
-	&& (zcbor_uint32_encode(state, (&(*input).p1))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 1))));
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
+	&& (zcbor_uint32_encode(state, (&(*input).p1))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_set_parameter_result(
 		zcbor_state_t *state, const struct set_parameter_result *input)
@@ -344,16 +373,17 @@ static bool encode_set_parameter_result(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"id", tmp_str.len = sizeof("id") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).id))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"r", tmp_str.len = sizeof("r") - 1, &tmp_str)))))
-	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	&& (zcbor_int32_encode(state, (&(*input).r))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
 
 	return tmp_result;
-}
+}
+
 
 static bool encode_set_parameter(
 		zcbor_state_t *state, const struct set_parameter *input)
@@ -361,7 +391,7 @@ static bool encode_set_parameter(
 	zcbor_print("%s\r\n", __func__);
 	struct zcbor_string tmp_str;
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 2) && (((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
+	bool tmp_result = ((((((((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p1", tmp_str.len = sizeof("p1") - 1, &tmp_str)))))
 	&& (zcbor_uint32_encode(state, (&(*input).p1))))
 	&& (((zcbor_tstr_encode(state, ((tmp_str.value = (uint8_t *)"p2", tmp_str.len = sizeof("p2") - 1, &tmp_str)))))
 	&& (((*input).p2_choice == _set_parameter_p2_bool) ? ((zcbor_bool_encode(state, (&(*input)._bool))))
@@ -373,7 +403,7 @@ static bool encode_set_parameter(
 	: (((*input).p2_choice == _set_parameter_p2_tstr) ? ((zcbor_tstr_encode(state, (&(*input).tstr))))
 	: (((*input).p2_choice == _set_parameter_p2_float) ? ((zcbor_float64_encode(state, (&(*input)._float))))
 	: (((*input).p2_choice == _set_parameter_p2_bstr) ? ((zcbor_bstr_encode(state, (&(*input).bstr))))
-	: false)))))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 2))));
+	: false)))))))) || (zcbor_list_map_end_force_encode(state), false)))));
 
 	if (!tmp_result)
 		zcbor_trace();
@@ -406,7 +436,8 @@ int cbor_encode_set_parameter(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_set_parameter_result(
@@ -432,7 +463,8 @@ int cbor_encode_set_parameter_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_get_parameter(
@@ -458,7 +490,8 @@ int cbor_encode_get_parameter(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_get_parameter_result(
@@ -484,7 +517,8 @@ int cbor_encode_get_parameter_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_load_parameter_file(
@@ -510,7 +544,8 @@ int cbor_encode_load_parameter_file(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_load_parameter_file_result(
@@ -536,7 +571,8 @@ int cbor_encode_load_parameter_file_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_dump_parameter_file(
@@ -562,7 +598,8 @@ int cbor_encode_dump_parameter_file(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_dump_parameter_file_result(
@@ -588,7 +625,8 @@ int cbor_encode_dump_parameter_file_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_factory_reset(
@@ -614,7 +652,8 @@ int cbor_encode_factory_reset(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_factory_reset_result(
@@ -640,7 +679,8 @@ int cbor_encode_factory_reset_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_set_notify(
@@ -666,7 +706,8 @@ int cbor_encode_set_notify(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_set_notify_result(
@@ -692,7 +733,8 @@ int cbor_encode_set_notify_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_get_notify(
@@ -718,7 +760,8 @@ int cbor_encode_get_notify(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_get_notify_result(
@@ -744,7 +787,8 @@ int cbor_encode_get_notify_result(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_disable_notify(
@@ -770,7 +814,8 @@ int cbor_encode_disable_notify(
 		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
 	}
 	return ZCBOR_SUCCESS;
-}
+}
+
 
 
 int cbor_encode_disable_notify_result(

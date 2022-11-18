@@ -1,1 +1,3 @@
 zcbor -c attributes.cddl --default-max-qty 3 code --short-names -d -e -t set_parameter set_parameter_result get_parameter get_parameter_result load_parameter_file load_parameter_file_result dump_parameter_file dump_parameter_file_result factory_reset factory_reset_result set_notify set_notify_result get_notify get_notify_result disable_notify disable_notify_result --oc ../src/generated/attribute_mgmt.c --oh ../include/generated/attribute_mgmt.h
+
+** zcbor_map_start_encode and zcbor_map_end_encode must be removed from output because they are already present in smp.c **
