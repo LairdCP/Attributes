@@ -1163,7 +1163,9 @@ int attr_load(const char *abs_path, bool *modified)
 		*modified = mod_count > 0;
 	}
 
-	return (r < 0) ? r : pairs;
+	/* Bug 22990: WBX3 Expects 0 on success */
+	return (r < 0) ? r : 0;
+
 }
 
 int attr_set_notify(attr_id_t id, bool value)

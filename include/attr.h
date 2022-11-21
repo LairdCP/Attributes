@@ -586,7 +586,7 @@ int attr_set_quiet(attr_id_t id, bool value);
  * @param modified Will be set to true if parameters were modified or false if
  * not (can be supplied NULL to ignore)
  *
- * @retval negative error code, number of parameters on success
+ * @retval negative error code, 0 on success (Bug 22990)
  */
 int attr_load(const char *abs_path, bool *modified);
 
