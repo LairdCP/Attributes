@@ -56,11 +56,19 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_FPU),
 	while (!attr_initialized) {                                            \
 		k_yield();                                                     \
 	}                                                                      \
-	k_mutex_lock(&m, K_FOREVER)
+	k_mutex_lock(&m, K_FOREVER);                                           \
+	k_sched_lock();
 
-#define TAKE_MUTEX_DURING_INIT(m) k_mutex_lock(&m, K_FOREVER)
+#define TAKE_MUTEX_DURING_INIT(m)                                              \
+	k_mutex_lock(&m, K_FOREVER);                                           \
+	k_sched_lock();
 
-#define GIVE_MUTEX(m) k_mutex_unlock(&m)
+/* After a broadcast, don't allow another task to become active
+ * until mutex is released.
+ */
+#define GIVE_MUTEX(m)                                                          \
+	k_mutex_unlock(&m);                                                    \
+	k_sched_unlock();
 
 #define ATTR_ENTRY_DECL(x)                                                     \
 	const struct attr_table_entry *const entry = attr_map(x);
