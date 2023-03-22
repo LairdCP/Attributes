@@ -517,9 +517,9 @@ class attributes:
         self.CreateHeaderFile(self.CreateSkeleton(header_file_path))
         self.CreateUtilFile(self.CreateSkeleton(util_file_path))
 
-        subprocess.call(f"clang-format -i -style=file {source_file_path}")
-        subprocess.call(f"clang-format -i -style=file {header_file_path}")
-        subprocess.call(f"clang-format -i -style=file {util_file_path}")
+        subprocess.call(f"clang-format -i -style=file {source_file_path}", shell=True)
+        subprocess.call(f"clang-format -i -style=file {header_file_path}", shell=True)
+        subprocess.call(f"clang-format -i -style=file {util_file_path}", shell=True)
 
     def CreateSkeleton(self, file_name: Path) -> Skeleton:
         """
