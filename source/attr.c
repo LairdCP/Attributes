@@ -729,6 +729,11 @@ int attr_show_all(const struct shell *shell)
 	int r = 0;
 	attr_index_t i;
 
+	/* To prevent priority inheritance issues, call this before lock. */
+	for (i = 0; i < ATTR_TABLE_SIZE; i++) {
+		prepare_for_read(&ATTR_TABLE[i]);
+	}
+
 	if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			shell_show(shell, &ATTR_TABLE[i]);

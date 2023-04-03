@@ -78,7 +78,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		  ats_get_cmd),
 	SHELL_CMD(dump, NULL, "<0 = rw, 1 = w, 2 = ro> <abs_path>\n",
 		  ats_dump_cmd),
-	SHELL_CMD(show, NULL, "Display all parameters", ats_show_cmd),
+	SHELL_CMD(show, NULL, "Display all parameters (prepared called)",
+		  ats_show_cmd),
 	SHELL_CMD(
 		type, NULL,
 		"Display an attribute file\n"
