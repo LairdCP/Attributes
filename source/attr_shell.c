@@ -11,7 +11,6 @@
 /* Includes                                                                   */
 /******************************************************************************/
 #include <shell/shell.h>
-#include <init.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -46,8 +45,6 @@ static int ats_delete_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_notify_cmd(const struct shell *shell, size_t argc, char **argv);
 static int ats_disable_notify_cmd(const struct shell *shell, size_t argc,
 				  char **argv);
-
-static int attr_shell_init(const struct device *device);
 
 /******************************************************************************/
 /* Global Function Definitions                                                */
@@ -108,8 +105,6 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(attr, &sub_attr, "Attribute/Parameter Utilities", NULL);
-
-SYS_INIT(attr_shell_init, APPLICATION, 99);
 
 /******************************************************************************/
 /* Local Function Definitions                                                 */
@@ -548,13 +543,6 @@ static int ats_delete_cmd(const struct shell *shell, size_t argc, char **argv)
 	ARG_UNUSED(argv);
 
 	shell_print(shell, "Delete attribute file status: %d", attr_delete());
-
-	return 0;
-}
-
-static int attr_shell_init(const struct device *device)
-{
-	ARG_UNUSED(device);
 
 	return 0;
 }
