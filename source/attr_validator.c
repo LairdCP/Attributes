@@ -52,17 +52,20 @@ int av_string(const ate_t *const entry, void *pv, size_t vlen, bool do_write)
 	__ASSERT((entry->size == entry->max.ux + 1), "Unexpected string size");
 	int r = -EPERM;
 
-	/* -1 to account for NULL */
-	if (entry->size > vlen) {
+	if (vlen < entry->min.ux) {
+		r = -EINVAL;
+	} else if (vlen < entry->size) {
+		/* Must be smaller to account for NULL character */
 		size_t current_vlen = strlen(entry->pData);
-		if (do_write && (vlen >= entry->min.ux) &&
-		    ((current_vlen != vlen) ||
-		     (memcmp(entry->pData, pv, vlen) != 0))) {
+		if (do_write && ((current_vlen != vlen) ||
+				 (memcmp(entry->pData, pv, vlen) != 0))) {
 			atomic_set_bit(attr_modified, attr_table_index(entry));
 			memset(entry->pData, 0, entry->size);
 			strncpy(entry->pData, pv, vlen);
 		}
 		r = 0;
+	} else {
+		r = -EINVAL;
 	}
 	return r;
 }
