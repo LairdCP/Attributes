@@ -40,14 +40,23 @@ LOG_MODULE_REGISTER(attr, CONFIG_ATTR_LOG_LEVEL);
 		break;                                                         \
 	}
 
-/* Sys init order isn't always respected */
 #define TAKE_MUTEX(m)                                                          \
 	while (!attr_initialized) {                                            \
 		k_yield();                                                     \
 	}                                                                      \
-	k_mutex_lock(&m, K_FOREVER)
+	k_mutex_lock(&m, K_FOREVER);                                           \
+	k_sched_lock()
 
-#define GIVE_MUTEX(m) k_mutex_unlock(&m)
+#define TAKE_MUTEX_DURING_INIT(m)                                              \
+	k_mutex_lock(&m, K_FOREVER);                                           \
+	k_sched_lock()
+
+/* After a broadcast, don't allow another task to become active
+ * until mutex is released.
+ */
+#define GIVE_MUTEX(m)                                                          \
+	k_mutex_unlock(&m);                                                    \
+	k_sched_unlock()
 
 #define ATTR_ENTRY_DECL(x)                                                     \
 	const struct attr_table_entry *const entry = attr_map(x);
@@ -78,15 +87,15 @@ extern const struct attr_table_entry ATTR_TABLE[ATTR_TABLE_SIZE];
 
 ATOMIC_DEFINE(attr_modified, ATTR_TABLE_SIZE);
 
+K_MUTEX_DEFINE(attr_mutex);
+
 /******************************************************************************/
 /* Local Data Definitions                                                     */
 /******************************************************************************/
 static ATOMIC_DEFINE(quiet, ATTR_TABLE_SIZE);
 static ATOMIC_DEFINE(notify, ATTR_TABLE_SIZE);
 
-static struct k_mutex attr_mutex;
-
-static bool attr_initialized;
+static volatile bool attr_initialized;
 
 /******************************************************************************/
 /* Local Function Prototypes                                                  */
@@ -712,9 +721,11 @@ int attr_show(const struct shell *shell, attr_id_t id)
 	ATTR_ENTRY_DECL(id);
 
 	if (entry != NULL) {
-		if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+		if (!attr_initialized) {
+			r = -EAGAIN;
+		} else if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
 			shell_show(shell, entry);
-			GIVE_MUTEX(attr_mutex);
+			k_mutex_unlock(&attr_mutex);
 			r = 0;
 		} else {
 			r = -EWOULDBLOCK;
@@ -734,11 +745,13 @@ int attr_show_all(const struct shell *shell)
 		prepare_for_read(&ATTR_TABLE[i]);
 	}
 
-	if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
+	if (!attr_initialized) {
+		r = -EAGAIN;
+	} else if (k_mutex_lock(&attr_mutex, K_NO_WAIT) == 0) {
 		for (i = 0; i < ATTR_TABLE_SIZE; i++) {
 			shell_show(shell, &ATTR_TABLE[i]);
 		}
-		GIVE_MUTEX(attr_mutex);
+		k_mutex_unlock(&attr_mutex);
 	} else {
 		r = -EWOULDBLOCK;
 	}
@@ -1429,7 +1442,7 @@ static int attr_init(const struct device *device)
 	ARG_UNUSED(device);
 	int r = -EPERM;
 
-	k_mutex_init(&attr_mutex);
+	TAKE_MUTEX_DURING_INIT(attr_mutex);
 
 	attr_table_initialize();
 
@@ -1449,6 +1462,7 @@ static int attr_init(const struct device *device)
 	initialize_quiet();
 
 	attr_initialized = true;
-
+	GIVE_MUTEX(attr_mutex);
+	
 	return r;
 }

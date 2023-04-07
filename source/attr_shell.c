@@ -402,8 +402,11 @@ static int ats_show_cmd(const struct shell *shell, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	attr_show_all(shell);
-	return 0;
+	int r;
+	
+	r = attr_show_all(shell);
+	shell_print(shell, "show all: %d", r);
+	return r;
 }
 
 static int ats_type_cmd(const struct shell *shell, size_t argc, char **argv)
